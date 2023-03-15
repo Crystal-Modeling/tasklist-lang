@@ -1,17 +1,9 @@
 import chalk from 'chalk';
 import { Command } from 'commander';
-import { Model } from '../language-server/generated/ast';
 import { TaskListLanguageMetaData } from '../language-server/generated/module';
-import { createTaskListServices } from '../language-server/task-list-module';
-import { extractAstNode } from './cli-util';
-import { generateJavaScript } from './generator';
-import { NodeFileSystem } from 'langium/node';
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
-    const services = createTaskListServices(NodeFileSystem).TaskList;
-    const model = await extractAstNode<Model>(fileName, services);
-    const generatedFilePath = generateJavaScript(model, fileName, opts.destination);
-    console.log(chalk.green(`JavaScript code generated successfully: ${generatedFilePath}`));
+    console.log(chalk.yellow(`No OP stub`));
 };
 
 export type GenerateOptions = {
