@@ -1,5 +1,5 @@
 import chalk from 'chalk';
-import { Command } from 'commander';
+import { Command } from 'commander/typings';
 import { TaskListLanguageMetaData } from '../language-server/generated/module';
 
 export const generateAction = async (fileName: string, opts: GenerateOptions): Promise<void> => {
