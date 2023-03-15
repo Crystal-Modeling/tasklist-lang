@@ -20,10 +20,10 @@ export function registerValidationChecks(services: TaskListServices) {
 export class TaskListValidator {
 
     checkTaskStartsWithCapital(task: Task, accept: ValidationAcceptor): void {
-        if (task.name) {
-            const firstChar = task.name.substring(0, 1);
+        if (task.content) {
+            const firstChar = task.content.substring(0, 1);
             if (firstChar.toUpperCase() !== firstChar) {
-                accept('warning', 'Task name should start with a capital.', { node: task, property: 'name' });
+                accept('warning', 'Task content should start with a capital.', { node: task, property: 'content' });
             }
         }
     }

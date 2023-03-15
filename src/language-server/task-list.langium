@@ -4,16 +4,25 @@ entry Model:
     tasks+=Task*;
 
 Task:
-    'task' name=STRING
-    ('->' references+=[Task:STRING] (',' references+=[Task:STRING] )* )?
-    ('=>' next=Task )?
-    ('{' (children+=Task)* '}')?
+    'task'
+    TaskProperties
+    ;
+
+NextTask infers Task:
+    'next'
+    TaskProperties
+    ;
+
+fragment TaskProperties:
+    (name=ID)?
+    content=STRING
+    ('->' references+=[Task:ID] (',' references+=[Task:ID] )* )?
+    (next=NextTask)?
     ;
 
 
 hidden terminal WS: /\s+/;
-terminal ID: /[_a-zA-Z][\w_]*/;
-terminal INT returns number: /[0-9]+/;
+terminal ID: /[0-9_a-zA-Z][\w_]*/;
 terminal STRING: /"(\\.|[^"\\])*"|'(\\.|[^'\\])*'/;
 
 hidden terminal ML_COMMENT: /\/\*[\s\S]*?\*\//;
