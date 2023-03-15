@@ -1,13 +1,15 @@
 grammar TaskList
 
 entry Model:
-    (persons+=Person | greetings+=Greeting)*;
+    tasks+=Task*;
 
-Person:
-    'person' name=ID;
+Task:
+    'task' name=STRING
+    ('->' references+=[Task:STRING] (',' references+=[Task:STRING] )* )?
+    ('=>' next=Task )?
+    ('{' (children+=Task)* '}')?
+    ;
 
-Greeting:
-    'Hello' person=[Person:ID] '!';
 
 hidden terminal WS: /\s+/;
 terminal ID: /[_a-zA-Z][\w_]*/;
