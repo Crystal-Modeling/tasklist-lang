@@ -1,0 +1,5 @@
+node_modules
+out
+src/language-server/generated
+## Ignoring TextMate grammar definition, since it is currently generated with Langium -- see langium-config.json
+syntaxes/task-list.tmLanguage.json
