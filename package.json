@@ -10,17 +10,26 @@
         "Programming Languages"
     ],
     "contributes": {
-        "languages": [{
-            "id": "task-list",
-            "aliases": ["Task List", "task-list"],
-            "extensions": [".tasks"],
-            "configuration": "./language-configuration.json"
-        }],
-        "grammars": [{
-            "language": "task-list",
-            "scopeName": "source.task-list",
-            "path": "./syntaxes/task-list.tmLanguage.json"
-        }]
+        "languages": [
+            {
+                "id": "task-list",
+                "aliases": [
+                    "Task List",
+                    "task-list"
+                ],
+                "extensions": [
+                    ".tasks"
+                ],
+                "configuration": "./language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "task-list",
+                "scopeName": "source.task-list",
+                "path": "./syntaxes/task-list.tmLanguage.json"
+            }
+        ]
     },
     "activationEvents": [
         "onLanguage:task-list"
@@ -43,8 +52,8 @@
         "langium:watch": "langium generate --watch"
     },
     "dependencies": {
-        "chevrotain": "~10.4.2",
         "chalk": "~4.1.2",
+        "chevrotain": "~10.4.2",
         "commander": "~10.0.0",
         "langium": "~1.1.0",
         "vscode-languageclient": "~8.0.2",
