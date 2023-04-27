@@ -2,7 +2,9 @@
   "compilerOptions": {
     "target": "ES6",
     "module": "commonjs",
-    "lib": ["ESNext"],
+    "lib": [
+      "ESNext"
+    ],
     "sourceMap": true,
     "outDir": "out",
     "strict": true,
@@ -12,13 +14,16 @@
     "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true
+    "forceConsistentCasingInFileNames": true,
+    "typeRoots": [
+      "./node_modules/@types"
+    ]
   },
   "include": [
-     "src/**/*.ts"
+    "src/**/*.ts"
   ],
   "exclude": [
-     "out",
-     "node_modules"
+    "out",
+    "node_modules"
   ]
 }
