@@ -5,20 +5,10 @@ entry Model:
 
 Task:
     'task'
-    TaskProperties
-    ;
-
-NextTask infers Task:
-    'next'
-    TaskProperties
-    ;
-
-fragment TaskProperties:
-    (name=ID)?
+    (name=ID)
     content=STRING
     ('->' references+=[Task:ID] (',' references+=[Task:ID] )* )?
-    (next=NextTask)?
-    ;
+;
 
 
 hidden terminal WS: /\s+/;
