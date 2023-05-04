@@ -5,7 +5,7 @@
 This folder contains all necessary files for your language extension.
 
 * `package.json` - the manifest file in which you declare your language support.
-* `language-configuration.json` - the language configuration used in the VS Code editor, defining the tokens that are used for comments and brackets.
+* `contributions/language-configuration.json` - the language configuration used in the VS Code editor, defining the tokens that are used for comments and brackets.
 * `src/extension.ts` - the main code of the extension, which is responsible for launching a language server and client.
 * `src/language-server/task-list.langium` -  the grammar definition of your language.
 * `src/language-server/main.ts` - the entry point of the language server process.
