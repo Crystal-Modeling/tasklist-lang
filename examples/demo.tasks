@@ -2,9 +2,9 @@ task 1st "First task"
 task 2nd "Second task"
 task an "Another task"
 
-task 1 "First" -> an, 2
-task 2 "Second" -> 2nd, 3
-task 3 "Third" -> 1st
+task first "First" -> an, second
+task second "Second" -> 2nd, third
+task third "Third" -> 1st
 
 // Sequential tasks will look like 👇
 
