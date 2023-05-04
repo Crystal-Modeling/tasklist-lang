@@ -1,0 +1,11 @@
+{
+	"Next task": {
+		"scope": "task-list",
+		"prefix": "next",
+		"body": [
+			"${1:nextTask}",
+			"task ${1:nextTask} \"${2:Task content}\"$0"
+		],
+		"description": "Reference sequential task"
+	},
+}
