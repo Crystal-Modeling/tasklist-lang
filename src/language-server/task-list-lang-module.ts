@@ -6,7 +6,6 @@ import { SourceModelGeneratedModule, TaskListGeneratedModule, TaskListLangGenera
 import { SourceModelModule, SourceModelServices } from './task-list-sm/source-model-module';
 import { TaskListModule, TaskListServices } from './task-list/task-list-module';
 import { registerTaskListValidationChecks } from './task-list/validation/task-list-validation';
-import { registerSourceModelValidationChecks } from './task-list-sm/validation/source-model-validation';
 
 /**
  * Create the full set of services required by Langium.
@@ -45,6 +44,5 @@ export function createTaskListLangServices(context: DefaultSharedModuleContext):
     shared.ServiceRegistry.register(TaskList);
     shared.ServiceRegistry.register(SourceModel);
     registerTaskListValidationChecks(TaskList);
-    registerSourceModelValidationChecks(SourceModel)
     return { shared, TaskList, SourceModel };
 }

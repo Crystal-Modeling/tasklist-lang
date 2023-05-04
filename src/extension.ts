@@ -33,12 +33,15 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
         debug: { module: serverModule, transport: TransportKind.ipc, options: debugOptions }
     };
 
-    const fileSystemWatcher = vscode.workspace.createFileSystemWatcher('**/*.tasks');
+    const fileSystemWatcher = vscode.workspace.createFileSystemWatcher('**/*.(tasks|task-sm)');
     context.subscriptions.push(fileSystemWatcher);
 
     // Options to control the language client
     const clientOptions: LanguageClientOptions = {
-        documentSelector: [{ scheme: 'file', language: 'task-list' }],
+        documentSelector: [
+            { scheme: 'file', language: 'task-list' },
+            { scheme: 'file', language: 'tasks-sm' }
+        ],
         synchronize: {
             // Notify the server about file changes to files contained in the workspace
             fileEvents: fileSystemWatcher
@@ -47,8 +50,8 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
 
     // Create the language client and start the client.
     const client = new LanguageClient(
-        'task-list',
-        'Task List',
+        'task-list-lang',
+        'Task List Language',
         serverOptions,
         clientOptions
     );

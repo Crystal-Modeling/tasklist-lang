@@ -2,15 +2,11 @@ import {
     LangiumServices,
     Module, PartialLangiumServices
 } from 'langium';
-import { SourceModelValidator } from './validation/source-model-validation';
 
 /**
  * Declaration of custom services - add your own service classes here.
  */
 export type SourceModelAddedServices = {
-    validation: {
-        SourceModelValidator: SourceModelValidator
-    }
 }
 
 /**
@@ -25,7 +21,4 @@ export type SourceModelServices = LangiumServices & SourceModelAddedServices
  * selected services, while the custom services must be fully specified.
  */
 export const SourceModelModule: Module<SourceModelServices, PartialLangiumServices & SourceModelAddedServices> = {
-    validation: {
-        SourceModelValidator: () => new SourceModelValidator()
-    }
 };

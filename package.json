@@ -7,7 +7,7 @@
     "url": "git@github.com:Crystal-VPL/tasklist-lang.git"
   },
   "engines": {
-    "vscode": "^1.56.0"
+    "vscode": "^1.67.0"
   },
   "categories": [
     "Programming Languages"
@@ -28,8 +28,8 @@
       {
         "id": "tasks-sm",
         "aliases": [
-          "Task List Source Model",
-          "task-list source-model"
+          "Source Model",
+          "tasks-sm"
         ],
         "extensions": [
           ".task-sm"
@@ -80,13 +80,13 @@
     "chevrotain": "~10.4.2",
     "commander": "~10.0.0",
     "langium": "~1.1.0",
-    "vscode-languageclient": "~7.0.0",
-    "vscode-languageserver": "~7.0.0",
+    "vscode-languageclient": "~8.0.2",
+    "vscode-languageserver": "~8.0.2",
     "vscode-uri": "~3.0.7"
   },
   "devDependencies": {
     "@types/node": "~16.18.11",
-    "@types/vscode": "~1.56.0",
+    "@types/vscode": "~1.67.0",
     "@typescript-eslint/eslint-plugin": "~5.51.0",
     "@typescript-eslint/parser": "~5.51.0",
     "@vscode/vsce": "^2.19.0",
