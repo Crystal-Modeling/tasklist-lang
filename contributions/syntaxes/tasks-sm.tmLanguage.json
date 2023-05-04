@@ -1,0 +1,71 @@
+{
+  "name": "tasks-sm",
+  "scopeName": "source.tasks-sm",
+  "fileTypes": [
+    ".task-sm"
+  ],
+  "patterns": [
+    {
+      "include": "#comments"
+    },
+    {
+      "name": "keyword.control.tasks-sm",
+      "match": "\\b(test)\\b"
+    },
+    {
+      "name": "string.quoted.double.tasks-sm",
+      "begin": "\"",
+      "end": "\"",
+      "patterns": [
+        {
+          "include": "#string-character-escape"
+        }
+      ]
+    },
+    {
+      "name": "string.quoted.single.tasks-sm",
+      "begin": "'",
+      "end": "'",
+      "patterns": [
+        {
+          "include": "#string-character-escape"
+        }
+      ]
+    }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.block.tasks-sm",
+          "begin": "/\\*",
+          "beginCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.tasks-sm"
+            }
+          },
+          "end": "\\*/",
+          "endCaptures": {
+            "0": {
+              "name": "punctuation.definition.comment.tasks-sm"
+            }
+          }
+        },
+        {
+          "begin": "//",
+          "beginCaptures": {
+            "1": {
+              "name": "punctuation.whitespace.comment.leading.tasks-sm"
+            }
+          },
+          "end": "(?=$)",
+          "name": "comment.line.tasks-sm"
+        }
+      ]
+    },
+    "string-character-escape": {
+      "name": "constant.character.escape.tasks-sm",
+      "match": "\\\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|u\\{[0-9A-Fa-f]+\\}|[0-2][0-7]{0,2}|3[0-6][0-7]?|37[0-7]?|[4-7][0-7]?|.|$)"
+    }
+  }
+}

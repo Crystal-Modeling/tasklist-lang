@@ -24,6 +24,17 @@
           ".tasks"
         ],
         "configuration": "./contributions/language-configuration.json"
+      },
+      {
+        "id": "tasks-sm",
+        "aliases": [
+          "Task List Source Model",
+          "task-list source-model"
+        ],
+        "extensions": [
+          ".task-sm"
+        ],
+        "configuration": "./contributions/language-configuration.json"
       }
     ],
     "snippets": [
@@ -37,12 +48,15 @@
         "language": "task-list",
         "scopeName": "source.task-list",
         "path": "./contributions/syntaxes/task-list.tmLanguage.json"
+      },
+      {
+        "language": "tasks-sm",
+        "scopeName": "source.tasks-sm",
+        "path": "./contributions/syntaxes/tasks-sm.tmLanguage.json"
       }
     ]
   },
-  "activationEvents": [
-    "onLanguage:task-list"
-  ],
+  "activationEvents": [],
   "files": [
     "bin",
     "out",

@@ -2,9 +2,11 @@ import {
     createDefaultModule, createDefaultSharedModule, DefaultSharedModuleContext, inject,
     LangiumSharedServices
 } from 'langium';
-import { TaskListGeneratedModule, TaskListGeneratedSharedModule } from './generated/module';
-import { registerValidationChecks } from './task-list/validation/task-list-validation';
+import { SourceModelGeneratedModule, TaskListGeneratedModule, TaskListLangGeneratedSharedModule } from './generated/module';
+import { SourceModelModule, SourceModelServices } from './task-list-sm/source-model-module';
 import { TaskListModule, TaskListServices } from './task-list/task-list-module';
+import { registerTaskListValidationChecks } from './task-list/validation/task-list-validation';
+import { registerSourceModelValidationChecks } from './task-list-sm/validation/source-model-validation';
 
 /**
  * Create the full set of services required by Langium.
@@ -21,20 +23,28 @@ import { TaskListModule, TaskListServices } from './task-list/task-list-module';
  * @param context Optional module context with the LSP connection
  * @returns An object wrapping the shared services and the language-specific services
  */
-export function createTaskListServices(context: DefaultSharedModuleContext): {
+export function createTaskListLangServices(context: DefaultSharedModuleContext): {
     shared: LangiumSharedServices,
-    TaskList: TaskListServices
+    TaskList: TaskListServices,
+    SourceModel: SourceModelServices,
 } {
     const shared = inject(
         createDefaultSharedModule(context),
-        TaskListGeneratedSharedModule
+        TaskListLangGeneratedSharedModule
     );
     const TaskList = inject(
         createDefaultModule({ shared }),
         TaskListGeneratedModule,
         TaskListModule
     );
+    const SourceModel = inject(
+        createDefaultModule({ shared }),
+        SourceModelGeneratedModule,
+        SourceModelModule
+    );
     shared.ServiceRegistry.register(TaskList);
-    registerValidationChecks(TaskList);
-    return { shared, TaskList };
+    shared.ServiceRegistry.register(SourceModel);
+    registerTaskListValidationChecks(TaskList);
+    registerSourceModelValidationChecks(SourceModel)
+    return { shared, TaskList, SourceModel };
 }

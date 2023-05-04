@@ -1,14 +1,14 @@
 import { MultiMap, ValidationAcceptor, ValidationChecks } from 'langium';
-import { Model, Task, TaskListAstType, isTask } from '../../generated/ast';
+import { Model, Task, TaskListLangAstType, isTask } from '../../generated/ast';
 import { TaskListServices } from '../task-list-module';
 
 /**
  * Register custom validation checks.
  */
-export function registerValidationChecks(services: TaskListServices) {
+export function registerTaskListValidationChecks(services: TaskListServices) {
     const registry = services.validation.ValidationRegistry;
     const validator = services.validation.TaskListValidator;
-    const checks: ValidationChecks<TaskListAstType> = {
+    const checks: ValidationChecks<TaskListLangAstType> = {
         Model: validator.checkModelHasUniqueTasks,
         Task: [
             validator.checkTaskContentShouldStartWithCapital,

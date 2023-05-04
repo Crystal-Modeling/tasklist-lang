@@ -1,12 +1,22 @@
 {
-    "projectName": "TaskList",
-    "languages": [{
-        "id": "task-list",
-        "grammar": "src/language-server/task-list/task-list.langium",
-        "fileExtensions": [".tasks"],
-        "textMate": {
-            "out": "contributions/syntaxes/task-list.tmLanguage.json"
-        }
-    }],
-    "out": "src/language-server/generated"
+  "projectName": "TaskListLang",
+  "languages": [
+    {
+      "id": "task-list",
+      "grammar": "src/language-server/task-list/task-list.langium",
+      "fileExtensions": [".tasks"],
+      "textMate": {
+        "out": "contributions/syntaxes/task-list.tmLanguage.json"
+      }
+    },
+    {
+      "id": "tasks-sm",
+      "grammar": "src/language-server/task-list-sm/source-model.langium",
+      "fileExtensions": [".task-sm"],
+      "textMate": {
+        "out": "contributions/syntaxes/tasks-sm.tmLanguage.json"
+      }
+    }
+  ],
+  "out": "src/language-server/generated"
 }
