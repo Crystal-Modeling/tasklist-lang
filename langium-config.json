@@ -2,10 +2,10 @@
     "projectName": "TaskList",
     "languages": [{
         "id": "task-list",
-        "grammar": "src/language-server/task-list.langium",
+        "grammar": "src/language-server/task-list/task-list.langium",
         "fileExtensions": [".tasks"],
         "textMate": {
-            "out": "syntaxes/task-list.tmLanguage.json"
+            "out": "contributions/syntaxes/task-list.tmLanguage.json"
         }
     }],
     "out": "src/language-server/generated"

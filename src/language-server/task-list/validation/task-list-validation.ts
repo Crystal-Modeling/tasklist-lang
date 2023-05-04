@@ -1,6 +1,6 @@
 import { MultiMap, ValidationAcceptor, ValidationChecks } from 'langium';
-import { Model, Task, TaskListAstType, isTask } from './generated/ast';
-import type { TaskListServices } from './task-list-module';
+import { Model, Task, TaskListAstType, isTask } from '../../generated/ast';
+import { TaskListServices } from '../task-list-module';
 
 /**
  * Register custom validation checks.

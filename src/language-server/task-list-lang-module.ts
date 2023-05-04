@@ -1,35 +1,10 @@
 import {
     createDefaultModule, createDefaultSharedModule, DefaultSharedModuleContext, inject,
-    LangiumServices, LangiumSharedServices, Module, PartialLangiumServices
+    LangiumSharedServices
 } from 'langium';
 import { TaskListGeneratedModule, TaskListGeneratedSharedModule } from './generated/module';
-import { TaskListValidator, registerValidationChecks } from './task-list-validator';
-
-/**
- * Declaration of custom services - add your own service classes here.
- */
-export type TaskListAddedServices = {
-    validation: {
-        TaskListValidator: TaskListValidator
-    }
-}
-
-/**
- * Union of Langium default services and your custom services - use this as constructor parameter
- * of custom service classes.
- */
-export type TaskListServices = LangiumServices & TaskListAddedServices
-
-/**
- * Dependency injection module that overrides Langium default services and contributes the
- * declared custom services. The Langium defaults can be partially specified to override only
- * selected services, while the custom services must be fully specified.
- */
-export const TaskListModule: Module<TaskListServices, PartialLangiumServices & TaskListAddedServices> = {
-    validation: {
-        TaskListValidator: () => new TaskListValidator()
-    }
-};
+import { registerValidationChecks } from './task-list/validation/task-list-validation';
+import { TaskListModule, TaskListServices } from './task-list/task-list-module';
 
 /**
  * Create the full set of services required by Langium.

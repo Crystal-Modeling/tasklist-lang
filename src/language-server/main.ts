@@ -1,7 +1,7 @@
 import { startLanguageServer } from 'langium';
 import { NodeFileSystem } from 'langium/node';
 import { createConnection, ProposedFeatures } from 'vscode-languageserver/node';
-import { createTaskListServices } from './task-list-module';
+import { createTaskListServices } from './task-list-lang-module';
 
 // Create a connection to the client
 const connection = createConnection(ProposedFeatures.all);
