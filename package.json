@@ -23,14 +23,20 @@
         "extensions": [
           ".tasks"
         ],
-        "configuration": "./language-configuration.json"
+        "configuration": "./contributions/language-configuration.json"
+      }
+    ],
+    "snippets": [
+      {
+        "language": "task-list",
+        "path": "./contributions/task-list.code-snippets"
       }
     ],
     "grammars": [
       {
         "language": "task-list",
         "scopeName": "source.task-list",
-        "path": "./syntaxes/task-list.tmLanguage.json"
+        "path": "./contributions/syntaxes/task-list.tmLanguage.json"
       }
     ]
   },
