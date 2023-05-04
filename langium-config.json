@@ -10,11 +10,11 @@
       }
     },
     {
-      "id": "tasks-sm",
+      "id": "task-list-sm",
       "grammar": "src/language-server/task-list-sm/source-model.langium",
-      "fileExtensions": [".task-sm"],
+      "fileExtensions": [".tasks-sm"],
       "textMate": {
-        "out": "contributions/syntaxes/tasks-sm.tmLanguage.json"
+        "out": "contributions/syntaxes/task-list-sm.tmLanguage.json"
       }
     }
   ],

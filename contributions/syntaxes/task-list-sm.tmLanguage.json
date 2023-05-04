@@ -1,19 +1,19 @@
 {
-  "name": "tasks-sm",
-  "scopeName": "source.tasks-sm",
+  "name": "task-list-sm",
+  "scopeName": "source.task-list-sm",
   "fileTypes": [
-    ".task-sm"
+    ".tasks-sm"
   ],
   "patterns": [
     {
       "include": "#comments"
     },
     {
-      "name": "keyword.control.tasks-sm",
-      "match": "\\b(test)\\b"
+      "name": "keyword.control.task-list-sm",
+      "match": "\\b(tasks:)\\B"
     },
     {
-      "name": "string.quoted.double.tasks-sm",
+      "name": "string.quoted.double.task-list-sm",
       "begin": "\"",
       "end": "\"",
       "patterns": [
@@ -23,7 +23,7 @@
       ]
     },
     {
-      "name": "string.quoted.single.tasks-sm",
+      "name": "string.quoted.single.task-list-sm",
       "begin": "'",
       "end": "'",
       "patterns": [
@@ -37,17 +37,17 @@
     "comments": {
       "patterns": [
         {
-          "name": "comment.block.tasks-sm",
+          "name": "comment.block.task-list-sm",
           "begin": "/\\*",
           "beginCaptures": {
             "0": {
-              "name": "punctuation.definition.comment.tasks-sm"
+              "name": "punctuation.definition.comment.task-list-sm"
             }
           },
           "end": "\\*/",
           "endCaptures": {
             "0": {
-              "name": "punctuation.definition.comment.tasks-sm"
+              "name": "punctuation.definition.comment.task-list-sm"
             }
           }
         },
@@ -55,16 +55,16 @@
           "begin": "//",
           "beginCaptures": {
             "1": {
-              "name": "punctuation.whitespace.comment.leading.tasks-sm"
+              "name": "punctuation.whitespace.comment.leading.task-list-sm"
             }
           },
           "end": "(?=$)",
-          "name": "comment.line.tasks-sm"
+          "name": "comment.line.task-list-sm"
         }
       ]
     },
     "string-character-escape": {
-      "name": "constant.character.escape.tasks-sm",
+      "name": "constant.character.escape.task-list-sm",
       "match": "\\\\(x[0-9A-Fa-f]{2}|u[0-9A-Fa-f]{4}|u\\{[0-9A-Fa-f]+\\}|[0-2][0-7]{0,2}|3[0-6][0-7]?|37[0-7]?|[4-7][0-7]?|.|$)"
     }
   }

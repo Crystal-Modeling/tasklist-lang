@@ -9,7 +9,7 @@ Task:
 
 
 hidden terminal WS: /\s+/;
-terminal ID: /[0-9_a-zA-Z][\w_]*/;
+terminal ID: /[-0-9_a-zA-Z][\w_-]*/;
 terminal STRING: /"(\\.|[^"\\])*"|'(\\.|[^'\\])*'/;
 
 hidden terminal ML_COMMENT: /\/\*[\s\S]*?\*\//;

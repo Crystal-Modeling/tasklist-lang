@@ -26,13 +26,13 @@
         "configuration": "./contributions/language-configuration.json"
       },
       {
-        "id": "tasks-sm",
+        "id": "task-list-sm",
         "aliases": [
           "Source Model",
-          "tasks-sm"
+          "task-list-sm"
         ],
         "extensions": [
-          ".task-sm"
+          ".tasks-sm"
         ],
         "configuration": "./contributions/language-configuration.json"
       }
@@ -50,9 +50,9 @@
         "path": "./contributions/syntaxes/task-list.tmLanguage.json"
       },
       {
-        "language": "tasks-sm",
-        "scopeName": "source.tasks-sm",
-        "path": "./contributions/syntaxes/tasks-sm.tmLanguage.json"
+        "language": "task-list-sm",
+        "scopeName": "source.task-list-sm",
+        "path": "./contributions/syntaxes/task-list-sm.tmLanguage.json"
       }
     ]
   },

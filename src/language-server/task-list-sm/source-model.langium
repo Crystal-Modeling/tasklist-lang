@@ -1,18 +1,13 @@
 grammar SourceModel
 import '../shared'
 
-entry STask:
-    'test' name=ID ref=[Task:ID]
-    // id=ID
-    // (tasks+=STask)*
+entry SModel:
+    id=ID
+    'tasks:'
+    (tasks+=STask)*
 ;
 
-// STask:
-//     'stask'
-//     id=ID
-//     '->'
-//     task=[Task:ID]
-// ;
-
-
-// terminal SEMANTIC_ID: /[0-9a-z]+/;
+STask:
+    id=ID
+    task=[Task:ID]
+;
