@@ -1,5 +1,5 @@
 {
-    "projectName": "TaskList",
+    "projectName": "TaskListLang",
     "languages": [{
         "id": "task-list",
         "grammar": "src/language-server/task-list/task-list.langium",

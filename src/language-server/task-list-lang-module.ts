@@ -2,9 +2,9 @@ import {
     createDefaultModule, createDefaultSharedModule, DefaultSharedModuleContext, inject,
     LangiumSharedServices
 } from 'langium';
-import { TaskListGeneratedModule, TaskListGeneratedSharedModule } from './generated/module';
-import { registerValidationChecks } from './task-list/validation/task-list-validation';
+import { TaskListGeneratedModule, TaskListLangGeneratedSharedModule } from './generated/module';
 import { TaskListModule, TaskListServices } from './task-list/task-list-module';
+import { registerValidationChecks } from './task-list/validation/task-list-validation';
 
 /**
  * Create the full set of services required by Langium.
@@ -21,13 +21,13 @@ import { TaskListModule, TaskListServices } from './task-list/task-list-module';
  * @param context Optional module context with the LSP connection
  * @returns An object wrapping the shared services and the language-specific services
  */
-export function createTaskListServices(context: DefaultSharedModuleContext): {
+export function createTaskListLangServices(context: DefaultSharedModuleContext): {
     shared: LangiumSharedServices,
     TaskList: TaskListServices
 } {
     const shared = inject(
         createDefaultSharedModule(context),
-        TaskListGeneratedSharedModule
+        TaskListLangGeneratedSharedModule
     );
     const TaskList = inject(
         createDefaultModule({ shared }),

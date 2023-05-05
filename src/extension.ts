@@ -47,8 +47,8 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
 
     // Create the language client and start the client.
     const client = new LanguageClient(
-        'task-list',
-        'Task List',
+        'task-list-lang',
+        'Task List Language',
         serverOptions,
         clientOptions
     );
