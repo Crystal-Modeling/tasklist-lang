@@ -9,5 +9,5 @@ const connection = createConnection(ProposedFeatures.all);
 // Inject the shared services and language-specific services
 const { shared, TaskList } = createTaskListLangServices({ connection, ...NodeFileSystem });
 
-// Start the language server with the shared services
+// Start the language server with the shared services and source-model specific services
 startSourceModelLanguageServer(shared, TaskList.sourceModel)

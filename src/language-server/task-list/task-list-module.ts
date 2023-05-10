@@ -13,6 +13,9 @@ export type TaskListAddedServices = {
     validation: {
         TaskListValidator: TaskListValidator
     },
+    /**
+     * This service is required to leverage SourceModel 'Langium extension' capabilities
+     */
     sourceModel: SourceModelServices
 }
 
