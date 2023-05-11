@@ -1,13 +1,12 @@
 
 import * as fs from 'fs-extra';
 import { fileURLToPath } from 'url';
-import { TypeGuard } from '../type-util';
 import { SourceModelServerError } from '../source-model-server-error';
-import { URI } from 'vscode-uri';
+import { TypeGuard } from '../type-util';
 
 export interface SemanticModelStorage {
-    saveSemanticModel(languageDocumentUri: URI): void
-    loadSemanticModel(languageDocumentUri: URI): void
+    saveSemanticModel(languageDocumentUri: string): void
+    loadSemanticModel(languageDocumentUri: string): void
 }
 
 
@@ -50,6 +49,9 @@ export abstract class AbstractSemanticModelStorage {
 
     protected readFile(path: string): unknown | undefined {
         try {
+            if (!fs.existsSync(path)) {
+                return undefined
+            }
             const data = fs.readFileSync(path, { encoding: 'utf8' });
             if (!data || data.length === 0) {
                 return undefined;

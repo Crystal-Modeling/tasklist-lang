@@ -1,10 +1,12 @@
 import {
-    createDefaultModule, createDefaultSharedModule, DefaultSharedModuleContext, inject,
+    createDefaultModule, createDefaultSharedModule, DefaultSharedModuleContext, DocumentState, inject,
+    interruptAndCheck,
     LangiumSharedServices
 } from 'langium';
 import { TaskListGeneratedModule, TaskListLangGeneratedSharedModule } from './generated/module';
 import { TaskListModule, TaskListServices } from './task-list/task-list-module';
 import { registerValidationChecks } from './task-list/validation/task-list-validation';
+import { isTaskListDocument } from './task-list/workspace/documents';
 
 /**
  * Create the full set of services required by Langium.
@@ -34,7 +36,24 @@ export function createTaskListLangServices(context: DefaultSharedModuleContext):
         TaskListGeneratedModule,
         TaskListModule
     );
+    addSemanticReconciliationPhase(shared, TaskList);
     shared.ServiceRegistry.register(TaskList);
     registerValidationChecks(TaskList);
     return { shared, TaskList };
+}
+
+
+
+function addSemanticReconciliationPhase(sharedServices: LangiumSharedServices, taskListServices: TaskListServices) {
+    const documentBuilder = sharedServices.workspace.DocumentBuilder;
+    documentBuilder.onBuildPhase(DocumentState.Validated, async (documents, cancelToken) => {
+        for (const document of documents) {
+            if (isTaskListDocument(document)) {
+                await interruptAndCheck(cancelToken);
+                const semanticReconciler = taskListServices.sourceModel.TaskListSemanticModelReconciler
+                semanticReconciler.reconcileSemanticWithLangiumModel(document.textDocument.uri, document.parseResult.value)
+            }
+
+        }
+    });
 }

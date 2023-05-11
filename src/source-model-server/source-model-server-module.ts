@@ -1,4 +1,4 @@
-import { SemanticModelStorage } from "./source-model/semantic-model-storage";
+import { SemanticModelStorage } from "./source-model/semantic-storage";
 
 
 export type SourceModelServices = {

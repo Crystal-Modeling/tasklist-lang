@@ -4,7 +4,9 @@ import {
 } from 'langium';
 import { SourceModelServices } from '../../source-model-server/source-model-server-module';
 import { TaskListValidator } from '../task-list/validation/task-list-validation';
-import { TaskListSemanticModelStorage } from './source-model/task-list-storage';
+import { TaskListSemanticModelStorage } from './source-model/task-list-semantic-storage';
+import { TaskListSemanticModelState } from './source-model/task-list-semantic-state';
+import { TaskListSemanticModelReconciler } from './source-model/task-list-semantic-reconciler';
 
 /**
  * Declaration of custom services - add your own service classes here.
@@ -16,7 +18,10 @@ export type TaskListAddedServices = {
     /**
      * This service is required to leverage SourceModel 'Langium extension' capabilities
      */
-    sourceModel: SourceModelServices
+    sourceModel: SourceModelServices & {
+        TaskListSemanticModelState: TaskListSemanticModelState
+        TaskListSemanticModelReconciler: TaskListSemanticModelReconciler
+    }
 }
 
 /**
@@ -35,6 +40,8 @@ export const TaskListModule: Module<TaskListServices, PartialLangiumServices & T
         TaskListValidator: () => new TaskListValidator()
     },
     sourceModel: {
-        SemanticModelStorage: () => new TaskListSemanticModelStorage()
+        SemanticModelStorage: (services) => new TaskListSemanticModelStorage(services),
+        TaskListSemanticModelState: (services) => new TaskListSemanticModelState(services),
+        TaskListSemanticModelReconciler: (services) => new TaskListSemanticModelReconciler(services),
     }
 };

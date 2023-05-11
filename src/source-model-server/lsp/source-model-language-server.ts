@@ -1,6 +1,5 @@
 import { LangiumSharedServices, startLanguageServer } from "langium";
 import { Connection } from "vscode-languageserver";
-import { URI } from "vscode-uri";
 import { SourceModelServices } from "../source-model-server-module";
 
 
@@ -19,11 +18,11 @@ function addSemanticModelProcessingHandlers(connection: Connection, services: La
 
     const semanticModelStorage = sourceModelServices.SemanticModelStorage;
     function onDidSave(uri: string): void {
-        semanticModelStorage.saveSemanticModel(URI.parse(uri))
+        semanticModelStorage.saveSemanticModel(uri)
     }
 
     function onDidOpen(uri: string): void {
-        semanticModelStorage.loadSemanticModel(URI.parse(uri))
+        semanticModelStorage.loadSemanticModel(uri)
     }
 
     const documents = services.workspace.TextDocuments;
