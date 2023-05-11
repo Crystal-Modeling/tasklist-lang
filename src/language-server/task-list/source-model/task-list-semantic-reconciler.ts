@@ -1,6 +1,6 @@
-import { MultiMap } from "langium";
 import * as ast from "../../generated/ast";
 import { TaskListServices } from "../task-list-module";
+import { TaskListDocument } from "../workspace/documents";
 import { SemanticTask } from "./task-list-semantic-model";
 import { TaskListSemanticModelState } from "./task-list-semantic-state";
 
@@ -11,17 +11,19 @@ export class TaskListSemanticModelReconciler {
         this.semanticModelState = services.sourceModel.TaskListSemanticModelState
     }
 
-    public reconcileSemanticWithLangiumModel(langiumDocumentUri: string, model: ast.Model) {
-        const semanticModelIndex = this.semanticModelState.get(langiumDocumentUri)
+    public reconcileSemanticWithLangiumModel(document: TaskListDocument) {
+        const isCorrectlyNamed = (task: ast.Task) => !document.incorrectlyNamedTasks?.find(invalidTask => task === invalidTask)
+
+        const model: ast.Model = document.parseResult.value
+        const semanticModelIndex = this.semanticModelState.get(document.textDocument.uri)
         const tasksToAdd: ast.Task[] = []
-        const tasksToRemove: MultiMap<string, SemanticTask> = semanticModelIndex.tasksByName
-        
+        const tasksToRemove: Map<string, SemanticTask> = semanticModelIndex.tasksByName
+
         model.tasks.forEach(task => {
-            const existingSemanticTasksByName = tasksToRemove.get(task.name)
-            if (existingSemanticTasksByName.length === 0) {
-                tasksToAdd.push(task)
-            } else {
-                tasksToRemove.delete(task.name, existingSemanticTasksByName[0])
+            if (isCorrectlyNamed(task)) {
+                if (!tasksToRemove.delete(task.name)) {
+                    tasksToAdd.push(task)
+                }
             }
         })
         semanticModelIndex.removeTasks(tasksToRemove.values())

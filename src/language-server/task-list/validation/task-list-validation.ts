@@ -1,6 +1,7 @@
 import { MultiMap, ValidationAcceptor, ValidationChecks } from 'langium';
 import { Model, Task, TaskListLangAstType, isTask } from '../../generated/ast';
 import { TaskListServices } from '../task-list-module';
+import { isTaskListDocument } from '../workspace/documents';
 
 /**
  * Register custom validation checks.
@@ -32,12 +33,17 @@ export class TaskListValidator {
             tasksByContent.add(task.content, task)
         })
 
-        tasksByName.entriesGroupedByKey().filter(([, tasks]) => tasks.length > 1)
-            .flatMap(([, tasks]) => tasks)
-            .forEach(task => {
-                accept('error', `Task must have unique name, but found another task with name [${task.name}]`,
-                    { node: task, property: 'name' })
-            })
+        const incorrectlyNamedTasks = tasksByName.entriesGroupedByKey().filter(([, tasks]) => tasks.length > 1)
+            .flatMap(([, tasks]) => tasks.splice(1))
+            .toArray()
+        incorrectlyNamedTasks.forEach(task => {
+            accept('error', `Task must have unique name, but found another task with name [${task.name}]`,
+                { node: task, property: 'name' })
+        })
+        //HACK: This actually is always true, or should be
+        if (model.$document && isTaskListDocument(model.$document)) {
+            model.$document.incorrectlyNamedTasks = incorrectlyNamedTasks
+        }
 
         tasksByContent.entriesGroupedByKey().filter(([, tasks]) => tasks.length > 1)
             .flatMap(([, tasks]) => tasks)

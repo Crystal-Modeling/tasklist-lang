@@ -52,7 +52,7 @@ function addSemanticReconciliationPhase(sharedServices: LangiumSharedServices, t
             if (isTaskListDocument(document)) {
                 await interruptAndCheck(cancelToken);
                 const semanticReconciler = taskListServices.sourceModel.TaskListSemanticModelReconciler
-                semanticReconciler.reconcileSemanticWithLangiumModel(document.textDocument.uri, document.parseResult.value)
+                semanticReconciler.reconcileSemanticWithLangiumModel(document)
             }
 
         }
