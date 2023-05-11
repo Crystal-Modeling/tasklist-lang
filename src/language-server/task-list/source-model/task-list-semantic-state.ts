@@ -19,9 +19,7 @@ export class TaskListSemanticModelState extends Map<string, SemanticModelIndex> 
         if (loadedSemanticModel) {
             return loadedSemanticModel
         }
-        console.info(`Semantic model for document ${languageDocumentUri} was not loaded, but requested now.`)
-        const semanticModelStorage = this.lazySemanticModelStorage()
-        semanticModelStorage.loadSemanticModel(languageDocumentUri)
+        this.lazySemanticModelStorage().loadSemanticModel(languageDocumentUri)
         //HACK: Relying on the fact, that semanticModelStorage will load semantic model and put into semantic state (or else throw Error)
         return super.get(languageDocumentUri)!
     }

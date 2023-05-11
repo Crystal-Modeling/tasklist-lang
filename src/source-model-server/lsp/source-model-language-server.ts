@@ -21,10 +21,6 @@ function addSemanticModelProcessingHandlers(connection: Connection, services: La
         semanticModelStorage.saveSemanticModel(uri)
     }
 
-    function onDidOpen(uri: string): void {
-        // semanticModelStorage.loadSemanticModel(uri)
-    }
-
     const documents = services.workspace.TextDocuments;
     documents.onDidSave(change => {
         console.debug("[saved by documents]:")
@@ -33,14 +29,5 @@ function addSemanticModelProcessingHandlers(connection: Connection, services: La
     connection.onDidSaveTextDocument(params => {
         console.debug("[saved by connection]:")
         onDidSave(params.textDocument.uri)
-    })
-
-    documents.onDidOpen(change => {
-        console.debug("[opened by documents]:")
-        onDidOpen(change.document.uri)
-    })
-    connection.onDidOpenTextDocument(params => {
-        console.debug("[opened by connection]:")
-        onDidOpen(params.textDocument.uri)
     })
 }
