@@ -12,26 +12,36 @@ import { SourceModelServices } from "../source-model-server-module";
  */
 export function startSourceModelLanguageServer(services: LangiumSharedServices, sourceModelServices: SourceModelServices): void {
     startLanguageServer(services)
-    addDocumentClosedHandler(services.lsp.Connection!, services, sourceModelServices)
+    addSemanticModelProcessingHandlers(services.lsp.Connection!, services, sourceModelServices)
 }
 
-function addDocumentClosedHandler(connection: Connection, services: LangiumSharedServices, sourceModelServices: SourceModelServices) {
+function addSemanticModelProcessingHandlers(connection: Connection, services: LangiumSharedServices, sourceModelServices: SourceModelServices) {
 
     const semanticModelStorage = sourceModelServices.SemanticModelStorage;
-    function onDidSave(saved: URI[]): void {
-        saved.forEach(uri => {
-            semanticModelStorage.saveSemanticModel()
-            console.debug("Document with uri ", uri, " was saved")
-        })
+    function onDidSave(uri: string): void {
+        semanticModelStorage.saveSemanticModel(URI.parse(uri))
+    }
+
+    function onDidOpen(uri: string): void {
+        semanticModelStorage.loadSemanticModel(URI.parse(uri))
     }
 
     const documents = services.workspace.TextDocuments;
     documents.onDidSave(change => {
-        console.debug("[documents]:")
-        onDidSave([URI.parse(change.document.uri)]);
-    });
+        console.debug("[saved by documents]:")
+        onDidSave(change.document.uri)
+    })
     connection.onDidSaveTextDocument(params => {
-        console.debug("[connection]:")
-        onDidSave([URI.parse(params.textDocument.uri)]);
+        console.debug("[saved by connection]:")
+        onDidSave(params.textDocument.uri)
+    })
+
+    documents.onDidOpen(change => {
+        console.debug("[opened by documents]:")
+        onDidOpen(change.document.uri)
+    })
+    connection.onDidOpenTextDocument(params => {
+        console.debug("[opened by connection]:")
+        onDidOpen(params.textDocument.uri)
     })
 }

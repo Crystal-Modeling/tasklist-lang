@@ -3,9 +3,11 @@ import * as fs from 'fs-extra';
 import { fileURLToPath } from 'url';
 import { TypeGuard } from '../type-util';
 import { SourceModelServerError } from '../source-model-server-error';
+import { URI } from 'vscode-uri';
 
 export interface SemanticModelStorage {
-    saveSemanticModel(): void
+    saveSemanticModel(languageDocumentUri: URI): void
+    loadSemanticModel(languageDocumentUri: URI): void
 }
 
 
