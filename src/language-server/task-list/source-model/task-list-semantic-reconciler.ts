@@ -1,3 +1,4 @@
+import { MultiMap } from "langium";
 import * as ast from "../../generated/ast";
 import { TaskListServices } from "../task-list-module";
 import { SemanticTask } from "./task-list-semantic-model";
@@ -13,11 +14,14 @@ export class TaskListSemanticModelReconciler {
     public reconcileSemanticWithLangiumModel(langiumDocumentUri: string, model: ast.Model) {
         const semanticModelIndex = this.semanticModelState.get(langiumDocumentUri)
         const tasksToAdd: ast.Task[] = []
-        const tasksToRemove: Map<string, SemanticTask> = semanticModelIndex.tasksByName
+        const tasksToRemove: MultiMap<string, SemanticTask> = semanticModelIndex.tasksByName
         
         model.tasks.forEach(task => {
-            if (!tasksToRemove.delete(task.name)) {
+            const existingSemanticTasksByName = tasksToRemove.get(task.name)
+            if (existingSemanticTasksByName.length === 0) {
                 tasksToAdd.push(task)
+            } else {
+                tasksToRemove.delete(task.name, existingSemanticTasksByName[0])
             }
         })
         semanticModelIndex.removeTasks(tasksToRemove.values())
