@@ -3,6 +3,7 @@ import * as fs from 'fs-extra';
 import { fileURLToPath } from 'url';
 import { SourceModelServerError } from '../source-model-server-error';
 import { TypeGuard } from '../type-util';
+import path from 'path';
 
 export interface SemanticModelStorage {
     saveSemanticModel(languageDocumentUri: string): void
@@ -71,9 +72,11 @@ export abstract class AbstractSemanticModelStorage {
     }
 
     protected writeFile(fileUri: string, model: unknown): void {
-        const path = this.toPath(fileUri);
+        const filePath = this.toPath(fileUri);
         const content = this.toString(model);
-        fs.writeFileSync(path, content);
+        const dirPath = path.dirname(filePath);
+        fs.mkdir(dirPath, { recursive: true })
+        fs.writeFileSync(filePath, content);
     }
 
     protected toString(model: unknown): string {

@@ -1,0 +1,18 @@
+{
+  "id": "197af3b7-862b-4b63-b783-a14b463a5dc6",
+  "tasks": {
+    "09fcdc5e-1ce4-4f7a-8d60-7436ec6043c2": {
+      "id": "09fcdc5e-1ce4-4f7a-8d60-7436ec6043c2",
+      "name": "loopy"
+    },
+    "4dc5d782-e874-47f4-9190-15a5fba95f5b": {
+      "id": "4dc5d782-e874-47f4-9190-15a5fba95f5b",
+      "name": "same"
+    },
+    "728d2043-bc7d-438d-adb3-45f8fd37fba3": {
+      "id": "728d2043-bc7d-438d-adb3-45f8fd37fba3",
+      "name": "tripleReference"
+    }
+  },
+  "transitions": {}
+}

@@ -33,8 +33,11 @@ export class TaskListSemanticModelStorage extends AbstractSemanticModelStorage i
 }
 
 function convertLangiumDocumentUriIntoSourceModelUri(uri: URI): URI {
+    const folderFileSeparator = uri.path.lastIndexOf('/')
+    const semanticPath = uri.path.slice(0, folderFileSeparator) + '/semantic' + uri.path.slice(folderFileSeparator)
+    console.debug("Semantic path is", semanticPath)
     return uri.with({
-        path: uri.path.substring(0, uri.path.lastIndexOf('.tasks')) + '.json'
+        path: semanticPath.substring(0, semanticPath.lastIndexOf('.tasks')) + '.json'
     });
 }
 
