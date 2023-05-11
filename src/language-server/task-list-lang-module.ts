@@ -46,7 +46,8 @@ export function createTaskListLangServices(context: DefaultSharedModuleContext):
 
 function addSemanticReconciliationPhase(sharedServices: LangiumSharedServices, taskListServices: TaskListServices) {
     const documentBuilder = sharedServices.workspace.DocumentBuilder;
-    documentBuilder.onBuildPhase(DocumentState.Validated, async (documents, cancelToken) => {
+    documentBuilder.onBuildPhase(DocumentState.IndexedReferences, async (documents, cancelToken) => {
+        console.debug("====== SEMANTIC RECONCILIATION PHASE ======")
         for (const document of documents) {
             if (isTaskListDocument(document)) {
                 await interruptAndCheck(cancelToken);

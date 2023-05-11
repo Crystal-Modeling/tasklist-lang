@@ -22,7 +22,7 @@ function addSemanticModelProcessingHandlers(connection: Connection, services: La
     }
 
     function onDidOpen(uri: string): void {
-        semanticModelStorage.loadSemanticModel(uri)
+        // semanticModelStorage.loadSemanticModel(uri)
     }
 
     const documents = services.workspace.TextDocuments;

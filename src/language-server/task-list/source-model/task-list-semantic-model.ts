@@ -69,9 +69,12 @@ export abstract class SemanticModelIndex {
     }
 
     public removeTasks(tasks: IterableIterator<SemanticTask>) {
+        let number = 0
         for (const task of tasks) {
             delete this._model.tasks[task.id]
+            number++
         }
+        console.debug("Removed " + number + " tasks")
     }
 
     public addTasks(tasks: Task[]) {
@@ -82,7 +85,7 @@ export abstract class SemanticModelIndex {
             this._tasksById.set(semanticTask.id, semanticTask)
             this._tasksByName.set(semanticTask.name, semanticTask)
         }
-        console.debug("After adding " + tasks.length + " tasks, the semanticModel is:", this._model)
+        console.debug("Added " + tasks.length + " tasks")
     }
 
     public get tasksByName(): Map<string, SemanticTask> {
