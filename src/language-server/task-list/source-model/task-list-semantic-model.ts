@@ -1,12 +1,32 @@
 import * as uuid from 'uuid'
 import { Task } from "../../generated/ast"
+import { isDefinedObject, isMappedObject } from '../../../source-model-server/source-model/typing-utils'
 
 export namespace SemanticModel {
-    export function is(object: any): object is SemanticModel {
-        if (typeof object.id === 'string' && object.tasks && object.transitions) {
-            return true
+    export function is(obj: unknown): obj is SemanticModel {
+        if (!isDefinedObject(obj)) {
+            return false
         }
-        return false
+        if (typeof obj.id !== 'string'
+            || !isMappedObject(obj.tasks, 'string', isSemanticTask)
+            || !isMappedObject(obj.transitions, 'string', isSemanticTransition)) {
+            return false
+        }
+
+        return true
+    }
+
+    function isSemanticTask(obj: unknown): obj is SemanticTask {
+        return isDefinedObject(obj)
+            && typeof obj.id === 'string'
+            && typeof obj.name === 'string'
+    }
+
+    function isSemanticTransition(obj: unknown): obj is SemanticTransition {
+        return isDefinedObject(obj)
+            && typeof obj.id === 'string'
+            && typeof obj.sourceTaskId === 'string'
+            && typeof obj.targetTaskId === 'string'
     }
 
     export function newModel(): SemanticModel {
