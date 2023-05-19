@@ -8,6 +8,7 @@ import path from 'path';
 export interface SemanticModelStorage {
     saveSemanticModel(languageDocumentUri: string): void
     loadSemanticModel(languageDocumentUri: string): void
+    deleteSemanticModel(languageDocumentUri: string): void
 }
 
 
@@ -77,6 +78,11 @@ export abstract class AbstractSemanticModelStorage {
         const dirPath = path.dirname(filePath);
         fs.mkdir(dirPath, { recursive: true })
         fs.writeFileSync(filePath, content);
+    }
+
+    protected deleteFile(fileUri: string): void {
+        const filePath = this.toPath(fileUri);
+        fs.rmSync(filePath, { force: true })
     }
 
     protected toString(model: unknown): string {

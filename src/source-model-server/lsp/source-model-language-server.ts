@@ -1,5 +1,5 @@
 import { LangiumSharedServices, startLanguageServer } from "langium";
-import { Connection } from "vscode-languageserver";
+import { Connection, FileChangeType } from "vscode-languageserver";
 import { SourceModelServices } from "../source-model-server-module";
 
 
@@ -17,17 +17,20 @@ export function startSourceModelLanguageServer(services: LangiumSharedServices, 
 function addSemanticModelProcessingHandlers(connection: Connection, services: LangiumSharedServices, sourceModelServices: SourceModelServices) {
 
     const semanticModelStorage = sourceModelServices.SemanticModelStorage;
-    function onDidSave(uri: string): void {
-        semanticModelStorage.saveSemanticModel(uri)
-    }
 
-    const documents = services.workspace.TextDocuments;
-    documents.onDidSave(change => {
-        console.debug("[saved by documents]:")
-        onDidSave(change.document.uri)
-    })
     connection.onDidSaveTextDocument(params => {
-        console.debug("[saved by connection]:")
-        onDidSave(params.textDocument.uri)
+        semanticModelStorage.saveSemanticModel(params.textDocument.uri)
     })
+
+    connection.onDidChangeWatchedFiles(params => {
+        for (const event of params.changes) {
+            switch (event.type) {
+                case FileChangeType.Deleted:
+                    semanticModelStorage.deleteSemanticModel(event.uri)
+                    break;
+                default:
+                    break;
+            }
+        }
+    });
 }

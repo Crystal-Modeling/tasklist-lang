@@ -26,6 +26,13 @@ export class TaskListSemanticModelStorage extends AbstractSemanticModelStorage i
         const semanticModel = this.loadFromFile(uri, SemanticModel.is)
         this.semanticModelState.set(languageDocumentUri, new AccessibleSemanticModelIndex(semanticModel))
     }
+    
+    deleteSemanticModel(languageDocumentUri: string): void {
+        console.debug("Deleting semantic model for URI", languageDocumentUri)
+        const uri = convertLangiumDocumentUriIntoSourceModelUri(URI.parse(languageDocumentUri)).toString()
+        this.semanticModelState.delete(languageDocumentUri)
+        this.deleteFile(uri)
+    }
 
     protected override createModelForEmptyFile(path: string): SemanticModel {
         return SemanticModel.newModel();
