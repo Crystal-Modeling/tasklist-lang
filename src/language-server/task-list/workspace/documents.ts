@@ -9,7 +9,7 @@ export interface TaskListDocument extends LangiumDocument<Model> {
     /**
      * This property is initialized during Validation phase to be not considered during Semantic Reconciliation phase
      */
-    incorrectlyNamedTasks ?: Task[]
+    incorrectlyNamedTasks ?: Set<Task>
 }
 
 export function isTaskListDocument(document: LangiumDocument): document is TaskListDocument {

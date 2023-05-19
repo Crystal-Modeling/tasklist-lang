@@ -12,7 +12,7 @@ export class TaskListSemanticModelReconciler {
     }
 
     public reconcileSemanticWithLangiumModel(document: TaskListDocument) {
-        const isCorrectlyNamed = (task: ast.Task) => !document.incorrectlyNamedTasks?.find(invalidTask => task === invalidTask)
+        const isCorrectlyNamed = (task: ast.Task) => !document.incorrectlyNamedTasks?.has(task)
 
         const model: ast.Model = document.parseResult.value
         const semanticModelIndex = this.semanticModelState.get(document.textDocument.uri)

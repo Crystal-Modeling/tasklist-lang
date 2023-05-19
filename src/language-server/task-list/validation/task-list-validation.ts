@@ -35,7 +35,7 @@ export class TaskListValidator {
 
         const incorrectlyNamedTasks = tasksByName.entriesGroupedByKey().filter(([, tasks]) => tasks.length > 1)
             .flatMap(([, tasks]) => tasks.splice(1))
-            .toArray()
+            .toSet()
         incorrectlyNamedTasks.forEach(task => {
             accept('error', `Task must have unique name, but found another task with name [${task.name}]`,
                 { node: task, property: 'name' })
