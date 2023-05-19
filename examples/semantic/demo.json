@@ -78,5 +78,101 @@
       "name": "ty"
     }
   },
-  "transitions": {}
+  "transitions": {
+    "473be0c3-d000-4fc5-a993-715d6c230d9f": {
+      "id": "473be0c3-d000-4fc5-a993-715d6c230d9f",
+      "sourceTaskId": "6c93cd50-20c3-4a07-9f66-8a2b16ce7aec",
+      "targetTaskId": "91dc609e-ad17-4fef-8ffd-7e2e59fc8af6"
+    },
+    "39d70d06-85c1-4040-a1b5-148e69580af0": {
+      "id": "39d70d06-85c1-4040-a1b5-148e69580af0",
+      "sourceTaskId": "6c93cd50-20c3-4a07-9f66-8a2b16ce7aec",
+      "targetTaskId": "77bf95c9-cbbf-4004-a319-cc980fa01c8e"
+    },
+    "a93a3009-2670-4848-bee0-7d9890223a73": {
+      "id": "a93a3009-2670-4848-bee0-7d9890223a73",
+      "sourceTaskId": "77bf95c9-cbbf-4004-a319-cc980fa01c8e",
+      "targetTaskId": "5c8b1f15-fbcd-441c-85ee-73393a323899"
+    },
+    "9be51fae-17bc-40f9-9e75-1b3863841145": {
+      "id": "9be51fae-17bc-40f9-9e75-1b3863841145",
+      "sourceTaskId": "77bf95c9-cbbf-4004-a319-cc980fa01c8e",
+      "targetTaskId": "370bff3e-9a20-425d-b60c-03e1f1b5e852"
+    },
+    "aa03d67d-474f-4cc9-98a8-2322e71014b7": {
+      "id": "aa03d67d-474f-4cc9-98a8-2322e71014b7",
+      "sourceTaskId": "370bff3e-9a20-425d-b60c-03e1f1b5e852",
+      "targetTaskId": "d2a66642-6bc4-4f53-9833-81f1bdbed48a"
+    },
+    "429b9d32-5732-429a-b256-6be2c0af5270": {
+      "id": "429b9d32-5732-429a-b256-6be2c0af5270",
+      "sourceTaskId": "66f953a2-ceec-4e88-91b9-2cb72c63656a",
+      "targetTaskId": "97e38ea9-e1bf-4d93-9086-b3f04a1b7b0b"
+    },
+    "7105b1d7-44de-4b87-a63a-eab2a2539ff1": {
+      "id": "7105b1d7-44de-4b87-a63a-eab2a2539ff1",
+      "sourceTaskId": "97e38ea9-e1bf-4d93-9086-b3f04a1b7b0b",
+      "targetTaskId": "3325890e-1d06-4019-9e6f-0f06ee25b286"
+    },
+    "d28f3445-335c-44fd-ab0e-c3134b9579c6": {
+      "id": "d28f3445-335c-44fd-ab0e-c3134b9579c6",
+      "sourceTaskId": "3325890e-1d06-4019-9e6f-0f06ee25b286",
+      "targetTaskId": "2322c352-51da-419f-b941-1cb06fc1a6c9"
+    },
+    "883e6bba-3445-4fdc-9c0f-eb95b6eafa31": {
+      "id": "883e6bba-3445-4fdc-9c0f-eb95b6eafa31",
+      "sourceTaskId": "6e96f8be-0691-421d-aafd-5cacba5a546f",
+      "targetTaskId": "5a804723-2ad2-4a8b-b68e-afced4aeea3f"
+    },
+    "70f25c3d-aa99-4b3e-8107-50cd666a3114": {
+      "id": "70f25c3d-aa99-4b3e-8107-50cd666a3114",
+      "sourceTaskId": "5a804723-2ad2-4a8b-b68e-afced4aeea3f",
+      "targetTaskId": "17e62cf3-d681-4342-baf0-8c67119edf28"
+    },
+    "f4741374-7e71-4bd6-85b6-b7294aaea6cf": {
+      "id": "f4741374-7e71-4bd6-85b6-b7294aaea6cf",
+      "sourceTaskId": "5a804723-2ad2-4a8b-b68e-afced4aeea3f",
+      "targetTaskId": "ff6ca4fe-6694-48cd-9506-7293f5a704b2"
+    },
+    "ba1af1ed-f4cb-442c-a84f-70e08ca868f5": {
+      "id": "ba1af1ed-f4cb-442c-a84f-70e08ca868f5",
+      "sourceTaskId": "5a804723-2ad2-4a8b-b68e-afced4aeea3f",
+      "targetTaskId": "e103d20f-bea3-4f85-8af3-3dd33880c72a"
+    },
+    "4ddf36bc-2b11-47b3-b003-e3f82cc20b2c": {
+      "id": "4ddf36bc-2b11-47b3-b003-e3f82cc20b2c",
+      "sourceTaskId": "17e62cf3-d681-4342-baf0-8c67119edf28",
+      "targetTaskId": "8e704a99-d535-449e-bfe6-b22ba23f0dd3"
+    },
+    "a1aab2af-6521-41a5-b004-6a3e33e01c98": {
+      "id": "a1aab2af-6521-41a5-b004-6a3e33e01c98",
+      "sourceTaskId": "8e704a99-d535-449e-bfe6-b22ba23f0dd3",
+      "targetTaskId": "a857f926-17c5-4ab4-a197-5c601f8166c3"
+    },
+    "b3975e45-4e0d-47ea-af4f-2e61cdfd08db": {
+      "id": "b3975e45-4e0d-47ea-af4f-2e61cdfd08db",
+      "sourceTaskId": "8e704a99-d535-449e-bfe6-b22ba23f0dd3",
+      "targetTaskId": "b3dcc877-eb5c-4aab-a9c2-f65ab5e71205"
+    },
+    "4dc970df-19bc-4aaa-859b-118e8abbaa2a": {
+      "id": "4dc970df-19bc-4aaa-859b-118e8abbaa2a",
+      "sourceTaskId": "a857f926-17c5-4ab4-a197-5c601f8166c3",
+      "targetTaskId": "17e62cf3-d681-4342-baf0-8c67119edf28"
+    },
+    "966af6df-8b98-4f89-a514-67419fc9c005": {
+      "id": "966af6df-8b98-4f89-a514-67419fc9c005",
+      "sourceTaskId": "ff6ca4fe-6694-48cd-9506-7293f5a704b2",
+      "targetTaskId": "b3dcc877-eb5c-4aab-a9c2-f65ab5e71205"
+    },
+    "4256f4cc-cf48-4250-9d27-fddf9eed55cd": {
+      "id": "4256f4cc-cf48-4250-9d27-fddf9eed55cd",
+      "sourceTaskId": "e103d20f-bea3-4f85-8af3-3dd33880c72a",
+      "targetTaskId": "9cb88e41-cc5b-4cdf-b06e-75fb940156d9"
+    },
+    "53f44b55-89e6-4d10-bc2d-4f445e3c418d": {
+      "id": "53f44b55-89e6-4d10-bc2d-4f445e3c418d",
+      "sourceTaskId": "9cb88e41-cc5b-4cdf-b06e-75fb940156d9",
+      "targetTaskId": "e103d20f-bea3-4f85-8af3-3dd33880c72a"
+    }
+  }
 }
