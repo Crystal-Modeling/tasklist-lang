@@ -15,13 +15,17 @@ export interface SemanticModelStorage {
 /**
  * Copied and adopted from @eclipse-glsp/server-node/src/features/model/abstract-json-model-storage.ts
  */
-export abstract class AbstractSemanticModelStorage {
+export abstract class AbstractSemanticModelStorage implements SemanticModelStorage {
+
+    public abstract saveSemanticModel(languageDocumentUri: string): void
+    public abstract loadSemanticModel(languageDocumentUri: string): void
+    public abstract deleteSemanticModel(languageDocumentUri: string): void
 
     protected loadFromFile(sourceUri: string): unknown
     protected loadFromFile<T>(sourceUri: string, guard: TypeGuard<T>): T
     protected loadFromFile<T>(sourceUri: string, guard?: TypeGuard<T>): T | unknown {
         try {
-            const path = this.toPath(sourceUri);
+            const path = this.uriToPath(sourceUri);
             let fileContent = this.readFile(path);
             if (!fileContent) {
                 fileContent = this.createModelForEmptyFile(path);
@@ -58,34 +62,33 @@ export abstract class AbstractSemanticModelStorage {
             if (!data || data.length === 0) {
                 return undefined;
             }
-            return this.toJson(data);
+            return this.parseContent(data);
         } catch (error) {
             throw new SourceModelServerError(`Could not read & parse file contents of '${path}' as json`, error);
         }
     }
-
-    protected toJson(fileContent: string): unknown {
-        return JSON.parse(fileContent);
-    }
-
-    protected toPath(sourceUri: string): string {
-        return sourceUri.startsWith('file://') ? fileURLToPath(sourceUri) : sourceUri;
-    }
-
     protected writeFile(fileUri: string, model: unknown): void {
-        const filePath = this.toPath(fileUri);
-        const content = this.toString(model);
+        const filePath = this.uriToPath(fileUri);
+        const content = this.stringifyModel(model);
         const dirPath = path.dirname(filePath);
         fs.mkdir(dirPath, { recursive: true })
         fs.writeFileSync(filePath, content);
     }
 
     protected deleteFile(fileUri: string): void {
-        const filePath = this.toPath(fileUri);
+        const filePath = this.uriToPath(fileUri);
         fs.rmSync(filePath, { force: true })
     }
 
-    protected toString(model: unknown): string {
+    protected uriToPath(sourceUri: string): string {
+        return sourceUri.startsWith('file://') ? fileURLToPath(sourceUri) : sourceUri;
+    }
+
+    protected parseContent(fileContent: string): unknown {
+        return JSON.parse(fileContent);
+    }
+
+    protected stringifyModel(model: unknown): string {
         return JSON.stringify(model, undefined, 2);
     }
 }
