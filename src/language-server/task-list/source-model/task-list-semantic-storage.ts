@@ -2,11 +2,11 @@ import { URI } from "vscode-uri";
 import { AbstractSemanticModelStorage, SemanticModelStorage } from "../../../source-model-server/source-model/semantic-storage";
 import { TaskListServices } from '../task-list-module';
 import { SemanticModel, SemanticModelIndex } from "./task-list-semantic-model";
-import { TaskListSemanticModelState } from './task-list-semantic-state';
+import { TaskListSemanticIndexManager } from './task-list-semantic-manager';
 
 export class TaskListSemanticModelStorage extends AbstractSemanticModelStorage implements SemanticModelStorage {
 
-    private semanticModelState: TaskListSemanticModelState
+    private semanticModelState: TaskListSemanticIndexManager
 
     public constructor(services: TaskListServices) {
         super()

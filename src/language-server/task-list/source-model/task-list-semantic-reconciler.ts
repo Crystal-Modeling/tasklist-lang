@@ -3,10 +3,10 @@ import * as ast from "../../generated/ast";
 import { TaskListServices } from "../task-list-module";
 import { TaskListDocument } from "../workspace/documents";
 import { SemanticTask } from "./task-list-semantic-model";
-import { TaskListSemanticModelState } from "./task-list-semantic-state";
+import { TaskListSemanticIndexManager } from "./task-list-semantic-manager";
 
 export class TaskListSemanticModelReconciler {
-    private semanticModelState: TaskListSemanticModelState
+    private semanticModelState: TaskListSemanticIndexManager
 
     public constructor(services: TaskListServices) {
         this.semanticModelState = services.sourceModel.TaskListSemanticModelState

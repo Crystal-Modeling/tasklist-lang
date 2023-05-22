@@ -5,9 +5,10 @@ import { TaskListServices } from "../task-list-module";
 import { SemanticModel, SemanticModelIndex } from "./task-list-semantic-model";
 
 /**
- * Stores {@link SemanticModel} per URI of Langium-managed TextDocument
+ * Stores {@link SemanticModel} per URI of Langium-managed TextDocument.
+ * It has control over all {@link SemanticModelIndex}es existing. Therefore, it can consume the link to SemanticModelIndex to perform computation?
  */
-export class TaskListSemanticModelState extends Map<string, SemanticModelIndex> {
+export class TaskListSemanticIndexManager extends Map<string, SemanticModelIndex> {
 
     private lazySemanticModelStorage: () => SemanticModelStorage
 
