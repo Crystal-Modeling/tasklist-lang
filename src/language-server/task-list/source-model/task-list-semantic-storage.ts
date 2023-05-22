@@ -15,21 +15,21 @@ export class TaskListSemanticModelStorage extends AbstractSemanticModelStorage i
 
     saveSemanticModel(languageDocumentUri: string): void {
         console.debug("Saving semantic model...")
-        const uri = convertLangiumDocumentUriIntoSourceModelUri(URI.parse(languageDocumentUri)).toString()
+        const uri = convertLangiumDocumentUriIntoSourceModelUri(URI.parse(languageDocumentUri)).modelToString()
         const semanticModel = (this.semanticModelState.get(languageDocumentUri) as AccessibleSemanticModelIndex).model
         this.writeFile(uri, semanticModel)
     }
 
     loadSemanticModel(languageDocumentUri: string): void {
         console.debug("Loading semantic model for URI", languageDocumentUri)
-        const uri = convertLangiumDocumentUriIntoSourceModelUri(URI.parse(languageDocumentUri)).toString()
+        const uri = convertLangiumDocumentUriIntoSourceModelUri(URI.parse(languageDocumentUri)).modelToString()
         const semanticModel = this.loadFromFile(uri, SemanticModel.is)
         this.semanticModelState.set(languageDocumentUri, new AccessibleSemanticModelIndex(semanticModel))
     }
     
     deleteSemanticModel(languageDocumentUri: string): void {
         console.debug("Deleting semantic model for URI", languageDocumentUri)
-        const uri = convertLangiumDocumentUriIntoSourceModelUri(URI.parse(languageDocumentUri)).toString()
+        const uri = convertLangiumDocumentUriIntoSourceModelUri(URI.parse(languageDocumentUri)).modelToString()
         this.semanticModelState.delete(languageDocumentUri)
         this.deleteFile(uri)
     }

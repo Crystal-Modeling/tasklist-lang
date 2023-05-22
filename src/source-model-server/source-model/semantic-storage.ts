@@ -92,7 +92,7 @@ export abstract class AbstractSemanticModelStorage implements SemanticModelStora
         return JSON.stringify(model, undefined, 2);
     }
 
-    protected toString(model: unknown): string {
+    protected modelToString(model: unknown): string {
         return 'random stuff'
     }
 }
