@@ -1,4 +1,4 @@
-import { MultiMap, Stream, stream } from 'langium'
+import { MultiMap } from 'langium'
 import * as uuid from 'uuid'
 import { isDefinedObject, isMappedObject } from '../../../source-model-server/source-model/typing-utils'
 import { Task } from "../../generated/ast"
@@ -71,7 +71,6 @@ export namespace SemanticModel {
     }
 }
 
-
 export abstract class SemanticModelIndex {
     protected readonly _model: SemanticModel
     private readonly _tasksById: Map<string, SemanticTask> = new Map()
@@ -106,53 +105,7 @@ export abstract class SemanticModelIndex {
         return this._model
     }
 
-    public addTasksWithTransitionsFrom(tasks: Iterable<Task>,
-        validTargetSemanticTaskIdsGetter: (sourceTask: Task) => Stream<string>) {
-        const semanticTasksWithTasks = stream(tasks)
-            .map((task): [SemanticTask, Task] => [SemanticModel.newTask(task), task])
-        semanticTasksWithTasks
-            .forEach(([semanticTask,]) => this.newTask(semanticTask))
-
-        semanticTasksWithTasks.forEach(([semanticTask, sourceTask]) => {
-            const sourceTaskId = semanticTask.id
-            validTargetSemanticTaskIdsGetter(sourceTask)
-                .forEach(id => this.newTransition(SemanticModel.newTransition(sourceTaskId, id)))
-        })
-    }
-
-    public addTransitionsForSourceTaskId(transitions: Iterable<[string, Task]>, semanticTaskIdGetter: (task: Task) => string | undefined) {
-        for (const [sourceTaskId, targetTask] of transitions) {
-            const targetTaskId = semanticTaskIdGetter(targetTask)
-            if (targetTaskId) {
-                this.newTransition(SemanticModel.newTransition(sourceTaskId, targetTaskId))
-            }
-        }
-    }
-
-    public getTaskIdByName(name: string): string | undefined {
-        return this._tasksByName.get(name)?.id
-    }
-
-    public removeTasksWithRelatedTransitions(tasks: Iterable<SemanticTask>) {
-        for (const task of tasks) {
-            this.deleteTask(task)
-            this.removeTransitionsForTask(task.id)
-        }
-    }
-
-    public removeTransitions(transitions: Iterable<SemanticTransition>) {
-        for (const transition of transitions) {
-            this.deleteTransition(transition)
-        }
-    }
-
-    private removeTransitionsForTask(sourceTaskId: string) {
-        for (const transition of this._transitionsByTaskId.get(sourceTaskId)) {
-            this.deleteTransition(transition)
-        }
-    }
-
-    private newTask(task: SemanticTask) {
+    public newTask(task: SemanticTask) {
         this._model.tasks[task.id] = task
         this.addTaskToIndex(task)
     }
@@ -160,6 +113,17 @@ export abstract class SemanticModelIndex {
     private addTaskToIndex(task: SemanticTask): void {
         this._tasksById.set(task.id, task)
         this._tasksByName.set(task.name, task)
+    }
+
+    public getTaskIdByName(name: string): string | undefined {
+        return this._tasksByName.get(name)?.id
+    }
+
+    public deleteTasksWithRelatedTransitions(tasks: Iterable<SemanticTask>) {
+        for (const task of tasks) {
+            this.deleteTask(task)
+            this.deleteTransitionsForTask(task.id)
+        }
     }
 
     private deleteTask(task: SemanticTask) {
@@ -172,7 +136,7 @@ export abstract class SemanticModelIndex {
         this._tasksByName.delete(task.name)
     }
 
-    private newTransition(transition: SemanticTransition) {
+    public newTransition(transition: SemanticTransition) {
         this._model.transitions[transition.id] = transition
         this.addTransitionToIndex(transition)
     }
@@ -182,6 +146,18 @@ export abstract class SemanticModelIndex {
         this._transitionsByTaskId.add(transition.sourceTaskId, transition)
         this._transitionsByTaskId.add(transition.targetTaskId, transition)
         this._transitionsBySourceTaskIdAndTargetTaskId.set([transition.sourceTaskId, transition.targetTaskId], transition)
+    }
+
+    public deleteTransitions(transitions: Iterable<SemanticTransition>) {
+        for (const transition of transitions) {
+            this.deleteTransition(transition)
+        }
+    }
+
+    private deleteTransitionsForTask(sourceTaskId: string) {
+        for (const transition of this._transitionsByTaskId.get(sourceTaskId)) {
+            this.deleteTransition(transition)
+        }
     }
 
     private deleteTransition(transition: SemanticTransition) {

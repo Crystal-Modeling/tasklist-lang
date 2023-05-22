@@ -58,7 +58,7 @@ export class TaskListSemanticModelReconciler {
             }
         })
         // Deletion can happen immediately after the mapping within the iteration (always?)
-        semanticModelIndex.removeTasksWithRelatedTransitions(existingUnmappedTasks.values())
+        semanticModelIndex.deleteTasksWithRelatedTransitions(existingUnmappedTasks.values())
 
         //NOTE: ITERATION 2: mapping Transitions
         const newTransitionsForMappedSourceTaskId: [string, ast.Task][] = []
@@ -70,10 +70,10 @@ export class TaskListSemanticModelReconciler {
                 newTransitionsForMappedSourceTaskId.push([mappedSourceTaskId, targetTask])
             }
         })
-        semanticModelIndex.removeTransitions(existingUnmappedTransitions.values())
+        semanticModelIndex.deleteTransitions(existingUnmappedTransitions.values())
 
         //NOTE: POST-ITERATION: now unmapped source elements can be added to semantic model
-        semanticModelIndex.addTasksWithTransitionsFrom(newTasks, getValidTargetSemanticTaskIds)
-        semanticModelIndex.addTransitionsForSourceTaskId(newTransitionsForMappedSourceTaskId, getSemanticTaskId)
+        this.semanticIndexManager.addTasksWithTransitionsFrom(semanticModelIndex, newTasks, getValidTargetSemanticTaskIds)
+        this.semanticIndexManager.addTransitionsForSourceTaskId(semanticModelIndex, newTransitionsForMappedSourceTaskId, getSemanticTaskId)
     }
 }
