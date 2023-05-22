@@ -3,18 +3,37 @@ import { SemanticModelStorage } from "../../../source-model-server/source-model/
 import { Task } from "../../generated/ast";
 import { TaskListServices } from "../task-list-module";
 import { SemanticModel, SemanticModelIndex } from "./task-list-semantic-model";
+import { SemanticIndexManager } from "../../../source-model-server/source-model/semantic-manager";
 
 /**
  * Stores {@link SemanticModel} per URI of Langium-managed TextDocument.
  * It has control over all {@link SemanticModelIndex}es existing. Therefore, it can consume the link to SemanticModelIndex to perform computation?
  */
-export class TaskListSemanticIndexManager extends Map<string, SemanticModelIndex> {
+export class TaskListSemanticIndexManager extends Map<string, SemanticModelIndex> implements SemanticIndexManager {
 
-    private lazySemanticModelStorage: () => SemanticModelStorage
+    private semanticModelStorage: SemanticModelStorage
 
     public constructor(services: TaskListServices) {
         super()
-        this.lazySemanticModelStorage = () => (services.sourceModel.SemanticModelStorage)
+        this.semanticModelStorage = services.sourceModel.SemanticModelStorage
+    }
+
+    loadSemanticModel(languageDocumentUri: string): void {
+        console.debug("Loading semantic model for URI", languageDocumentUri)
+        const semanticModel = this.semanticModelStorage.loadSemanticModelFromFile(languageDocumentUri, SemanticModel.is)
+        this.set(languageDocumentUri, new AccessibleSemanticModelIndex(semanticModel))
+    }
+
+    saveSemanticModel(languageDocumentUri: string): void {
+        console.debug("Saving semantic model...")
+        const semanticModel = (this.get(languageDocumentUri) as AccessibleSemanticModelIndex).model
+        this.semanticModelStorage.saveSemanticModelToFile(languageDocumentUri, semanticModel)
+    }
+    
+    deleteSemanticModel(languageDocumentUri: string): void {
+        console.debug("Deleting semantic model for URI", languageDocumentUri)
+        this.delete(languageDocumentUri)
+        this.semanticModelStorage.deleteSemanticModelFile(languageDocumentUri)
     }
 
     public getTaskId(task: Task): string | undefined {
@@ -27,9 +46,14 @@ export class TaskListSemanticIndexManager extends Map<string, SemanticModelIndex
         if (loadedSemanticModel) {
             return loadedSemanticModel
         }
-        this.lazySemanticModelStorage().loadSemanticModel(languageDocumentUri)
-        //HACK: Relying on the fact, that semanticModelStorage will load semantic model and put into semantic state (or else throw Error)
+        this.loadSemanticModel(languageDocumentUri)
         return super.get(languageDocumentUri)!
     }
 
+}
+class AccessibleSemanticModelIndex extends SemanticModelIndex {
+    
+    public override get model(): SemanticModel {
+        return this._model
+    }
 }

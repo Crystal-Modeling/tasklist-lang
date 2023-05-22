@@ -4,11 +4,12 @@ import { fileURLToPath } from 'url';
 import { SourceModelServerError } from '../source-model-server-error';
 import { TypeGuard } from '../type-util';
 import path from 'path';
+import { URI } from 'vscode-uri';
 
 export interface SemanticModelStorage {
-    saveSemanticModel(languageDocumentUri: string): void
-    loadSemanticModel(languageDocumentUri: string): void
-    deleteSemanticModel(languageDocumentUri: string): void
+    saveSemanticModelToFile(languageDocumentUri: string, model: unknown): void
+    loadSemanticModelFromFile<T>(languageDocumentUri: string, guard: TypeGuard<T>): T
+    deleteSemanticModelFile(languageDocumentUri: string): void
 }
 
 
@@ -17,9 +18,25 @@ export interface SemanticModelStorage {
  */
 export abstract class AbstractSemanticModelStorage implements SemanticModelStorage {
 
-    public abstract saveSemanticModel(languageDocumentUri: string): void
-    public abstract loadSemanticModel(languageDocumentUri: string): void
-    public abstract deleteSemanticModel(languageDocumentUri: string): void
+    public saveSemanticModelToFile(languageDocumentUri: string, semanticModel: unknown): void {
+        console.debug("Saving semantic model...")
+        const uri = this.convertLangiumDocumentUriIntoSourceModelUri(URI.parse(languageDocumentUri)).toString()
+        this.writeFile(uri, semanticModel)
+    }
+
+    public loadSemanticModelFromFile<T>(languageDocumentUri: string, guard: TypeGuard<T>): T {
+        console.debug("Loading semantic model for URI", languageDocumentUri)
+        const uri = this.convertLangiumDocumentUriIntoSourceModelUri(URI.parse(languageDocumentUri)).toString()
+        return this.loadFromFile(uri, guard)
+    }
+
+    public deleteSemanticModelFile(languageDocumentUri: string): void {
+        console.debug("Deleting semantic model for URI", languageDocumentUri)
+        const uri = this.convertLangiumDocumentUriIntoSourceModelUri(URI.parse(languageDocumentUri)).toString()
+        this.deleteFile(uri)
+    }
+
+    protected abstract convertLangiumDocumentUriIntoSourceModelUri(langiumDocumentUri: URI): URI
 
     protected loadFromFile(sourceUri: string): unknown
     protected loadFromFile<T>(sourceUri: string, guard: TypeGuard<T>): T

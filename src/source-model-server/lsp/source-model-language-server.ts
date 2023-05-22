@@ -11,22 +11,22 @@ import { SourceModelServices } from "../source-model-server-module";
  */
 export function startSourceModelLanguageServer(services: LangiumSharedServices, sourceModelServices: SourceModelServices): void {
     startLanguageServer(services)
-    addSemanticModelProcessingHandlers(services.lsp.Connection!, services, sourceModelServices)
+    addSemanticModelProcessingHandlers(services.lsp.Connection!, sourceModelServices)
 }
 
-function addSemanticModelProcessingHandlers(connection: Connection, services: LangiumSharedServices, sourceModelServices: SourceModelServices) {
+function addSemanticModelProcessingHandlers(connection: Connection, sourceModelServices: SourceModelServices) {
 
-    const semanticModelStorage = sourceModelServices.SemanticModelStorage;
+    const semanticIndexManager = sourceModelServices.SemanticIndexManager;
 
     connection.onDidSaveTextDocument(params => {
-        semanticModelStorage.saveSemanticModel(params.textDocument.uri)
+        semanticIndexManager.saveSemanticModel(params.textDocument.uri)
     })
 
     connection.onDidChangeWatchedFiles(params => {
         for (const event of params.changes) {
             switch (event.type) {
                 case FileChangeType.Deleted:
-                    semanticModelStorage.deleteSemanticModel(event.uri)
+                    semanticIndexManager.deleteSemanticModel(event.uri)
                     break;
                 default:
                     break;

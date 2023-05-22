@@ -19,7 +19,7 @@ export type TaskListAddedServices = {
      * This service is required to leverage SourceModel 'Langium extension' capabilities
      */
     sourceModel: SourceModelServices & {
-        TaskListSemanticModelState: TaskListSemanticIndexManager
+        SemanticIndexManager: TaskListSemanticIndexManager
         TaskListSemanticModelReconciler: TaskListSemanticModelReconciler
     }
 }
@@ -40,8 +40,8 @@ export const TaskListModule: Module<TaskListServices, PartialLangiumServices & T
         TaskListValidator: () => new TaskListValidator()
     },
     sourceModel: {
-        SemanticModelStorage: (services) => new TaskListSemanticModelStorage(services),
-        TaskListSemanticModelState: (services) => new TaskListSemanticIndexManager(services),
+        SemanticModelStorage: () => new TaskListSemanticModelStorage(),
+        SemanticIndexManager: (services) => new TaskListSemanticIndexManager(services),
         TaskListSemanticModelReconciler: (services) => new TaskListSemanticModelReconciler(services),
     }
 };

@@ -6,16 +6,16 @@ import { SemanticTask } from "./task-list-semantic-model";
 import { TaskListSemanticIndexManager } from "./task-list-semantic-manager";
 
 export class TaskListSemanticModelReconciler {
-    private semanticModelState: TaskListSemanticIndexManager
+    private semanticIndexManager: TaskListSemanticIndexManager
 
     public constructor(services: TaskListServices) {
-        this.semanticModelState = services.sourceModel.TaskListSemanticModelState
+        this.semanticIndexManager = services.sourceModel.SemanticIndexManager
     }
 
     public reconcileSemanticWithLangiumModel(document: TaskListDocument) {
         const isCorrectlyNamed = (task: ast.Task) => !document.incorrectlyNamedTasks?.has(task)
         const isResolvedAndCorrectlyNamed = (task: ast.Task | undefined): task is ast.Task => !!task && isCorrectlyNamed(task)
-        const getSemanticTaskId = (task: ast.Task) => this.semanticModelState.getTaskId(task)
+        const getSemanticTaskId = (task: ast.Task) => this.semanticIndexManager.getTaskId(task)
         const getValidTargetTasks = (task: ast.Task): Stream<ast.Task> => stream(task.references)
             .map(ref => (ref.ref))
             .filter(isResolvedAndCorrectlyNamed)
@@ -36,7 +36,7 @@ export class TaskListSemanticModelReconciler {
         */
 
         // Preparation: getting services, and AST root
-        const semanticModelIndex = this.semanticModelState.get(document.textDocument.uri)
+        const semanticModelIndex = this.semanticIndexManager.get(document.textDocument.uri)
         const model: ast.Model = document.parseResult.value
 
         // NOTE: ITERATION 1: mapping Tasks
@@ -65,7 +65,7 @@ export class TaskListSemanticModelReconciler {
         const existingUnmappedTransitions = semanticModelIndex.transitionsBySourceTaskIdAndTargetTaskId
         // Actual mapping
         targetTasksByMappedSourceTaskId.entries().forEach(([mappedSourceTaskId, targetTask]) => {
-            const targetTaskId = this.semanticModelState.getTaskId(targetTask)
+            const targetTaskId = this.semanticIndexManager.getTaskId(targetTask)
             if (!targetTaskId || !existingUnmappedTransitions.delete([mappedSourceTaskId, targetTaskId])) {
                 newTransitionsForMappedSourceTaskId.push([mappedSourceTaskId, targetTask])
             }
