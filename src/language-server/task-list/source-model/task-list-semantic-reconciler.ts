@@ -12,11 +12,22 @@ export class TaskListSemanticModelReconciler {
     }
 
     public reconcileSemanticWithLangiumModel(document: TaskListDocument) {
+
+        /* NOTE: So, the problem can be characterized as following:
+        
+        - I do mapping from existing structure (AST), not optimized for search element by identifier (name)
+        - I do mapping to semantic model, which I have control for, therefore, can make it indexed, and optimized for data manipulations
+        - That is why I traverse the source model!
+        - When the source model (AST) is not linear (with nested submodels), I do traversing in several iterations.
+        In previous iteration I prepare data for the next iteration (`targetTasksByMappedSourceTaskId`)
+        - I need the concept of source model _semantical validity_, that is, which node from AST do I map to SemanticModel?
+          = which AST node I assume correct enough to track his identity?
+        */
         /* NOTE: Reconciler is responsible for semantic model-specific domain logic:
         
-        - Task is valid for Semantic Model (is uniquely named within a document)
-        - Transition is valid for Semantic Model (is not a duplicate transition).
-        - Aggregate function: getValidTargetTasks, which deals with Task internals, adding isCorrectlyNamed on top
+        - Task is valid for Semantic Model (is unique by name within a document)
+        - Transition is valid for Semantic Model (is unique by name within a Task).
+        - Aggregate function: getValidTargetTasks, which deals with Task internals
 
         So that neither SemanticManager, nor SemanticModelIndex is responsible for traversing AST internals
         */
@@ -33,18 +44,6 @@ export class TaskListSemanticModelReconciler {
             })
             return validTargetTasks
         }
-
-        /* NOTE: So, the problem can be characterized as following:
-        
-        - I do mapping from existing structure (AST), not optimized for search element by identifier (name)
-        - I do mapping to semantic model, which I have control for, therefore, can make it indexed, and optimized for data manipulations
-        - That is why I traverse the source model!
-        - When the source model (AST) is not linear (with nested submodels), I do traversing in several iterations.
-        In previous iteration I prepare data for the next iteration (`targetTasksByMappedSourceTaskId`)
-        - I need the concept of source model _validity_, that is, which node from AST do I map to SemanticModel?
-          = which AST node I assume correct enough to track his identity?
-        - 
-        */
 
         // Preparation: getting services, and AST root
         const semanticModelIndex = this.semanticIndexManager.get(document.textDocument.uri)
@@ -88,7 +87,7 @@ export class TaskListSemanticModelReconciler {
         // Add new Tasks AND prepare new Transitions to be added for these new Tasks
         for (const task of newTasks) {
             const semanticTask = SemanticModel.newTask(task)
-            semanticModelIndex.newTask(semanticTask)
+            semanticModelIndex.addTask(semanticTask)
             getValidTargetTasks(task)
                 .forEach(targetTask => newTransitionsForMappedSourceTaskId.push([semanticTask.id, targetTask]))
         }
@@ -102,7 +101,7 @@ export class TaskListSemanticModelReconciler {
             because each time LS loads, it performs semantic reconciliation phase for all the documents
             */
             if (targetTaskId) {
-                semanticModelIndex.newTransition(SemanticModel.newTransition(sourceTaskId, targetTaskId))
+                semanticModelIndex.addTransition(SemanticModel.newTransition(sourceTaskId, targetTaskId))
             }
         }
     }

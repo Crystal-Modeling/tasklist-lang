@@ -105,14 +105,9 @@ export abstract class SemanticModelIndex {
         return this._model
     }
 
-    public newTask(task: SemanticTask) {
+    public addTask(task: SemanticTask) {
         this._model.tasks[task.id] = task
         this.addTaskToIndex(task)
-    }
-
-    private addTaskToIndex(task: SemanticTask): void {
-        this._tasksById.set(task.id, task)
-        this._tasksByName.set(task.name, task)
     }
 
     public getTaskIdByName(name: string): string | undefined {
@@ -126,6 +121,11 @@ export abstract class SemanticModelIndex {
         }
     }
 
+    private addTaskToIndex(task: SemanticTask): void {
+        this._tasksById.set(task.id, task)
+        this._tasksByName.set(task.name, task)
+    }
+
     private deleteTask(task: SemanticTask) {
         delete this._model.tasks[task.id]
         this.removeTaskFromIndex(task)
@@ -136,16 +136,9 @@ export abstract class SemanticModelIndex {
         this._tasksByName.delete(task.name)
     }
 
-    public newTransition(transition: SemanticTransition) {
+    public addTransition(transition: SemanticTransition) {
         this._model.transitions[transition.id] = transition
         this.addTransitionToIndex(transition)
-    }
-
-    private addTransitionToIndex(transition: SemanticTransition): void {
-        this._transitionsById.set(transition.id, transition)
-        this._transitionsByTaskId.add(transition.sourceTaskId, transition)
-        this._transitionsByTaskId.add(transition.targetTaskId, transition)
-        this._transitionsBySourceTaskIdAndTargetTaskId.set([transition.sourceTaskId, transition.targetTaskId], transition)
     }
 
     public deleteTransitions(transitions: Iterable<SemanticTransition>) {
@@ -158,6 +151,13 @@ export abstract class SemanticModelIndex {
         for (const transition of this._transitionsByTaskId.get(sourceTaskId)) {
             this.deleteTransition(transition)
         }
+    }
+
+    private addTransitionToIndex(transition: SemanticTransition): void {
+        this._transitionsById.set(transition.id, transition)
+        this._transitionsByTaskId.add(transition.sourceTaskId, transition)
+        this._transitionsByTaskId.add(transition.targetTaskId, transition)
+        this._transitionsBySourceTaskIdAndTargetTaskId.set([transition.sourceTaskId, transition.targetTaskId], transition)
     }
 
     private deleteTransition(transition: SemanticTransition) {
