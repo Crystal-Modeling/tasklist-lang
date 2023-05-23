@@ -1,4 +1,4 @@
-import { LangiumDocument } from "langium";
+import { LangiumDocument, getDocument } from "langium";
 import { Model, Task, isModel } from "../../generated/ast";
 
 /**
@@ -14,5 +14,9 @@ export interface TaskListDocument extends LangiumDocument<Model> {
 }
 
 export function isTaskListDocument(document: LangiumDocument): document is TaskListDocument {
-    return isModel(document.parseResult.value);
+    return isModel(document.parseResult.value)
+}
+
+export function getTaskListDocument(node: Model | Task): TaskListDocument {
+    return getDocument(node)
 }

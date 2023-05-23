@@ -1,7 +1,7 @@
-import { MultiMap, ValidationAcceptor, ValidationChecks, getDocument } from 'langium';
+import { MultiMap, ValidationAcceptor, ValidationChecks } from 'langium';
 import { Model, Task, TaskListLangAstType, isTask } from '../../generated/ast';
 import { TaskListServices } from '../task-list-module';
-import { isTaskListDocument } from '../workspace/documents';
+import { getTaskListDocument } from '../workspace/documents';
 
 /**
  * Register custom validation checks.
@@ -90,19 +90,13 @@ export class TaskListValidator {
     }
 
     private setSemanticallyInvalidTasks(model: Model, semanticallyInvalidTasks: Set<Task>) {
-        const document = getDocument(model)
-        //HACK: This actually is always true, or should be
-        if (isTaskListDocument(document)) {
-            document.semanticallyInvalidTasks = semanticallyInvalidTasks
-        }
+        const document = getTaskListDocument(model)
+        document.semanticallyInvalidTasks = semanticallyInvalidTasks
     }
 
-    private setSemanticallyInvalidReferences(task: Task, newInvalidReferenceIndices: Set<number>): void {
-        const document = getDocument(task)
-        //HACK: This actually is always true, or should be
-        if (isTaskListDocument(document)) {
-            document.semanticallyInvalidReferences ??= new Map()
-            document.semanticallyInvalidReferences.set(task, newInvalidReferenceIndices)
-        }
+    private setSemanticallyInvalidReferences(task: Task, semanticallyInvalidReferences: Set<number>): void {
+        const document = getTaskListDocument(task)
+        document.semanticallyInvalidReferences ??= new Map()
+        document.semanticallyInvalidReferences.set(task, semanticallyInvalidReferences)
     }
 }

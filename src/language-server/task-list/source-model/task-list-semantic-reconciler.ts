@@ -16,16 +16,15 @@ export class TaskListSemanticModelReconciler {
         
         - Task is valid for Semantic Model (is uniquely named within a document)
         - Transition is valid for Semantic Model (is not a duplicate transition).
-        //TODO: Do I need to ensure transition references semantically valid task if it is in the different document?
         - Aggregate function: getValidTargetTasks, which deals with Task internals, adding isCorrectlyNamed on top
 
         So that neither SemanticManager, nor SemanticModelIndex is responsible for traversing AST internals
         */
-        const isTaskSemanticallyValid = (task: ast.Task) => !document.semanticallyInvalidTasks?.has(task)
-        const isTransitionSemanticallyValid = (task: ast.Task, targetTaskIndex: number) => !document
+        const isTaskSemanticallyValid = (task: ast.Task): task is Valid<ast.Task> => !document.semanticallyInvalidTasks?.has(task)
+        const isTransitionSemanticallyValid = (task: Valid<ast.Task>, targetTaskIndex: number) => !document
             .semanticallyInvalidReferences?.get(task)?.has(targetTaskIndex)
-        const getValidTargetTasks = (task: ast.Task): ast.Task[] => {
-            const validTargetTasks: ast.Task[] = []
+        const getValidTargetTasks = (task: Valid<ast.Task>): Valid<ast.Task>[] => {
+            const validTargetTasks: Valid<ast.Task>[] = []
             task.references.forEach((targetTaskRef, targetTaskIndex) => {
                 const targetTask = targetTaskRef.ref
                 if (!!targetTask && isTaskSemanticallyValid(targetTask) && isTransitionSemanticallyValid(task, targetTaskIndex)) {
@@ -52,11 +51,11 @@ export class TaskListSemanticModelReconciler {
         const model: ast.Model = document.parseResult.value
 
         // NOTE: ITERATION 1: mapping Tasks
-        const newTasks: ast.Task[] = []
+        const newTasks: Valid<ast.Task>[] = []
         const existingUnmappedTasks: Map<string, SemanticTask> = semanticModelIndex.tasksByName
         // Collecting data for the next iteration (source task id + target task => Transition). Notice, that I replaced
         // source task with source task id (using already mapped data to optimize further mapping)
-        const validTargetTaskByMappedSourceTaskId: [string, ast.Task][] = []
+        const validTargetTaskByMappedSourceTaskId: [string, Valid<ast.Task>][] = []
         // Actual mapping: marking semantic elements for deletion, and AST nodes to be added
         model.tasks.forEach(task => {
             if (isTaskSemanticallyValid(task)) {
@@ -74,7 +73,7 @@ export class TaskListSemanticModelReconciler {
         semanticModelIndex.deleteTasksWithRelatedTransitions(existingUnmappedTasks.values())
 
         //NOTE: ITERATION 2: mapping Transitions
-        const newTransitionsForMappedSourceTaskId: [string, ast.Task][] = []
+        const newTransitionsForMappedSourceTaskId: [string, Valid<ast.Task>][] = []
         const existingUnmappedTransitions = semanticModelIndex.transitionsBySourceTaskIdAndTargetTaskId
         // Actual mapping
         validTargetTaskByMappedSourceTaskId.forEach(([mappedSourceTaskId, targetTask]) => {
@@ -97,10 +96,11 @@ export class TaskListSemanticModelReconciler {
         // Add new Transitions for existing Tasks
         for (const [sourceTaskId, targetTask] of newTransitionsForMappedSourceTaskId) {
             const targetTaskId = this.semanticIndexManager.getTaskId(targetTask)
-            //INCOMPLETE: If other semanticModel files are inconsistent (i.e., target task is missing),
-            // then this inconsistency propagates, because transition to this task will neither be created.
-            // However, I am not sure this inconsistency can exist: only if 2 files are modified simultaneously, I suppose,
-            // because each time LS loads, it performs semantic reconciliation phase for all the documents
+            /*INCOMPLETE: If other semanticModel files are inconsistent (i.e., target task is missing),
+            then this inconsistency propagates, because transition to this task will neither be created.
+            However, I am not sure this inconsistency can exist: only if 2 files are modified simultaneously, I suppose,
+            because each time LS loads, it performs semantic reconciliation phase for all the documents
+            */
             if (targetTaskId) {
                 semanticModelIndex.newTransition(SemanticModel.newTransition(sourceTaskId, targetTaskId))
             }
