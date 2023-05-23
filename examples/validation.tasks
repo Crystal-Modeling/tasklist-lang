@@ -1,0 +1,6 @@
+task loopy "I want to do this and that and that..." -> loop, loopy, 1st
+task same "I want to do this and that and that..."
+
+
+task tripleReference "Perhaps the author was feeling dizzy" -> same, loop, same, loopy, same
+task same "But this time its different content 🥲"
