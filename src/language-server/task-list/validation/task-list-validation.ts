@@ -1,4 +1,4 @@
-import { MultiMap, ValidationAcceptor, ValidationChecks } from 'langium';
+import { MultiMap, ValidationAcceptor, ValidationChecks, getDocument } from 'langium';
 import { Model, Task, TaskListLangAstType, isTask } from '../../generated/ast';
 import { TaskListServices } from '../task-list-module';
 import { isTaskListDocument } from '../workspace/documents';
@@ -40,10 +40,7 @@ export class TaskListValidator {
             accept('error', `Task must have unique name, but found another task with name [${task.name}]`,
                 { node: task, property: 'name' })
         })
-        //HACK: This actually is always true, or should be
-        if (model.$document && isTaskListDocument(model.$document)) {
-            model.$document.incorrectlyNamedTasks = incorrectlyNamedTasks
-        }
+        this.setSemanticallyInvalidTasks(model, incorrectlyNamedTasks)
 
         tasksByContent.entriesGroupedByKey().filter(([, tasks]) => tasks.length > 1)
             .flatMap(([, tasks]) => tasks)
@@ -65,6 +62,7 @@ export class TaskListValidator {
 
     checkTaskHasUniqueReferences(task: Task, accept: ValidationAcceptor): void {
         const referenceNames = new Set<string>()
+        const nonUniqueReferenceIndices = new Set<number>()
         for (let index = 0; index < task.references.length; index++) {
             const reference = task.references[index];
             if (isTask(reference.ref)) {
@@ -72,11 +70,13 @@ export class TaskListValidator {
                 if (referenceNames.has(referencedName)) {
                     accept('error', 'Task cannot reference another task more than once',
                         { node: task, property: 'references', index })
+                    nonUniqueReferenceIndices.add(index)
                 } else {
                     referenceNames.add(referencedName)
                 }
             }
         }
+        this.setSemanticallyInvalidReferences(task, nonUniqueReferenceIndices)
     }
 
     checkTaskDoesNotReferenceItself(task: Task, accept: ValidationAcceptor): void {
@@ -87,7 +87,22 @@ export class TaskListValidator {
                     { node: task, property: 'references', index })
             }
         }
-
     }
 
+    private setSemanticallyInvalidTasks(model: Model, semanticallyInvalidTasks: Set<Task>) {
+        const document = getDocument(model)
+        //HACK: This actually is always true, or should be
+        if (isTaskListDocument(document)) {
+            document.semanticallyInvalidTasks = semanticallyInvalidTasks
+        }
+    }
+
+    private setSemanticallyInvalidReferences(task: Task, newInvalidReferenceIndices: Set<number>): void {
+        const document = getDocument(task)
+        //HACK: This actually is always true, or should be
+        if (isTaskListDocument(document)) {
+            document.semanticallyInvalidReferences ??= new Map()
+            document.semanticallyInvalidReferences.set(task, newInvalidReferenceIndices)
+        }
+    }
 }

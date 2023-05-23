@@ -1,4 +1,3 @@
-import { Stream, stream } from "langium";
 import * as ast from "../../generated/ast";
 import { TaskListServices } from "../task-list-module";
 import { TaskListDocument } from "../workspace/documents";
@@ -15,16 +14,26 @@ export class TaskListSemanticModelReconciler {
     public reconcileSemanticWithLangiumModel(document: TaskListDocument) {
         /* NOTE: Reconciler is responsible for semantic model-specific domain logic:
         
-        - Task is valid for Semantic Model (isCorrectlyNamed)
+        - Task is valid for Semantic Model (is uniquely named within a document)
+        - Transition is valid for Semantic Model (is not a duplicate transition).
+        //TODO: Do I need to ensure transition references semantically valid task if it is in the different document?
         - Aggregate function: getValidTargetTasks, which deals with Task internals, adding isCorrectlyNamed on top
 
         So that neither SemanticManager, nor SemanticModelIndex is responsible for traversing AST internals
         */
-        const isCorrectlyNamed = (task: ast.Task) => !document.incorrectlyNamedTasks?.has(task)
-        const isResolvedAndCorrectlyNamed = (task: ast.Task | undefined): task is ast.Task => !!task && isCorrectlyNamed(task)
-        const getValidTargetTasks = (task: ast.Task): Stream<ast.Task> => stream(task.references)
-            .map(ref => (ref.ref))
-            .filter(isResolvedAndCorrectlyNamed)
+        const isTaskSemanticallyValid = (task: ast.Task) => !document.semanticallyInvalidTasks?.has(task)
+        const isTransitionSemanticallyValid = (task: ast.Task, targetTaskIndex: number) => !document
+            .semanticallyInvalidReferences?.get(task)?.has(targetTaskIndex)
+        const getValidTargetTasks = (task: ast.Task): ast.Task[] => {
+            const validTargetTasks: ast.Task[] = []
+            task.references.forEach((targetTaskRef, targetTaskIndex) => {
+                const targetTask = targetTaskRef.ref
+                if (!!targetTask && isTaskSemanticallyValid(targetTask) && isTransitionSemanticallyValid(task, targetTaskIndex)) {
+                    validTargetTasks.push(targetTask)
+                }
+            })
+            return validTargetTasks
+        }
 
         /* NOTE: So, the problem can be characterized as following:
         
@@ -50,7 +59,7 @@ export class TaskListSemanticModelReconciler {
         const validTargetTaskByMappedSourceTaskId: [string, ast.Task][] = []
         // Actual mapping: marking semantic elements for deletion, and AST nodes to be added
         model.tasks.forEach(task => {
-            if (isCorrectlyNamed(task)) {
+            if (isTaskSemanticallyValid(task)) {
                 const semanticTask = existingUnmappedTasks.get(task.name)
                 if (semanticTask) {
                     existingUnmappedTasks.delete(task.name)
