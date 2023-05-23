@@ -1,9 +1,9 @@
-import { MultiMap, Stream, stream } from "langium";
+import { Stream, stream } from "langium";
 import * as ast from "../../generated/ast";
 import { TaskListServices } from "../task-list-module";
 import { TaskListDocument } from "../workspace/documents";
-import { SemanticTask } from "./task-list-semantic-model";
 import { TaskListSemanticIndexManager } from "./task-list-semantic-manager";
+import { SemanticModel, SemanticTask } from "./task-list-semantic-model";
 
 export class TaskListSemanticModelReconciler {
     private semanticIndexManager: TaskListSemanticIndexManager
@@ -13,15 +13,18 @@ export class TaskListSemanticModelReconciler {
     }
 
     public reconcileSemanticWithLangiumModel(document: TaskListDocument) {
+        /* NOTE: Reconciler is responsible for semantic model-specific domain logic:
+        
+        - Task is valid for Semantic Model (isCorrectlyNamed)
+        - Aggregate function: getValidTargetTasks, which deals with Task internals, adding isCorrectlyNamed on top
+
+        So that neither SemanticManager, nor SemanticModelIndex is responsible for traversing AST internals
+        */
         const isCorrectlyNamed = (task: ast.Task) => !document.incorrectlyNamedTasks?.has(task)
         const isResolvedAndCorrectlyNamed = (task: ast.Task | undefined): task is ast.Task => !!task && isCorrectlyNamed(task)
-        const getSemanticTaskId = (task: ast.Task) => this.semanticIndexManager.getTaskId(task)
         const getValidTargetTasks = (task: ast.Task): Stream<ast.Task> => stream(task.references)
             .map(ref => (ref.ref))
             .filter(isResolvedAndCorrectlyNamed)
-        const getValidTargetSemanticTaskIds = (task: ast.Task): Stream<string> => getValidTargetTasks(task)
-            .map(getSemanticTaskId)
-            .filter((targetTaskId): targetTaskId is string => !!targetTaskId)
 
         /* NOTE: So, the problem can be characterized as following:
         
@@ -44,14 +47,15 @@ export class TaskListSemanticModelReconciler {
         const existingUnmappedTasks: Map<string, SemanticTask> = semanticModelIndex.tasksByName
         // Collecting data for the next iteration (source task id + target task => Transition). Notice, that I replaced
         // source task with source task id (using already mapped data to optimize further mapping)
-        const targetTasksByMappedSourceTaskId: MultiMap<string, ast.Task> = new MultiMap()
+        const validTargetTaskByMappedSourceTaskId: [string, ast.Task][] = []
         // Actual mapping: marking semantic elements for deletion, and AST nodes to be added
         model.tasks.forEach(task => {
             if (isCorrectlyNamed(task)) {
                 const semanticTask = existingUnmappedTasks.get(task.name)
                 if (semanticTask) {
                     existingUnmappedTasks.delete(task.name)
-                    targetTasksByMappedSourceTaskId.addAll(semanticTask.id, getValidTargetTasks(task))
+                    getValidTargetTasks(task)
+                        .forEach(targetTask => validTargetTaskByMappedSourceTaskId.push([semanticTask.id, targetTask]))
                 } else {
                     newTasks.push(task)
                 }
@@ -64,7 +68,7 @@ export class TaskListSemanticModelReconciler {
         const newTransitionsForMappedSourceTaskId: [string, ast.Task][] = []
         const existingUnmappedTransitions = semanticModelIndex.transitionsBySourceTaskIdAndTargetTaskId
         // Actual mapping
-        targetTasksByMappedSourceTaskId.entries().forEach(([mappedSourceTaskId, targetTask]) => {
+        validTargetTaskByMappedSourceTaskId.forEach(([mappedSourceTaskId, targetTask]) => {
             const targetTaskId = this.semanticIndexManager.getTaskId(targetTask)
             if (!targetTaskId || !existingUnmappedTransitions.delete([mappedSourceTaskId, targetTaskId])) {
                 newTransitionsForMappedSourceTaskId.push([mappedSourceTaskId, targetTask])
@@ -73,7 +77,24 @@ export class TaskListSemanticModelReconciler {
         semanticModelIndex.deleteTransitions(existingUnmappedTransitions.values())
 
         //NOTE: POST-ITERATION: now unmapped source elements can be added to semantic model
-        this.semanticIndexManager.addTasksWithTransitionsFrom(semanticModelIndex, newTasks, getValidTargetSemanticTaskIds)
-        this.semanticIndexManager.addTransitionsForSourceTaskId(semanticModelIndex, newTransitionsForMappedSourceTaskId, getSemanticTaskId)
+        // Add new Tasks AND prepare new Transitions to be added for these new Tasks
+        for (const task of newTasks) {
+            const semanticTask = SemanticModel.newTask(task)
+            semanticModelIndex.newTask(semanticTask)
+            getValidTargetTasks(task)
+                .forEach(targetTask => newTransitionsForMappedSourceTaskId.push([semanticTask.id, targetTask]))
+        }
+
+        // Add new Transitions for existing Tasks
+        for (const [sourceTaskId, targetTask] of newTransitionsForMappedSourceTaskId) {
+            const targetTaskId = this.semanticIndexManager.getTaskId(targetTask)
+            //INCOMPLETE: If other semanticModel files are inconsistent (i.e., target task is missing),
+            // then this inconsistency propagates, because transition to this task will neither be created.
+            // However, I am not sure this inconsistency can exist: only if 2 files are modified simultaneously, I suppose,
+            // because each time LS loads, it performs semantic reconciliation phase for all the documents
+            if (targetTaskId) {
+                semanticModelIndex.newTransition(SemanticModel.newTransition(sourceTaskId, targetTaskId))
+            }
+        }
     }
 }

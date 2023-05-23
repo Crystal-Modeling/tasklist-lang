@@ -1,9 +1,9 @@
-import { Stream, getDocument, stream } from "langium";
+import { getDocument } from "langium";
+import { SemanticIndexManager } from "../../../source-model-server/source-model/semantic-manager";
 import { SemanticModelStorage } from "../../../source-model-server/source-model/semantic-storage";
 import { Task } from "../../generated/ast";
 import { TaskListServices } from "../task-list-module";
-import { SemanticModel, SemanticModelIndex, SemanticTask } from "./task-list-semantic-model";
-import { SemanticIndexManager } from "../../../source-model-server/source-model/semantic-manager";
+import { SemanticModel, SemanticModelIndex } from "./task-list-semantic-model";
 
 /**
  * Stores {@link SemanticModel} per URI of Langium-managed TextDocument.
@@ -16,31 +16,6 @@ export class TaskListSemanticIndexManager extends Map<string, SemanticModelIndex
     public constructor(services: TaskListServices) {
         super()
         this.semanticModelStorage = services.sourceModel.SemanticModelStorage
-    }
-
-    public addTasksWithTransitionsFrom(semanticModelIndex: SemanticModelIndex,
-        tasks: Iterable<Task>,
-        validTargetSemanticTaskIdsGetter: (sourceTask: Task) => Stream<string>) {
-        const semanticTasksWithTasks = stream(tasks)
-            .map((task): [SemanticTask, Task] => [SemanticModel.newTask(task), task])
-        semanticTasksWithTasks
-            .forEach(([semanticTask,]) => semanticModelIndex.newTask(semanticTask))
-
-        semanticTasksWithTasks.forEach(([semanticTask, sourceTask]) => {
-            const sourceTaskId = semanticTask.id
-            validTargetSemanticTaskIdsGetter(sourceTask)
-                .forEach(id => semanticModelIndex.newTransition(SemanticModel.newTransition(sourceTaskId, id)))
-        })
-    }
-
-    public addTransitionsForSourceTaskId(semanticModelIndex: SemanticModelIndex, transitions: Iterable<[string, Task]>,
-        semanticTaskIdGetter: (task: Task) => string | undefined) {
-        for (const [sourceTaskId, targetTask] of transitions) {
-            const targetTaskId = semanticTaskIdGetter(targetTask)
-            if (targetTaskId) {
-                semanticModelIndex.newTransition(SemanticModel.newTransition(sourceTaskId, targetTaskId))
-            }
-        }
     }
 
     public getTaskId(task: Task): string | undefined {
