@@ -1,8 +1,10 @@
-import * as ast from "../../generated/ast";
-import { TaskListServices } from "../task-list-module";
-import { TaskListDocument } from "../workspace/documents";
-import { TaskListSemanticIndexManager } from "./task-list-semantic-manager";
-import { SemanticModel, SemanticTask } from "./task-list-semantic-model";
+import type { Valid } from '../../../source-model-server/source-model/semantic-types'
+import type * as ast from '../../generated/ast'
+import type { TaskListServices } from '../task-list-module'
+import type { TaskListDocument } from '../workspace/documents'
+import type { TaskListSemanticIndexManager } from './task-list-semantic-manager'
+import type { SemanticTask } from './task-list-semantic-model'
+import { SemanticModel } from './task-list-semantic-model'
 
 export class TaskListSemanticModelReconciler {
     private semanticIndexManager: TaskListSemanticIndexManager
@@ -14,7 +16,7 @@ export class TaskListSemanticModelReconciler {
     public reconcileSemanticWithLangiumModel(document: TaskListDocument) {
 
         /* NOTE: So, the problem can be characterized as following:
-        
+
         - I do mapping from existing structure (AST), not optimized for search element by identifier (name)
         - I do mapping to semantic model, which I have control for, therefore, can make it indexed, and optimized for data manipulations
         - That is why I traverse the source model!
@@ -24,7 +26,7 @@ export class TaskListSemanticModelReconciler {
           = which AST node I assume correct enough to track his identity?
         */
         /* NOTE: Reconciler is responsible for semantic model-specific domain logic:
-        
+
         - Task is valid for Semantic Model (is unique by name within a document)
         - Transition is valid for Semantic Model (is unique by name within a Task).
         - Aggregate function: getValidTargetTasks, which deals with Task internals
@@ -34,8 +36,8 @@ export class TaskListSemanticModelReconciler {
         const isTaskSemanticallyValid = (task: ast.Task): task is Valid<ast.Task> => !document.semanticallyInvalidTasks?.has(task)
         const isTransitionSemanticallyValid = (task: Valid<ast.Task>, targetTaskIndex: number) => !document
             .semanticallyInvalidReferences?.get(task)?.has(targetTaskIndex)
-        const getValidTargetTasks = (task: Valid<ast.Task>): Valid<ast.Task>[] => {
-            const validTargetTasks: Valid<ast.Task>[] = []
+        const getValidTargetTasks = (task: Valid<ast.Task>): Array<Valid<ast.Task>> => {
+            const validTargetTasks: Array<Valid<ast.Task>> = []
             task.references.forEach((targetTaskRef, targetTaskIndex) => {
                 const targetTask = targetTaskRef.ref
                 if (!!targetTask && isTaskSemanticallyValid(targetTask) && isTransitionSemanticallyValid(task, targetTaskIndex)) {
@@ -50,11 +52,11 @@ export class TaskListSemanticModelReconciler {
         const model: ast.Model = document.parseResult.value
 
         // NOTE: ITERATION 1: mapping Tasks
-        const newTasks: Valid<ast.Task>[] = []
+        const newTasks: Array<Valid<ast.Task>> = []
         const existingUnmappedTasks: Map<string, SemanticTask> = semanticModelIndex.tasksByName
         // Collecting data for the next iteration (source task id + target task => Transition). Notice, that I replaced
         // source task with source task id (using already mapped data to optimize further mapping)
-        const validTargetTaskByMappedSourceTaskId: [string, Valid<ast.Task>][] = []
+        const validTargetTaskByMappedSourceTaskId: Array<[string, Valid<ast.Task>]> = []
         // Actual mapping: marking semantic elements for deletion, and AST nodes to be added
         model.tasks.forEach(task => {
             if (isTaskSemanticallyValid(task)) {
@@ -72,7 +74,7 @@ export class TaskListSemanticModelReconciler {
         semanticModelIndex.deleteTasksWithRelatedTransitions(existingUnmappedTasks.values())
 
         //NOTE: ITERATION 2: mapping Transitions
-        const newTransitionsForMappedSourceTaskId: [string, Valid<ast.Task>][] = []
+        const newTransitionsForMappedSourceTaskId: Array<[string, Valid<ast.Task>]> = []
         const existingUnmappedTransitions = semanticModelIndex.transitionsBySourceTaskIdAndTargetTaskId
         // Actual mapping
         validTargetTaskByMappedSourceTaskId.forEach(([mappedSourceTaskId, targetTask]) => {

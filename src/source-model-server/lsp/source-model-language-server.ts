@@ -1,7 +1,8 @@
-import { LangiumSharedServices, startLanguageServer } from "langium";
-import { Connection, FileChangeType } from "vscode-languageserver";
-import { SourceModelServices } from "../source-model-server-module";
-
+import type { LangiumSharedServices} from 'langium'
+import { startLanguageServer } from 'langium'
+import type { Connection} from 'vscode-languageserver'
+import { FileChangeType } from 'vscode-languageserver'
+import type { SourceModelServices } from '../source-model-server-module'
 
 /**
  * Entry point function to launch SourceModel language server.
@@ -16,7 +17,7 @@ export function startSourceModelLanguageServer(services: LangiumSharedServices, 
 
 function addSemanticModelProcessingHandlers(connection: Connection, sourceModelServices: SourceModelServices) {
 
-    const semanticIndexManager = sourceModelServices.SemanticIndexManager;
+    const semanticIndexManager = sourceModelServices.SemanticIndexManager
 
     connection.onDidSaveTextDocument(params => {
         semanticIndexManager.saveSemanticModel(params.textDocument.uri)
@@ -27,10 +28,10 @@ function addSemanticModelProcessingHandlers(connection: Connection, sourceModelS
             switch (event.type) {
                 case FileChangeType.Deleted:
                     semanticIndexManager.deleteSemanticModel(event.uri)
-                    break;
+                    break
                 default:
-                    break;
+                    break
             }
         }
-    });
+    })
 }

@@ -1,14 +1,16 @@
-import { MultiMap, ValidationAcceptor, ValidationChecks } from 'langium';
-import { Model, Task, TaskListLangAstType, isTask } from '../../generated/ast';
-import { TaskListServices } from '../task-list-module';
-import { getTaskListDocument } from '../workspace/documents';
+import type { ValidationAcceptor, ValidationChecks } from 'langium'
+import { MultiMap } from 'langium'
+import type { Model, Task, TaskListLangAstType} from '../../generated/ast'
+import { isTask } from '../../generated/ast'
+import type { TaskListServices } from '../task-list-module'
+import { getTaskListDocument } from '../workspace/documents'
 
 /**
  * Register custom validation checks.
  */
 export function registerValidationChecks(services: TaskListServices) {
-    const registry = services.validation.ValidationRegistry;
-    const validator = services.validation.TaskListValidator;
+    const registry = services.validation.ValidationRegistry
+    const validator = services.validation.TaskListValidator
     const checks: ValidationChecks<TaskListLangAstType> = {
         Model: validator.checkModelHasUniqueTasks,
         Task: [
@@ -16,8 +18,8 @@ export function registerValidationChecks(services: TaskListServices) {
             validator.checkTaskHasUniqueReferences,
             validator.checkTaskDoesNotReferenceItself
         ]
-    };
-    registry.register(checks, validator);
+    }
+    registry.register(checks, validator)
 }
 
 /**
@@ -64,7 +66,7 @@ export class TaskListValidator {
         const referenceNames = new Set<string>()
         const nonUniqueReferenceIndices = new Set<number>()
         for (let index = 0; index < task.references.length; index++) {
-            const reference = task.references[index];
+            const reference = task.references[index]
             if (isTask(reference.ref)) {
                 const referencedName = reference.ref.name
                 if (referenceNames.has(referencedName)) {
@@ -81,7 +83,7 @@ export class TaskListValidator {
 
     checkTaskDoesNotReferenceItself(task: Task, accept: ValidationAcceptor): void {
         for (let index = 0; index < task.references.length; index++) {
-            const ref = task.references[index];
+            const ref = task.references[index]
             if (isTask(ref.ref) && ref.ref.name === task.name) {
                 accept('error', 'Task cannot reference itself',
                     { node: task, property: 'references', index })
