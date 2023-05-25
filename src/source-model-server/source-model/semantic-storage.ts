@@ -1,10 +1,10 @@
 
-import * as fs from 'fs-extra';
-import { fileURLToPath } from 'url';
-import { SourceModelServerError } from '../source-model-server-error';
-import { TypeGuard } from '../type-util';
-import path from 'path';
-import { URI } from 'vscode-uri';
+import * as fs from 'fs-extra'
+import { fileURLToPath } from 'url'
+import { SourceModelServerError } from '../source-model-server-error'
+import type { TypeGuard } from '../type-util'
+import path from 'path'
+import { URI } from 'vscode-uri'
 
 export interface SemanticModelStorage {
     saveSemanticModelToFile(languageDocumentUri: string, model: unknown): void
@@ -12,26 +12,25 @@ export interface SemanticModelStorage {
     deleteSemanticModelFile(languageDocumentUri: string): void
 }
 
-
 /**
  * Copied and adopted from @eclipse-glsp/server-node/src/features/model/abstract-json-model-storage.ts
  */
 export abstract class AbstractSemanticModelStorage implements SemanticModelStorage {
 
     public saveSemanticModelToFile(languageDocumentUri: string, semanticModel: unknown): void {
-        console.debug("Saving semantic model...")
+        console.debug('Saving semantic model...')
         const uri = this.convertLangiumDocumentUriIntoSourceModelUri(URI.parse(languageDocumentUri)).toString()
         this.writeFile(uri, semanticModel)
     }
 
     public loadSemanticModelFromFile<T>(languageDocumentUri: string, guard: TypeGuard<T>): T {
-        console.debug("Loading semantic model for URI", languageDocumentUri)
+        console.debug('Loading semantic model for URI', languageDocumentUri)
         const uri = this.convertLangiumDocumentUriIntoSourceModelUri(URI.parse(languageDocumentUri)).toString()
         return this.loadFromFile(uri, guard)
     }
 
     public deleteSemanticModelFile(languageDocumentUri: string): void {
-        console.debug("Deleting semantic model for URI", languageDocumentUri)
+        console.debug('Deleting semantic model for URI', languageDocumentUri)
         const uri = this.convertLangiumDocumentUriIntoSourceModelUri(URI.parse(languageDocumentUri)).toString()
         this.deleteFile(uri)
     }
@@ -42,20 +41,20 @@ export abstract class AbstractSemanticModelStorage implements SemanticModelStora
     protected loadFromFile<T>(sourceUri: string, guard: TypeGuard<T>): T
     protected loadFromFile<T>(sourceUri: string, guard?: TypeGuard<T>): T | unknown {
         try {
-            const path = this.uriToPath(sourceUri);
-            let fileContent = this.readFile(path);
+            const path = this.uriToPath(sourceUri)
+            let fileContent = this.readFile(path)
             if (!fileContent) {
-                fileContent = this.createModelForEmptyFile(path);
+                fileContent = this.createModelForEmptyFile(path)
                 if (!fileContent) {
-                    throw new SourceModelServerError(`Could not load the semantic model. The file '${path}' is empty!.`);
+                    throw new SourceModelServerError(`Could not load the semantic model. The file '${path}' is empty!.`)
                 }
             }
             if (guard && !guard(fileContent)) {
-                throw new Error('The loaded root object is not of the expected type!');
+                throw new Error('The loaded root object is not of the expected type!')
             }
-            return fileContent;
+            return fileContent
         } catch (error) {
-            throw new SourceModelServerError(`Could not load model from file: ${sourceUri}`, error);
+            throw new SourceModelServerError(`Could not load model from file: ${sourceUri}`, error)
         }
     }
 
@@ -66,8 +65,9 @@ export abstract class AbstractSemanticModelStorage implements SemanticModelStora
      * @param path The path of the empty file.
      * @returns The new model or `undefined`
      */
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     protected createModelForEmptyFile(path: string): unknown | undefined {
-        return undefined;
+        return undefined
     }
 
     protected readFile(path: string): unknown | undefined {
@@ -75,37 +75,37 @@ export abstract class AbstractSemanticModelStorage implements SemanticModelStora
             if (!fs.existsSync(path)) {
                 return undefined
             }
-            const data = fs.readFileSync(path, { encoding: 'utf8' });
+            const data = fs.readFileSync(path, { encoding: 'utf8' })
             if (!data || data.length === 0) {
-                return undefined;
+                return undefined
             }
-            return this.parseContent(data);
+            return this.parseContent(data)
         } catch (error) {
-            throw new SourceModelServerError(`Could not read & parse file contents of '${path}' as json`, error);
+            throw new SourceModelServerError(`Could not read & parse file contents of '${path}' as json`, error)
         }
     }
     protected writeFile(fileUri: string, model: unknown): void {
-        const filePath = this.uriToPath(fileUri);
-        const content = this.stringifyModel(model);
-        const dirPath = path.dirname(filePath);
+        const filePath = this.uriToPath(fileUri)
+        const content = this.stringifyModel(model)
+        const dirPath = path.dirname(filePath)
         fs.mkdir(dirPath, { recursive: true })
-        fs.writeFileSync(filePath, content);
+        fs.writeFileSync(filePath, content)
     }
 
     protected deleteFile(fileUri: string): void {
-        const filePath = this.uriToPath(fileUri);
+        const filePath = this.uriToPath(fileUri)
         fs.rmSync(filePath, { force: true })
     }
 
     protected uriToPath(sourceUri: string): string {
-        return sourceUri.startsWith('file://') ? fileURLToPath(sourceUri) : sourceUri;
+        return sourceUri.startsWith('file://') ? fileURLToPath(sourceUri) : sourceUri
     }
 
     protected parseContent(fileContent: string): unknown {
-        return JSON.parse(fileContent);
+        return JSON.parse(fileContent)
     }
 
     protected stringifyModel(model: unknown): string {
-        return JSON.stringify(model, undefined, 2);
+        return JSON.stringify(model, undefined, 2)
     }
 }

@@ -1,12 +1,15 @@
-import {
-    createDefaultModule, createDefaultSharedModule, DefaultSharedModuleContext, DocumentState, inject,
-    interruptAndCheck,
+import type { DefaultSharedModuleContext,
     LangiumSharedServices
-} from 'langium';
-import { TaskListGeneratedModule, TaskListLangGeneratedSharedModule } from './generated/module';
-import { TaskListModule, TaskListServices } from './task-list/task-list-module';
-import { registerValidationChecks } from './task-list/validation/task-list-validation';
-import { isTaskListDocument } from './task-list/workspace/documents';
+} from 'langium'
+import {
+    createDefaultModule, createDefaultSharedModule, DocumentState, inject,
+    interruptAndCheck
+} from 'langium'
+import { TaskListGeneratedModule, TaskListLangGeneratedSharedModule } from './generated/module'
+import type { TaskListServices } from './task-list/task-list-module'
+import { TaskListModule } from './task-list/task-list-module'
+import { registerValidationChecks } from './task-list/validation/task-list-validation'
+import { isTaskListDocument } from './task-list/workspace/documents'
 
 /**
  * Create the full set of services required by Langium.
@@ -30,31 +33,29 @@ export function createTaskListLangServices(context: DefaultSharedModuleContext):
     const shared = inject(
         createDefaultSharedModule(context),
         TaskListLangGeneratedSharedModule
-    );
+    )
     const TaskList = inject(
         createDefaultModule({ shared }),
         TaskListGeneratedModule,
         TaskListModule
-    );
-    addSemanticReconciliationPhase(shared, TaskList);
-    shared.ServiceRegistry.register(TaskList);
-    registerValidationChecks(TaskList);
-    return { shared, TaskList };
+    )
+    addSemanticReconciliationPhase(shared, TaskList)
+    shared.ServiceRegistry.register(TaskList)
+    registerValidationChecks(TaskList)
+    return { shared, TaskList }
 }
 
-
-
 function addSemanticReconciliationPhase(sharedServices: LangiumSharedServices, taskListServices: TaskListServices) {
-    const documentBuilder = sharedServices.workspace.DocumentBuilder;
+    const documentBuilder = sharedServices.workspace.DocumentBuilder
     documentBuilder.onBuildPhase(DocumentState.Validated, async (documents, cancelToken) => {
-        console.debug("====== SEMANTIC RECONCILIATION PHASE ======")
+        console.debug('====== SEMANTIC RECONCILIATION PHASE ======')
         for (const document of documents) {
             if (isTaskListDocument(document)) {
-                await interruptAndCheck(cancelToken);
+                await interruptAndCheck(cancelToken)
                 const semanticReconciler = taskListServices.sourceModel.TaskListSemanticModelReconciler
                 semanticReconciler.reconcileSemanticWithLangiumModel(document)
             }
 
         }
-    });
+    })
 }

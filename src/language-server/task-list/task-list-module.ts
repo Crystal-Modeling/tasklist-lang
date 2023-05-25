@@ -1,12 +1,12 @@
-import {
+import type {
     LangiumServices,
     Module, PartialLangiumServices
-} from 'langium';
-import { SourceModelServices } from '../../source-model-server/source-model-server-module';
-import { TaskListValidator } from '../task-list/validation/task-list-validation';
-import { TaskListSemanticModelStorage } from './source-model/task-list-semantic-storage';
-import { TaskListSemanticIndexManager } from './source-model/task-list-semantic-manager';
-import { TaskListSemanticModelReconciler } from './source-model/task-list-semantic-reconciler';
+} from 'langium'
+import type { SourceModelServices } from '../../source-model-server/source-model-server-module'
+import { TaskListValidator } from '../task-list/validation/task-list-validation'
+import { TaskListSemanticModelStorage } from './source-model/task-list-semantic-storage'
+import { TaskListSemanticIndexManager } from './source-model/task-list-semantic-manager'
+import { TaskListSemanticModelReconciler } from './source-model/task-list-semantic-reconciler'
 
 /**
  * Declaration of custom services - add your own service classes here.
@@ -44,4 +44,4 @@ export const TaskListModule: Module<TaskListServices, PartialLangiumServices & T
         SemanticIndexManager: (services) => new TaskListSemanticIndexManager(services),
         TaskListSemanticModelReconciler: (services) => new TaskListSemanticModelReconciler(services),
     }
-};
+}

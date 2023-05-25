@@ -1,29 +1,15 @@
 {
-  "compilerOptions": {
-    "target": "ES6",
-    "module": "commonjs",
-    "lib": [
-      "ESNext"
+    "extends": "./tsconfig.base.json",
+    "compilerOptions": {
+      "rootDir": "src",
+      "outDir": "out"
+    },
+    "include": [
+      "src/**/*.ts"
     ],
-    "sourceMap": true,
-    "outDir": "out",
-    "strict": true,
-    "noUnusedLocals": true,
-    "noImplicitReturns": true,
-    "noImplicitOverride": true,
-    "moduleResolution": "node",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "forceConsistentCasingInFileNames": true,
-    "typeRoots": [
-      "./node_modules/@types"
+    "exclude": [
+      "out",
+      "node_modules"
     ]
-  },
-  "include": [
-    "src/**/*.ts"
-  ],
-  "exclude": [
-    "out",
-    "node_modules"
-  ]
-}
+  }
+  

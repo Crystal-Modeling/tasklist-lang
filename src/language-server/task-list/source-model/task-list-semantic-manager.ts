@@ -1,9 +1,9 @@
-import { getDocument } from "langium";
-import { SemanticIndexManager } from "../../../source-model-server/source-model/semantic-manager";
-import { SemanticModelStorage } from "../../../source-model-server/source-model/semantic-storage";
-import { Task } from "../../generated/ast";
-import { TaskListServices } from "../task-list-module";
-import { SemanticModel, SemanticModelIndex } from "./task-list-semantic-model";
+import { getDocument } from 'langium'
+import type { SemanticIndexManager } from '../../../source-model-server/source-model/semantic-manager'
+import type { SemanticModelStorage } from '../../../source-model-server/source-model/semantic-storage'
+import type { Task } from '../../generated/ast'
+import type { TaskListServices } from '../task-list-module'
+import { SemanticModel, SemanticModelIndex } from './task-list-semantic-model'
 
 /**
  * Stores {@link SemanticModel} per URI of Langium-managed TextDocument.
@@ -24,19 +24,19 @@ export class TaskListSemanticIndexManager extends Map<string, SemanticModelIndex
     }
 
     public loadSemanticModel(languageDocumentUri: string): void {
-        console.debug("Loading semantic model for URI", languageDocumentUri)
+        console.debug('Loading semantic model for URI', languageDocumentUri)
         const semanticModel = this.semanticModelStorage.loadSemanticModelFromFile(languageDocumentUri, SemanticModel.is)
         this.set(languageDocumentUri, new AccessibleSemanticModelIndex(semanticModel))
     }
 
     public saveSemanticModel(languageDocumentUri: string): void {
-        console.debug("Saving semantic model...")
+        console.debug('Saving semantic model...')
         const semanticModel = (this.get(languageDocumentUri) as AccessibleSemanticModelIndex).model
         this.semanticModelStorage.saveSemanticModelToFile(languageDocumentUri, semanticModel)
     }
 
     public deleteSemanticModel(languageDocumentUri: string): void {
-        console.debug("Deleting semantic model for URI", languageDocumentUri)
+        console.debug('Deleting semantic model for URI', languageDocumentUri)
         this.delete(languageDocumentUri)
         this.semanticModelStorage.deleteSemanticModelFile(languageDocumentUri)
     }

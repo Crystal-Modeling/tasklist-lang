@@ -1,0 +1,13 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false, // In Langium it is set to true. But I didn't manage to make the error dissapear otherwise
+    "rootDir": "test"
+  },
+  "references": [{
+    "path": "tsconfig.json"
+  }],
+  "include": [
+    "test/**/*",
+  ]
+}

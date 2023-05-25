@@ -1,0 +1,18 @@
+{
+    "editor.guides.bracketPairs": true,
+    "eslint.codeAction.showDocumentation": {
+        "enable": true
+    },
+    "eslint.format.enable": true,
+    "eslint.validate": [
+        "javascript",
+        "typescript"
+    ],
+    "vitest.enable": true,
+    "[json]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "[jsonc]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    }
+}
