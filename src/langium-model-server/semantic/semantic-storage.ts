@@ -1,7 +1,7 @@
 
 import * as fs from 'fs-extra'
 import { fileURLToPath } from 'url'
-import { SourceModelServerError } from '../source-model-server-error'
+import { LangiumModelServerError } from '../langium-model-server-error'
 import type { TypeGuard } from '../type-util'
 import path from 'path'
 import { URI } from 'vscode-uri'
@@ -46,7 +46,7 @@ export abstract class AbstractSemanticModelStorage implements SemanticModelStora
             if (!fileContent) {
                 fileContent = this.createModelForEmptyFile(path)
                 if (!fileContent) {
-                    throw new SourceModelServerError(`Could not load the semantic model. The file '${path}' is empty!.`)
+                    throw new LangiumModelServerError(`Could not load the semantic model. The file '${path}' is empty!.`)
                 }
             }
             if (guard && !guard(fileContent)) {
@@ -54,7 +54,7 @@ export abstract class AbstractSemanticModelStorage implements SemanticModelStora
             }
             return fileContent
         } catch (error) {
-            throw new SourceModelServerError(`Could not load model from file: ${sourceUri}`, error)
+            throw new LangiumModelServerError(`Could not load model from file: ${sourceUri}`, error)
         }
     }
 
@@ -81,7 +81,7 @@ export abstract class AbstractSemanticModelStorage implements SemanticModelStora
             }
             return this.parseContent(data)
         } catch (error) {
-            throw new SourceModelServerError(`Could not read & parse file contents of '${path}' as json`, error)
+            throw new LangiumModelServerError(`Could not read & parse file contents of '${path}' as json`, error)
         }
     }
     protected writeFile(fileUri: string, model: unknown): void {

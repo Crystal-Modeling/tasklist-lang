@@ -1,6 +1,6 @@
 import { MultiMap } from 'langium'
 import * as uuid from 'uuid'
-import { isDefinedObject, isMappedObject } from '../../../source-model-server/type-util'
+import { isDefinedObject, isMappedObject } from '../../../langium-model-server/type-util'
 import type { Task } from '../../generated/ast'
 
 export interface SemanticModel {

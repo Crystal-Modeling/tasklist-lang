@@ -1,4 +1,4 @@
-import type { Valid } from '../../../source-model-server/source-model/semantic-types'
+import type { Valid } from '../../../langium-model-server/semantic/semantic-types'
 import type * as ast from '../../generated/ast'
 import type { TaskListServices } from '../task-list-module'
 import type { TaskListDocument } from '../workspace/documents'
@@ -6,11 +6,12 @@ import type { TaskListSemanticIndexManager } from './task-list-semantic-manager'
 import type { SemanticTask } from './task-list-semantic-model'
 import { SemanticModel } from './task-list-semantic-model'
 
+//TODO: When elaborating LMS into a library, make sure reconciler is defined and linked at that level
 export class TaskListSemanticModelReconciler {
     private semanticIndexManager: TaskListSemanticIndexManager
 
     public constructor(services: TaskListServices) {
-        this.semanticIndexManager = services.sourceModel.SemanticIndexManager
+        this.semanticIndexManager = services.semantic.SemanticIndexManager
     }
 
     public reconcileSemanticWithLangiumModel(document: TaskListDocument) {

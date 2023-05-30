@@ -1,6 +1,6 @@
 import type { URI } from 'vscode-uri'
-import type { SemanticModelStorage } from '../../../source-model-server/source-model/semantic-storage'
-import { AbstractSemanticModelStorage } from '../../../source-model-server/source-model/semantic-storage'
+import type { SemanticModelStorage } from '../../../langium-model-server/semantic/semantic-storage'
+import { AbstractSemanticModelStorage } from '../../../langium-model-server/semantic/semantic-storage'
 import { SemanticModel } from './task-list-semantic-model'
 
 export class TaskListSemanticModelStorage extends AbstractSemanticModelStorage implements SemanticModelStorage {

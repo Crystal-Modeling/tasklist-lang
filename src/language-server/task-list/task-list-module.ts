@@ -2,23 +2,24 @@ import type {
     LangiumServices,
     Module, PartialLangiumServices
 } from 'langium'
-import type { SourceModelServices } from '../../source-model-server/source-model-server-module'
+import type { LangiumModelServerServices } from '../../langium-model-server/langium-model-server-module'
 import { TaskListValidator } from '../task-list/validation/task-list-validation'
-import { TaskListSemanticModelStorage } from './source-model/task-list-semantic-storage'
-import { TaskListSemanticIndexManager } from './source-model/task-list-semantic-manager'
-import { TaskListSemanticModelReconciler } from './source-model/task-list-semantic-reconciler'
+import { TaskListSemanticModelStorage } from './semantic/task-list-semantic-storage'
+import { TaskListSemanticIndexManager } from './semantic/task-list-semantic-manager'
+import { TaskListSemanticModelReconciler } from './semantic/task-list-semantic-reconciler'
 
 /**
  * Declaration of custom services - add your own service classes here.
  */
-export type TaskListAddedServices = {
+export type TaskListAddedServices = LangiumModelServerServices & {
     validation: {
         TaskListValidator: TaskListValidator
     },
     /**
-     * This service is required to leverage SourceModel 'Langium extension' capabilities
+     * These services are required to leverage Langium Model Server (LMS) 'Langium extension' capabilities
      */
-    sourceModel: SourceModelServices & {
+    semantic: {
+        // Redefining the type of SemanticIndexManager to be used in TaskListSemanticModelReconciler
         SemanticIndexManager: TaskListSemanticIndexManager
         TaskListSemanticModelReconciler: TaskListSemanticModelReconciler
     }
@@ -39,7 +40,7 @@ export const TaskListModule: Module<TaskListServices, PartialLangiumServices & T
     validation: {
         TaskListValidator: () => new TaskListValidator()
     },
-    sourceModel: {
+    semantic: {
         SemanticModelStorage: () => new TaskListSemanticModelStorage(),
         SemanticIndexManager: (services) => new TaskListSemanticIndexManager(services),
         TaskListSemanticModelReconciler: (services) => new TaskListSemanticModelReconciler(services),
