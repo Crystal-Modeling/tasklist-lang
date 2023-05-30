@@ -1,3 +1,4 @@
+import type { LangiumDocument} from 'langium'
 import { getDocument } from 'langium'
 import type { SemanticIndexManager } from '../../../langium-model-server/semantic/semantic-manager'
 import type { SemanticModelStorage } from '../../../langium-model-server/semantic/semantic-storage'
@@ -12,45 +13,49 @@ import { SemanticModelIndex } from './task-list-semantic-model-index'
  * to fetch semantic elements globally, i.e., searching through all the managed files.
  * See {@link getTaskId} for example.
  */
-export class TaskListSemanticIndexManager extends Map<string, SemanticModelIndex> implements SemanticIndexManager {
+export class TaskListSemanticIndexManager implements SemanticIndexManager {
 
     private semanticModelStorage: SemanticModelStorage
+    private indexRegistry: Map<string, AccessibleSemanticModelIndex>
 
     public constructor(services: TaskListServices) {
-        super()
         this.semanticModelStorage = services.semantic.SemanticModelStorage
+        this.indexRegistry = new Map()
     }
 
     public getTaskId(task: Task): string | undefined {
-        const languageDocumentUri = getDocument(task).textDocument.uri
-        return this.get(languageDocumentUri).getTaskIdByName(task.name)
+        return this.getSemanticModel(getDocument(task)).getTaskIdByName(task.name)
+    }
+
+    public getSemanticModel(languageDocument: LangiumDocument): SemanticModelIndex {
+        return this.getOrLoadSemanticModel(languageDocument.textDocument.uri)
     }
 
     public loadSemanticModel(languageDocumentUri: string): void {
         console.debug('Loading semantic model for URI', languageDocumentUri)
         const semanticModel = this.semanticModelStorage.loadSemanticModelFromFile(languageDocumentUri, SemanticModel.is)
-        this.set(languageDocumentUri, new AccessibleSemanticModelIndex(semanticModel))
+        this.indexRegistry.set(languageDocumentUri, new AccessibleSemanticModelIndex(semanticModel))
     }
 
     public saveSemanticModel(languageDocumentUri: string): void {
         console.debug('Saving semantic model...')
-        const semanticModel = (this.get(languageDocumentUri) as AccessibleSemanticModelIndex).model
+        const semanticModel = this.getOrLoadSemanticModel(languageDocumentUri).model
         this.semanticModelStorage.saveSemanticModelToFile(languageDocumentUri, semanticModel)
     }
 
     public deleteSemanticModel(languageDocumentUri: string): void {
         console.debug('Deleting semantic model for URI', languageDocumentUri)
-        this.delete(languageDocumentUri)
+        this.indexRegistry.delete(languageDocumentUri)
         this.semanticModelStorage.deleteSemanticModelFile(languageDocumentUri)
     }
 
-    override get(languageDocumentUri: string): SemanticModelIndex {
-        const loadedSemanticModel = super.get(languageDocumentUri)
+    private getOrLoadSemanticModel(languageDocumentUri: string): AccessibleSemanticModelIndex {
+        const loadedSemanticModel = this.indexRegistry.get(languageDocumentUri)
         if (loadedSemanticModel) {
             return loadedSemanticModel
         }
         this.loadSemanticModel(languageDocumentUri)
-        return super.get(languageDocumentUri)!
+        return this.indexRegistry.get(languageDocumentUri)!
     }
 
 }
