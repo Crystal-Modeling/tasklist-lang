@@ -8,6 +8,7 @@
         "javascript",
         "typescript"
     ],
+    "typescript.preferences.quoteStyle": "single",
     "vitest.enable": true,
     "[json]": {
         "editor.defaultFormatter": "vscode.json-language-features"

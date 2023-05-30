@@ -3,7 +3,8 @@ import type { SemanticIndexManager } from '../../../langium-model-server/semanti
 import type { SemanticModelStorage } from '../../../langium-model-server/semantic/semantic-storage'
 import type { Task } from '../../generated/ast'
 import type { TaskListServices } from '../task-list-module'
-import { SemanticModel, SemanticModelIndex } from './task-list-semantic-model'
+import { SemanticModel } from './task-list-semantic-model'
+import { SemanticModelIndex } from './task-list-semantic-model-index'
 
 /**
  * Stores {@link SemanticModel} per URI of Langium-managed TextDocument.
