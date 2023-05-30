@@ -1,21 +1,31 @@
-import * as vscode from 'vscode'
+import * as http2 from 'http2'
 import * as path from 'path'
-import type { LanguageClientOptions, ServerOptions} from 'vscode-languageclient/node'
+import { promisify } from 'util'
+import * as vscode from 'vscode'
+import type { LanguageClientOptions, ServerOptions } from 'vscode-languageclient/node'
 import {
     LanguageClient, TransportKind
 } from 'vscode-languageclient/node'
 
 let client: LanguageClient
+let modelServer: http2.Http2Server
 
 // This function is called when the extension is activated.
 export function activate(context: vscode.ExtensionContext): void {
     client = startLanguageClient(context)
+    modelServer = startModelServer(context)
 }
 
 // This function is called when the extension is deactivated.
 export function deactivate(): Thenable<void> | undefined {
+    if (client && modelServer) {
+        return client.stop().then(promisify(modelServer.close))
+    }
     if (client) {
         return client.stop()
+    }
+    if (modelServer) {
+        return promisify(modelServer.close)()
     }
     return undefined
 }
@@ -57,4 +67,15 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
     // Start the client. This will also launch the server
     client.start()
     return client
+}
+
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+function startModelServer(context: vscode.ExtensionContext): http2.Http2Server {
+    return http2.createServer()
+        .on('sessionError', console.error)
+        .on('stream', (stream,) => {
+            stream.respond({ ':status': 200 })
+            stream.end('Hello World!')
+        })
+        .listen(8080)
 }
