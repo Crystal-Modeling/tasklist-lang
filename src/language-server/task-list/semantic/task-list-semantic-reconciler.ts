@@ -49,7 +49,7 @@ export class TaskListSemanticModelReconciler {
         }
 
         // Preparation: getting services, and AST root
-        const semanticModelIndex = this.semanticIndexManager.getSemanticModel(document)
+        const semanticModelIndex = this.semanticIndexManager.getSemanticModelIndex(document)
         const model: ast.Model = document.parseResult.value
 
         // NOTE: ITERATION 1: mapping Tasks

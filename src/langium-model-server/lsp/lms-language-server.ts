@@ -2,21 +2,21 @@ import type { LangiumSharedServices} from 'langium'
 import { startLanguageServer } from 'langium'
 import type { Connection} from 'vscode-languageserver'
 import { FileChangeType } from 'vscode-languageserver'
-import type { LangiumModelServerServices } from '../langium-model-server-module'
+import type { LangiumModelServerAddedServices } from '../langium-model-server-module'
 
 /**
  * Entry point function to launch LMS language server.
  * Overrides the default {@link startLanguageServer} adding LS handlers for semantic model
  * @param services Same {@link LangiumSharedServices} used in {@link startLanguageServer}
- * @param lmsServices Additional {@link LangiumModelServerServices} introduced by langium-model-server module
+ * @param lmsServices Additional {@link LangiumModelServerAddedServices} introduced by langium-model-server module
  */
-export function startLMSLanguageServer(services: LangiumSharedServices, lmsServices: LangiumModelServerServices): void {
+export function startLMSLanguageServer(services: LangiumSharedServices, lmsServices: LangiumModelServerAddedServices): void {
     startLanguageServer(services)
     addSemanticModelProcessingHandlers(services.lsp.Connection!, lmsServices)
 }
 
 //TODO: When elaborating into a library, make sure LMS is compatible with multiple Langium languages in one server
-function addSemanticModelProcessingHandlers(connection: Connection, lmsServices: LangiumModelServerServices) {
+function addSemanticModelProcessingHandlers(connection: Connection, lmsServices: LangiumModelServerAddedServices) {
 
     const semanticIndexManager = lmsServices.semantic.SemanticIndexManager
 

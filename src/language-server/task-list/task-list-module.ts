@@ -2,16 +2,19 @@ import type {
     LangiumServices,
     Module, PartialLangiumServices
 } from 'langium'
-import type { LangiumModelServerServices } from '../../langium-model-server/langium-model-server-module'
+import type { LangiumModelServerAddedServices } from '../../langium-model-server/langium-model-server-module'
 import { TaskListValidator } from '../task-list/validation/task-list-validation'
-import { TaskListSemanticModelStorage } from './semantic/task-list-semantic-storage'
+import type { Model } from './model-server/api-models'
 import { TaskListSemanticIndexManager } from './semantic/task-list-semantic-manager'
+import type { SemanticModelIndex } from './semantic/task-list-semantic-model-index'
 import { TaskListSemanticModelReconciler } from './semantic/task-list-semantic-reconciler'
+import { TaskListSemanticModelStorage } from './semantic/task-list-semantic-storage'
+import { TaskListSourceModelService } from './source/task-list-source-model-service'
 
 /**
  * Declaration of custom services - add your own service classes here.
  */
-export type TaskListAddedServices = LangiumModelServerServices & {
+export type TaskListAddedServices = LangiumModelServerAddedServices<Model, SemanticModelIndex> & {
     validation: {
         TaskListValidator: TaskListValidator
     },
@@ -44,5 +47,8 @@ export const TaskListModule: Module<TaskListServices, PartialLangiumServices & T
         SemanticModelStorage: () => new TaskListSemanticModelStorage(),
         SemanticIndexManager: (services) => new TaskListSemanticIndexManager(services),
         TaskListSemanticModelReconciler: (services) => new TaskListSemanticModelReconciler(services),
+    },
+    source: {
+        SourceModelService: (services) => new TaskListSourceModelService(services)
     }
 }
