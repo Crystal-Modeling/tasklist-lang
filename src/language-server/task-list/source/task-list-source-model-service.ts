@@ -1,13 +1,39 @@
 import type { AstNode, LangiumDocument } from 'langium'
 import { DefaultSourceModelService } from '../../../langium-model-server/source/source-model-service'
 import type { SemanticModelIndex } from '../semantic/task-list-semantic-model-index'
-import type * as lms from './model'
+import { isTaskListDocument } from '../workspace/documents'
+import * as lms from './model'
 
 export class TaskListSourceModelService extends DefaultSourceModelService<lms.Model, SemanticModelIndex> {
 
-    //TODO: Implement next
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    protected override combineSemanticModelWithAst(semanticModelIndex: SemanticModelIndex, langiumDocument: LangiumDocument<AstNode>): Model {
-        throw new Error('Unimplemented')
+    protected override combineSemanticModelWithAst(semanticModelIndex: SemanticModelIndex,
+        langiumDocument: LangiumDocument<AstNode>): lms.Model {
+
+        const sourceModel = lms.Model.create(semanticModelIndex.id)
+
+        if (isTaskListDocument(langiumDocument)) {
+            //HACK: Relying on the fact that semanticDomain is initialized during previous phases
+            const semanticDomain = langiumDocument.semanticDomain!
+            const model = langiumDocument.parseResult.value
+
+            const existingUnusedSemanticTasks = semanticModelIndex.tasksByName
+            for (const task of semanticDomain.getValidTasks(model)) {
+                const semanticTask = existingUnusedSemanticTasks.get(task.name)
+                if (semanticTask) {
+                    existingUnusedSemanticTasks.delete(task.name)
+                    sourceModel.tasks.push(lms.Task.create(semanticTask, task))
+                }//COMMENT: `else` should never actually happen
+            }
+            //COMMENT: Actually, if AST and Semantic models are reconciled, `values` will be empty
+            for (const unusedSemanticTask of existingUnusedSemanticTasks.values()) {
+                sourceModel.tasks.push(lms.Task.create(unusedSemanticTask))
+            }
+
+            for (const semanticTransition of semanticModelIndex.transitions) {
+                sourceModel.transitions.push(lms.Transition.create(semanticTransition))
+            }
+        }
+        //COMMENT: This should never actually happen
+        return sourceModel
     }
 }

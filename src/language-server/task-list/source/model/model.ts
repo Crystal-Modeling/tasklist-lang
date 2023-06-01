@@ -6,3 +6,13 @@ export interface Model {
     tasks: Task[]
     transitions: Transition[]
 }
+
+export namespace Model {
+    export function create(id: string): Model {
+        return {
+            id,
+            tasks: [],
+            transitions: []
+        }
+    }
+}

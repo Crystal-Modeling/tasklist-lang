@@ -9,7 +9,8 @@ export abstract class SemanticModelIndex {
     private readonly _tasksByName: Map<string, SemanticTask> = new Map()
     private readonly _transitionsById: Map<string, SemanticTransition> = new Map()
     private readonly _transitionsByTaskId: MultiMap<string, SemanticTransition> = new MultiMap()
-    private readonly _transitionsBySourceTaskIdAndTargetTaskId: ValueBasedMap<[string, string], SemanticTransition> = new ValueBasedMap()
+    private readonly _transitionsBySourceTaskIdAndTargetTaskId: ValueBasedMap<[string, string], SemanticTransition>
+        = new ValueBasedMap()
 
     public constructor(semanticModel: SemanticModel) {
         this._model = semanticModel
@@ -25,11 +26,19 @@ export abstract class SemanticModelIndex {
         }
     }
 
-    public get tasksByName(): Map<string, SemanticTask> {
+    public get id(): string {
+        return this._model.id
+    }
+
+    public get transitions(): Iterable<Readonly<SemanticTransition>> {
+        return this._transitionsById.values()
+    }
+
+    public get tasksByName(): Map<string, Readonly<SemanticTask>> {
         return new Map(this._tasksByName)
     }
 
-    public get transitionsBySourceTaskIdAndTargetTaskId(): ValueBasedMap<[string, string], SemanticTransition> {
+    public get transitionsBySourceTaskIdAndTargetTaskId(): ValueBasedMap<[string, string], Readonly<SemanticTransition>> {
         return this._transitionsBySourceTaskIdAndTargetTaskId.copy()
     }
 
@@ -37,13 +46,13 @@ export abstract class SemanticModelIndex {
         return this._model
     }
 
+    public getTaskIdByName(name: string): string | undefined {
+        return this._tasksByName.get(name)?.id
+    }
+
     public addTask(task: SemanticTask) {
         this._model.tasks[task.id] = task
         this.addTaskToIndex(task)
-    }
-
-    public getTaskIdByName(name: string): string | undefined {
-        return this._tasksByName.get(name)?.id
     }
 
     public deleteTasksWithRelatedTransitions(tasks: Iterable<SemanticTask>) {

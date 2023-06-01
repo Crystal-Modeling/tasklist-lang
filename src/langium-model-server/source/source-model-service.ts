@@ -1,4 +1,5 @@
 import type { LangiumDocument, LangiumDocuments } from 'langium'
+import { DocumentState } from 'langium'
 import type { LangiumModelServerServices } from '../langium-model-server-module'
 import type { SemanticIndexManager } from '../semantic/semantic-manager'
 
@@ -25,6 +26,11 @@ export abstract class DefaultSourceModelService<SM, SemI> implements SourceModel
             return undefined
         }
         const langiumDocument = this.langiumDocuments.getOrCreateDocument(documentUri)
+        //TODO: Change this to return Promise, if the document didn't reach the desired state.
+        // Also override DocumentBuilder, to augument new final state (SemanticModelReconciled)
+        if (langiumDocument.state !== DocumentState.Validated) {
+            return undefined
+        }
         const semanticModelIndex = this.semanticIndexManager.getSemanticModelIndex(langiumDocument)
         if (!semanticModelIndex) {
             return undefined
