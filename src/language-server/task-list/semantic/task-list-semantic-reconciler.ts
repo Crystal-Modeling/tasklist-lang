@@ -30,13 +30,23 @@ export class TaskListSemanticModelReconciler {
 
         - Task is valid for Semantic Model (is unique by name within a document)
         - Transition is valid for Semantic Model (is unique by name within a Task).
-        - Aggregate function: getValidTargetTasks, which deals with Task internals
+        - Aggregate functions: getValidTasks, getValidTargetTasks, which deals with Model/Task internals
 
         So that neither SemanticManager, nor SemanticModelIndex is responsible for traversing AST internals
         */
         const isTaskSemanticallyValid = (task: ast.Task): task is Valid<ast.Task> => !document.semanticallyInvalidTasks?.has(task)
         const isTransitionSemanticallyValid = (task: Valid<ast.Task>, targetTaskIndex: number) => !document
             .semanticallyInvalidReferences?.get(task)?.has(targetTaskIndex)
+
+        const getValidTasks = (model: ast.Model): Array<Valid<ast.Task>> => {
+            const validTasks: Array<Valid<ast.Task>> = []
+            model.tasks.forEach(task => {
+                if (isTaskSemanticallyValid(task)) {
+                    validTasks.push(task)
+                }
+            })
+            return validTasks
+        }
         const getValidTargetTasks = (task: Valid<ast.Task>): Array<Valid<ast.Task>> => {
             const validTargetTasks: Array<Valid<ast.Task>> = []
             task.references.forEach((targetTaskRef, targetTaskIndex) => {
@@ -59,16 +69,14 @@ export class TaskListSemanticModelReconciler {
         // source task with source task id (using already mapped data to optimize further mapping)
         const validTargetTaskByMappedSourceTaskId: Array<[string, Valid<ast.Task>]> = []
         // Actual mapping: marking semantic elements for deletion, and AST nodes to be added
-        model.tasks.forEach(task => {
-            if (isTaskSemanticallyValid(task)) {
-                const semanticTask = existingUnmappedTasks.get(task.name)
-                if (semanticTask) {
-                    existingUnmappedTasks.delete(task.name)
-                    getValidTargetTasks(task)
-                        .forEach(targetTask => validTargetTaskByMappedSourceTaskId.push([semanticTask.id, targetTask]))
-                } else {
-                    newTasks.push(task)
-                }
+        getValidTasks(model).forEach(task => {
+            const semanticTask = existingUnmappedTasks.get(task.name)
+            if (semanticTask) {
+                existingUnmappedTasks.delete(task.name)
+                getValidTargetTasks(task)
+                    .forEach(targetTask => validTargetTaskByMappedSourceTaskId.push([semanticTask.id, targetTask]))
+            } else {
+                newTasks.push(task)
             }
         })
         // Deletion can happen immediately after the mapping within the iteration (always?)
