@@ -24,7 +24,7 @@ export class TaskListSourceModelService extends DefaultSourceModelService<lms.Mo
                     sourceModel.tasks.push(lms.Task.create(semanticTask, task))
                 }//COMMENT: `else` should never actually happen
             }
-            //COMMENT: Actually, if AST and Semantic models are reconciled, `values` will be empty
+            //COMMENT: Actually, if AST and Semantic models are reconciled, `existingUnusedSemanticTasks.values()` will be empty
             for (const unusedSemanticTask of existingUnusedSemanticTasks.values()) {
                 sourceModel.tasks.push(lms.Task.create(unusedSemanticTask))
             }
