@@ -2,7 +2,7 @@
 import * as fs from 'fs-extra'
 import { fileURLToPath } from 'url'
 import { SemanticModelError } from './semantic-model-error'
-import type { TypeGuard } from '../type-util'
+import type { TypeGuard } from '../utils/types'
 import path from 'path'
 import { URI } from 'vscode-uri'
 

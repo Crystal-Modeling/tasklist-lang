@@ -1,5 +1,6 @@
 import { MultiMap } from 'langium'
 import type { SemanticModel, SemanticTask, SemanticTransition } from './task-list-semantic-model'
+import { ValueBasedMap } from '../../../langium-model-server/utils/collections'
 
 //TODO: The only reason why I keep _*byId index maps is because I am not certain of the _model format. Probably needs to be removed
 export abstract class SemanticModelIndex {
@@ -8,7 +9,7 @@ export abstract class SemanticModelIndex {
     private readonly _tasksByName: Map<string, SemanticTask> = new Map()
     private readonly _transitionsById: Map<string, SemanticTransition> = new Map()
     private readonly _transitionsByTaskId: MultiMap<string, SemanticTransition> = new MultiMap()
-    private readonly _transitionsBySourceTaskIdAndTargetTaskId: Map<[string, string], SemanticTransition> = new Map()
+    private readonly _transitionsBySourceTaskIdAndTargetTaskId: ValueBasedMap<[string, string], SemanticTransition> = new ValueBasedMap()
 
     public constructor(semanticModel: SemanticModel) {
         this._model = semanticModel
@@ -28,8 +29,8 @@ export abstract class SemanticModelIndex {
         return new Map(this._tasksByName)
     }
 
-    public get transitionsBySourceTaskIdAndTargetTaskId(): Map<[string, string], SemanticTransition> {
-        return new Map(this._transitionsBySourceTaskIdAndTargetTaskId)
+    public get transitionsBySourceTaskIdAndTargetTaskId(): ValueBasedMap<[string, string], SemanticTransition> {
+        return this._transitionsBySourceTaskIdAndTargetTaskId.copy()
     }
 
     protected get model(): SemanticModel {

@@ -1,5 +1,5 @@
 import * as uuid from 'uuid'
-import { isDefinedObject, isMappedObject } from '../../../langium-model-server/type-util'
+import { isDefinedObject, isMappedObject } from '../../../langium-model-server/utils/types'
 import type { Task } from '../../generated/ast'
 
 export interface SemanticModel {
