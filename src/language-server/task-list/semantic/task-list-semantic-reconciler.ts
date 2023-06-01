@@ -26,41 +26,12 @@ export class TaskListSemanticModelReconciler {
         - I need the concept of source model _semantical validity_, that is, which node from AST do I map to SemanticModel?
           = which AST node I assume correct enough to track his identity?
         */
-        /* NOTE: Reconciler is responsible for semantic model-specific domain logic:
-
-        - Task is valid for Semantic Model (is unique by name within a document)
-        - Transition is valid for Semantic Model (is unique by name within a Task).
-        - Aggregate functions: getValidTasks, getValidTargetTasks, which deals with Model/Task internals
-
-        So that neither SemanticManager, nor SemanticModelIndex is responsible for traversing AST internals
-        */
-        const isTaskSemanticallyValid = (task: ast.Task): task is Valid<ast.Task> => !document.semanticallyInvalidTasks?.has(task)
-        const isTransitionSemanticallyValid = (task: Valid<ast.Task>, targetTaskIndex: number) => !document
-            .semanticallyInvalidReferences?.get(task)?.has(targetTaskIndex)
-
-        const getValidTasks = (model: ast.Model): Array<Valid<ast.Task>> => {
-            const validTasks: Array<Valid<ast.Task>> = []
-            model.tasks.forEach(task => {
-                if (isTaskSemanticallyValid(task)) {
-                    validTasks.push(task)
-                }
-            })
-            return validTasks
-        }
-        const getValidTargetTasks = (task: Valid<ast.Task>): Array<Valid<ast.Task>> => {
-            const validTargetTasks: Array<Valid<ast.Task>> = []
-            task.references.forEach((targetTaskRef, targetTaskIndex) => {
-                const targetTask = targetTaskRef.ref
-                if (!!targetTask && isTaskSemanticallyValid(targetTask) && isTransitionSemanticallyValid(task, targetTaskIndex)) {
-                    validTargetTasks.push(targetTask)
-                }
-            })
-            return validTargetTasks
-        }
 
         // Preparation: getting services, and AST root
         const semanticModelIndex = this.semanticIndexManager.getSemanticModelIndex(document)
         const model: ast.Model = document.parseResult.value
+        //HACK: Relying on the fact that in this function `document` is in its final State
+        const semanticDomain = document.semanticDomain!
 
         // NOTE: ITERATION 1: mapping Tasks
         const newTasks: Array<Valid<ast.Task>> = []
@@ -69,11 +40,11 @@ export class TaskListSemanticModelReconciler {
         // source task with source task id (using already mapped data to optimize further mapping)
         const validTargetTaskByMappedSourceTaskId: Array<[string, Valid<ast.Task>]> = []
         // Actual mapping: marking semantic elements for deletion, and AST nodes to be added
-        getValidTasks(model).forEach(task => {
+        semanticDomain.getValidTasks(model).forEach(task => {
             const semanticTask = existingUnmappedTasks.get(task.name)
             if (semanticTask) {
                 existingUnmappedTasks.delete(task.name)
-                getValidTargetTasks(task)
+                semanticDomain.getValidTargetTasks(task)
                     .forEach(targetTask => validTargetTaskByMappedSourceTaskId.push([semanticTask.id, targetTask]))
             } else {
                 newTasks.push(task)
@@ -99,7 +70,7 @@ export class TaskListSemanticModelReconciler {
         for (const task of newTasks) {
             const semanticTask = SemanticModel.newTask(task)
             semanticModelIndex.addTask(semanticTask)
-            getValidTargetTasks(task)
+            semanticDomain.getValidTargetTasks(task)
                 .forEach(targetTask => newTransitionsForMappedSourceTaskId.push([semanticTask.id, targetTask]))
         }
 
