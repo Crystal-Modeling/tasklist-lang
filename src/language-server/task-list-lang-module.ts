@@ -50,7 +50,6 @@ export function createTaskListLangServices(context: DefaultSharedModuleContext):
 function addSemanticDomainInitializationPhase(sharedServices: LangiumSharedServices) {
     const documentBuilder = sharedServices.workspace.DocumentBuilder
     documentBuilder.onBuildPhase(DocumentState.IndexedReferences, async (documents, cancelToken) => {
-        console.debug('====== SEMANTIC DOMAIN INITIALIZATION PHASE ======')
         for (const document of documents) {
             if (isTaskListDocument(document)) {
                 await interruptAndCheck(cancelToken)

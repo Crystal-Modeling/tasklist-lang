@@ -43,7 +43,6 @@ export class TaskListSemanticIndexManager implements SemanticIndexManager<Semant
     }
 
     public loadSemanticModel(languageDocumentUri: string): void {
-        console.debug('Loading semantic model for URI', languageDocumentUri)
         const semanticModel = this.semanticModelStorage.loadSemanticModelFromFile(languageDocumentUri, SemanticModel.is)
         const semanticModelIndex = new AccessibleSemanticModelIndex(semanticModel)
         this.languageDocumentUriById.set(semanticModel.id, URI.parse(languageDocumentUri))
@@ -51,13 +50,11 @@ export class TaskListSemanticIndexManager implements SemanticIndexManager<Semant
     }
 
     public saveSemanticModel(languageDocumentUri: string): void {
-        console.debug('Saving semantic model...')
         const semanticModel = this.getOrLoadSemanticModel(languageDocumentUri).model
         this.semanticModelStorage.saveSemanticModelToFile(languageDocumentUri, semanticModel)
     }
 
     public deleteSemanticModel(languageDocumentUri: string): void {
-        console.debug('Deleting semantic model for URI', languageDocumentUri)
         const existingModelIndex = this.indexRegistryByLanguageDocumentUri.get(languageDocumentUri)
         if (existingModelIndex) {
             this.indexRegistryByLanguageDocumentUri.delete(languageDocumentUri)

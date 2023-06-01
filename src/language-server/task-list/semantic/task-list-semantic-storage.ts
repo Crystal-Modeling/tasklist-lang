@@ -11,10 +11,11 @@ export class TaskListSemanticModelStorage extends AbstractSemanticModelStorage i
 
     protected override convertLangiumDocumentUriIntoSourceModelUri(uri: URI): URI {
         const folderFileSeparator = uri.path.lastIndexOf('/')
-        const semanticPath = uri.path.slice(0, folderFileSeparator) + '/semantic' + uri.path.slice(folderFileSeparator)
+        let semanticPath = uri.path.slice(0, folderFileSeparator) + '/semantic' + uri.path.slice(folderFileSeparator)
+        semanticPath = semanticPath.substring(0, semanticPath.lastIndexOf('.tasks')) + '.json'
         console.debug('Semantic path is', semanticPath)
         return uri.with({
-            path: semanticPath.substring(0, semanticPath.lastIndexOf('.tasks')) + '.json'
+            path: semanticPath
         })
     }
 }
