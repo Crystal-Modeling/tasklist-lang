@@ -1,9 +1,9 @@
 import type { AstNode, LangiumDocument } from 'langium'
 import { DefaultSourceModelService } from '../../../langium-model-server/source/source-model-service'
-import type { Model } from '../model-server/api-models'
 import type { SemanticModelIndex } from '../semantic/task-list-semantic-model-index'
+import type * as lms from './model'
 
-export class TaskListSourceModelService extends DefaultSourceModelService<Model, SemanticModelIndex> {
+export class TaskListSourceModelService extends DefaultSourceModelService<lms.Model, SemanticModelIndex> {
 
     //TODO: Implement next
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

@@ -3,3 +3,4 @@ export interface Transition {
     sourceTaskId: string
     targetTaskId: string
 }
+
