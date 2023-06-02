@@ -20,7 +20,7 @@ export const LangiumModelServerRouter: LmsHttp2RouterProvider = (services: Langi
         if (matchPrefix('/', unmatchedPath)) {
             if (unmatchedPath.suffix === '') {
                 handler = helloWorldHandler
-            } else if (matchPrefix('model/', unmatchedPath) && method === 'GET') {
+            } else if (matchPrefix('models/', unmatchedPath) && method === 'GET') {
                 handler = getModelHandlerProvider(services.source.SourceModelService)
             } else {
                 handler = notFoundHandler
@@ -50,7 +50,7 @@ const getModelHandlerProvider: Http2RequestHandlerProvider<SourceModelService<ob
         const sourceModel = service.getById(id)
 
         if (!sourceModel) {
-            const response = ApiResponse.create(`Source model with id ${id} not found`, 404)
+            const response = ApiResponse.create(`Source model with id '${id}' not found`, 404)
             console.debug('Responding with', response)
             respondWithJson(stream, response)
         } else {
