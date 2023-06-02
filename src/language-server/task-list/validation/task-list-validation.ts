@@ -1,6 +1,6 @@
 import type { ValidationAcceptor, ValidationChecks } from 'langium'
 import { MultiMap } from 'langium'
-import type { Model, Task, TaskListLangAstType} from '../../generated/ast'
+import type { Model, Task, TaskListLangAstType } from '../../generated/ast'
 import { isTask } from '../../generated/ast'
 import type { TaskListServices } from '../task-list-module'
 import { getTaskListDocument } from '../workspace/documents'
@@ -42,7 +42,7 @@ export class TaskListValidator {
             accept('error', `Task must have unique name, but found another task with name [${task.name}]`,
                 { node: task, property: 'name' })
         })
-        this.setSemanticallyInvalidTasks(model, incorrectlyNamedTasks)
+        getTaskListDocument(model).semanticDomain?.setInvalidTasksForModel(model, incorrectlyNamedTasks)
 
         tasksByContent.entriesGroupedByKey().filter(([, tasks]) => tasks.length > 1)
             .flatMap(([, tasks]) => tasks)
@@ -78,7 +78,7 @@ export class TaskListValidator {
                 }
             }
         }
-        this.setSemanticallyInvalidReferences(task, nonUniqueReferenceIndices)
+        getTaskListDocument(task).semanticDomain?.setInvalidReferencesForTask(task, nonUniqueReferenceIndices)
     }
 
     checkTaskDoesNotReferenceItself(task: Task, accept: ValidationAcceptor): void {
@@ -89,16 +89,5 @@ export class TaskListValidator {
                     { node: task, property: 'references', index })
             }
         }
-    }
-
-    private setSemanticallyInvalidTasks(model: Model, semanticallyInvalidTasks: Set<Task>) {
-        const document = getTaskListDocument(model)
-        document.semanticallyInvalidTasks = semanticallyInvalidTasks
-    }
-
-    private setSemanticallyInvalidReferences(task: Task, semanticallyInvalidReferences: Set<number>): void {
-        const document = getTaskListDocument(task)
-        document.semanticallyInvalidReferences ??= new Map()
-        document.semanticallyInvalidReferences.set(task, semanticallyInvalidReferences)
     }
 }

@@ -1,88 +1,96 @@
 {
-  "name": "tasklist-lang",
-  "displayName": "tasklist-lang",
-  "description": "Please enter a brief description here",
-  "version": "0.0.1",
-  "repository": {
-    "url": "git@github.com:Crystal-VPL/tasklist-lang.git"
-  },
-  "engines": {
-    "vscode": "^1.67.0"
-  },
-  "categories": [
-    "Programming Languages"
-  ],
-  "contributes": {
-    "languages": [
-      {
-        "id": "task-list",
-        "aliases": [
-          "Task List",
-          "task-list"
-        ],
-        "extensions": [
-          ".tasks"
-        ],
-        "configuration": "./contributions/language-configuration.json"
-      }
+    "name": "tasklist-lang",
+    "displayName": "tasklist-lang",
+    "description": "Please enter a brief description here",
+    "version": "0.0.1",
+    "repository": {
+        "url": "git@github.com:Crystal-VPL/tasklist-lang.git"
+    },
+    "engines": {
+        "vscode": "^1.67.0"
+    },
+    "categories": [
+        "Programming Languages"
     ],
-    "snippets": [
-      {
-        "language": "task-list",
-        "path": "./contributions/task-list.code-snippets"
-      }
+    "contributes": {
+        "languages": [
+            {
+                "id": "task-list",
+                "aliases": [
+                    "Task List",
+                    "task-list"
+                ],
+                "extensions": [
+                    ".tasks"
+                ],
+                "configuration": "./contributions/language-configuration.json"
+            }
+        ],
+        "snippets": [
+            {
+                "language": "task-list",
+                "path": "./contributions/task-list.code-snippets"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "task-list",
+                "scopeName": "source.task-list",
+                "path": "./contributions/syntaxes/task-list.tmLanguage.json"
+            }
+        ]
+    },
+    "activationEvents": [
+        "onLanguage:task-list"
     ],
-    "grammars": [
-      {
-        "language": "task-list",
-        "scopeName": "source.task-list",
-        "path": "./contributions/syntaxes/task-list.tmLanguage.json"
-      }
-    ]
-  },
-  "files": [
-    "bin",
-    "out",
-    "src"
-  ],
-  "bin": {
-    "task-list-cli": "./bin/cli"
-  },
-  "main": "./out/extension.js",
-  "scripts": {
-    "vscode:prepublish": "npm run esbuild-base -- --minify && npm run lint",
-    "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node",
-    "build": "tsc -b tsconfig.build.json",
-    "watch": "tsc -b tsconfig.build.json --watch",
-    "lint": "eslint src test --ext ts",
-    "test": "vitest",
-    "langium:generate": "langium generate",
-    "langium:watch": "langium generate --watch"
-  },
-  "dependencies": {
-    "chalk": "~4.1.2",
-    "chevrotain": "~10.4.2",
-    "commander": "~10.0.0",
-    "fs-extra": "^11.1.1",
-    "langium": "~1.1.0",
-    "uuid": "^9.0.0",
-    "vscode-languageclient": "~8.0.2",
-    "vscode-languageserver": "~8.0.2",
-    "vscode-uri": "~3.0.7"
-  },
-  "devDependencies": {
-    "@types/fs-extra": "^11.0.1",
-    "@types/node": "~16.18.11",
-    "@types/uuid": "^9.0.1",
-    "@types/vscode": "~1.67.0",
-    "@typescript-eslint/eslint-plugin": "~5.51.0",
-    "@typescript-eslint/parser": "~5.51.0",
-    "@vscode/vsce": "^2.19.0",
-    "editorconfig": "^1.0.2",
-    "esbuild": "^0.17.18",
-    "eslint": "~8.33.0",
-    "langium-cli": "~1.1.0",
-    "typescript": "~4.9.5",
-    "vitest": "^0.28.5"
-  }
+    "files": [
+        "bin",
+        "out",
+        "src"
+    ],
+    "bin": {
+        "task-list-cli": "./bin/cli"
+    },
+    "main": "./out/extension.js",
+    "scripts": {
+        "rebuild": "npm run clean && npm run langium:generate && npm run build && npm run copy-files",
+        "vscode:prepublish": "npm run esbuild-base -- --minify && npm run lint",
+        "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node",
+        "build": "tsc -b",
+        "watch": "tsc -b --watch",
+        "lint": "eslint src test --ext ts",
+        "clean": "rimraf out/ tsconfig.tsbuildinfo tsconfig.base.tsbuildinfo tsconfig.test.tsbuildinfo",
+        "copy-files": "copyfiles -u 1 src/ssl/** out/",
+        "test": "vitest",
+        "langium:generate": "langium generate",
+        "langium:watch": "langium generate --watch"
+    },
+    "dependencies": {
+        "chalk": "~4.1.2",
+        "chevrotain": "~10.4.2",
+        "commander": "~10.0.0",
+        "fs-extra": "^11.1.1",
+        "langium": "~1.1.0",
+        "uuid": "^9.0.0",
+        "vscode-languageclient": "~8.0.2",
+        "vscode-languageserver": "~8.0.2",
+        "vscode-uri": "~3.0.7"
+    },
+    "devDependencies": {
+        "@types/fs-extra": "^11.0.1",
+        "@types/node": "~16.18.11",
+        "@types/uuid": "^9.0.1",
+        "@types/vscode": "~1.67.0",
+        "@typescript-eslint/eslint-plugin": "~5.51.0",
+        "@typescript-eslint/parser": "~5.51.0",
+        "@vscode/vsce": "^2.19.0",
+        "copyfiles": "^2.4.1",
+        "editorconfig": "^1.0.2",
+        "esbuild": "^0.17.18",
+        "eslint": "~8.33.0",
+        "langium-cli": "~1.1.0",
+        "rimraf": "^5.0.1",
+        "typescript": "~4.9.5",
+        "vitest": "^0.28.5"
+    }
 }

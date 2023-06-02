@@ -1,83 +1,16 @@
 import { MultiMap } from 'langium'
-import * as uuid from 'uuid'
-import { isDefinedObject, isMappedObject } from '../../../source-model-server/type-util'
-import type { Task } from '../../generated/ast'
+import type { SemanticModel, SemanticTask, SemanticTransition } from './task-list-semantic-model'
+import { ValueBasedMap } from '../../../langium-model-server/utils/collections'
 
-export interface SemanticModel {
-    id: string
-    tasks: { [ID: string]: SemanticTask }
-    transitions: { [ID: string]: SemanticTransition }
-}
-
-export interface SemanticTask {
-    id: string
-    name: string
-}
-
-export interface SemanticTransition {
-    id: string
-    sourceTaskId: string
-    targetTaskId: string
-}
-
-export namespace SemanticModel {
-    export function is(obj: unknown): obj is SemanticModel {
-        if (!isDefinedObject(obj)) {
-            return false
-        }
-        if (typeof obj.id !== 'string'
-            || !isMappedObject(obj.tasks, 'string', isSemanticTask)
-            || !isMappedObject(obj.transitions, 'string', isSemanticTransition)) {
-            return false
-        }
-
-        return true
-    }
-
-    function isSemanticTask(obj: unknown): obj is SemanticTask {
-        return isDefinedObject(obj)
-            && typeof obj.id === 'string'
-            && typeof obj.name === 'string'
-    }
-
-    function isSemanticTransition(obj: unknown): obj is SemanticTransition {
-        return isDefinedObject(obj)
-            && typeof obj.id === 'string'
-            && typeof obj.sourceTaskId === 'string'
-            && typeof obj.targetTaskId === 'string'
-    }
-
-    export function newModel(): SemanticModel {
-        return {
-            id: uuid.v4(),
-            tasks: {},
-            transitions: {}
-        }
-    }
-
-    export function newTask(task: Task): SemanticTask {
-        return {
-            id: uuid.v4(),
-            name: task.name
-        }
-    }
-
-    export function newTransition(sourceTaskId: string, targetTaskId: string): SemanticTransition {
-        return {
-            id: uuid.v4(),
-            sourceTaskId,
-            targetTaskId
-        }
-    }
-}
-
+//TODO: The only reason why I keep _*byId index maps is because I am not certain of the _model format. Probably needs to be removed
 export abstract class SemanticModelIndex {
     protected readonly _model: SemanticModel
     private readonly _tasksById: Map<string, SemanticTask> = new Map()
     private readonly _tasksByName: Map<string, SemanticTask> = new Map()
     private readonly _transitionsById: Map<string, SemanticTransition> = new Map()
     private readonly _transitionsByTaskId: MultiMap<string, SemanticTransition> = new MultiMap()
-    private readonly _transitionsBySourceTaskIdAndTargetTaskId: Map<[string, string], SemanticTransition> = new Map()
+    private readonly _transitionsBySourceTaskIdAndTargetTaskId: ValueBasedMap<[string, string], SemanticTransition>
+        = new ValueBasedMap()
 
     public constructor(semanticModel: SemanticModel) {
         this._model = semanticModel
@@ -93,25 +26,33 @@ export abstract class SemanticModelIndex {
         }
     }
 
-    public get tasksByName(): Map<string, SemanticTask> {
+    public get id(): string {
+        return this._model.id
+    }
+
+    public get transitions(): Iterable<Readonly<SemanticTransition>> {
+        return this._transitionsById.values()
+    }
+
+    public get tasksByName(): Map<string, Readonly<SemanticTask>> {
         return new Map(this._tasksByName)
     }
 
-    public get transitionsBySourceTaskIdAndTargetTaskId(): Map<[string, string], SemanticTransition> {
-        return new Map(this._transitionsBySourceTaskIdAndTargetTaskId)
+    public get transitionsBySourceTaskIdAndTargetTaskId(): ValueBasedMap<[string, string], Readonly<SemanticTransition>> {
+        return this._transitionsBySourceTaskIdAndTargetTaskId.copy()
     }
 
     protected get model(): SemanticModel {
         return this._model
     }
 
+    public getTaskIdByName(name: string): string | undefined {
+        return this._tasksByName.get(name)?.id
+    }
+
     public addTask(task: SemanticTask) {
         this._model.tasks[task.id] = task
         this.addTaskToIndex(task)
-    }
-
-    public getTaskIdByName(name: string): string | undefined {
-        return this._tasksByName.get(name)?.id
     }
 
     public deleteTasksWithRelatedTransitions(tasks: Iterable<SemanticTask>) {

@@ -1,6 +1,6 @@
-import * as vscode from 'vscode'
 import * as path from 'path'
-import type { LanguageClientOptions, ServerOptions} from 'vscode-languageclient/node'
+import * as vscode from 'vscode'
+import type { LanguageClientOptions, ServerOptions } from 'vscode-languageclient/node'
 import {
     LanguageClient, TransportKind
 } from 'vscode-languageclient/node'
@@ -58,3 +58,4 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
     client.start()
     return client
 }
+

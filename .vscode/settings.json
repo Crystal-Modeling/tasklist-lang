@@ -8,6 +8,8 @@
         "javascript",
         "typescript"
     ],
+    "typescript.preferences.quoteStyle": "single",
+    "typescript.format.semicolons": "remove",
     "vitest.enable": true,
     "[json]": {
         "editor.defaultFormatter": "vscode.json-language-features"
