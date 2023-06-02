@@ -50,11 +50,8 @@ const getModelHandlerProvider: Http2RequestHandlerProvider<SourceModelService<ob
         const sourceModel = service.getById(id)
 
         if (!sourceModel) {
-            const response = ApiResponse.create(`Source model with id '${id}' not found`, 404)
-            console.debug('Responding with', response)
-            respondWithJson(stream, response)
+            respondWithJson(stream, ApiResponse.create(`Source model with id '${id}' not found`, 404))
         } else {
-            console.debug('Responding with sourceModel', sourceModel)
             respondWithJson(stream, sourceModel, 200)
         }
     }
