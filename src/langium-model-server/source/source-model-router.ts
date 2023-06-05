@@ -1,6 +1,6 @@
 import type * as http2 from 'http2'
 import type { LangiumModelServerAddedServices } from '../langium-model-server-module'
-import { ApiResponse } from './model'
+import { ApiResponse, SemanticIdResponse } from './model'
 import type { SourceModelService } from './source-model-service'
 
 type Http2RequestHandler = (stream: http2.ServerHttp2Stream, unmatchedPath: PathContainer,
@@ -20,7 +20,7 @@ export const LangiumModelServerRouter: LmsHttp2RouterProvider = (services: Langi
             if (unmatchedPath.suffix === '') {
                 handler = helloWorldHandler
             } else if (unmatchedPath.matchPrefix('models/') && method === 'GET') {
-                handler = getModelHandlerProvider(services.source.SourceModelService)
+                handler = provideModelHandler(services.source.SourceModelService)
             } else {
                 handler = notFoundHandler
             }
@@ -43,8 +43,20 @@ const helloWorldHandler: Http2RequestHandler = (stream) => {
     stream.end('Hello World')
 }
 
-const getModelHandlerProvider: Http2RequestHandlerProvider<SourceModelService<object>> = (service) => (
-    (stream, unmatchedPath) => {
+const provideModelHandler: Http2RequestHandlerProvider<SourceModelService<object>> = (service) => {
+
+    const getModelIdHandler: Http2RequestHandler = (stream, unmatchedPath) => {
+        //HACK: LMS should be unaware of the requester. By adding dependency on GLSP Notation URI I break this (temporarily)
+        const notationUri = unmatchedPath.suffix
+        const semanticId = service.getSemanticId(notationUri)
+
+        if (!semanticId) {
+            respondWithJson(stream, ApiResponse.create(`Source model sitting next to URI '${notationUri}' not found`, 404))
+        } else {
+            respondWithJson(stream, SemanticIdResponse.create(semanticId), 200)
+        }
+    }
+    const getModelHandler: Http2RequestHandler = (stream, unmatchedPath) => {
         const id = unmatchedPath.suffix
         const sourceModel = service.getById(id)
 
@@ -54,8 +66,14 @@ const getModelHandlerProvider: Http2RequestHandlerProvider<SourceModelService<ob
             respondWithJson(stream, sourceModel, 200)
         }
     }
-)
 
+    return (_, unmatchedPath) => {
+        if (unmatchedPath.matchPrefix('id/')) {
+            return getModelIdHandler
+        }
+        return getModelHandler
+    }
+}
 const notFoundHandler: Http2RequestHandler = (stream, unmatchedPath, header) => {
     respondWithJson(stream,
         ApiResponse.create(`Path '${header[':path']}' not found (unmatched suffix '${unmatchedPath.suffix}')`, 404))
