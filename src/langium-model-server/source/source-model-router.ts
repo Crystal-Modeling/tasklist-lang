@@ -3,8 +3,7 @@ import type { LangiumModelServerAddedServices } from '../langium-model-server-mo
 import { ApiResponse } from './model'
 import type { SourceModelService } from './source-model-service'
 
-type UnmatchedPathContainer = { suffix: string }
-type Http2RequestHandler = (stream: http2.ServerHttp2Stream, unmatchedPath: UnmatchedPathContainer,
+type Http2RequestHandler = (stream: http2.ServerHttp2Stream, unmatchedPath: PathContainer,
     headers: http2.IncomingHttpHeaders, flags: number) => Http2RequestHandler | void
 type Http2RequestHandlerProvider<T> = (parameter: T) => Http2RequestHandler
 type LmsHttp2RouterProvider = (services: LangiumModelServerAddedServices) => (
@@ -14,13 +13,13 @@ type LmsHttp2RouterProvider = (services: LangiumModelServerAddedServices) => (
 export const LangiumModelServerRouter: LmsHttp2RouterProvider = (services: LangiumModelServerAddedServices) => (
     (stream, headers, flags) => {
         const method = headers[':method']
-        const unmatchedPath = { suffix: headers[':path'] ?? '' }
+        const unmatchedPath = new PathContainer(headers[':path'] ?? '')
         let handler: Http2RequestHandler
 
-        if (matchPrefix('/', unmatchedPath)) {
+        if (unmatchedPath.matchPrefix('/')) {
             if (unmatchedPath.suffix === '') {
                 handler = helloWorldHandler
-            } else if (matchPrefix('models/', unmatchedPath) && method === 'GET') {
+            } else if (unmatchedPath.matchPrefix('models/') && method === 'GET') {
                 handler = getModelHandlerProvider(services.source.SourceModelService)
             } else {
                 handler = notFoundHandler
@@ -62,21 +61,6 @@ const notFoundHandler: Http2RequestHandler = (stream, unmatchedPath, header) => 
         ApiResponse.create(`Path '${header[':path']}' not found (unmatched suffix '${unmatchedPath.suffix}')`, 404))
 }
 
-/**
- * If `pathContainer`.`suffix` begins with `prefix`, then this prefix is removed from `suffix`
- * and the function returns `true`. Otherwise `pathContainer` remains unmodified and the function returns `false`.
- *
- * @param prefix A string against which existing `suffix` is matched
- * @param pathContainer Object holding a reference to resulting path suffix
- */
-function matchPrefix(prefix: string, pathContainer: { suffix: string }): boolean {
-    if (pathContainer.suffix.startsWith(prefix)) {
-        pathContainer.suffix = pathContainer.suffix.substring(prefix.length)
-        return true
-    }
-    return false
-}
-
 function respondWithJson(stream: http2.ServerHttp2Stream, response: ApiResponse): void
 function respondWithJson(stream: http2.ServerHttp2Stream, response: object, status: number): void
 function respondWithJson(stream: http2.ServerHttp2Stream, response: ApiResponse | object, status?: number): void {
@@ -88,4 +72,31 @@ function respondWithJson(stream: http2.ServerHttp2Stream, response: ApiResponse 
         ':status': status
     })
     stream.end(JSON.stringify(response))
+}
+
+class PathContainer {
+    private _suffix: string
+
+    public get suffix(): string {
+        return this._suffix
+    }
+
+    public constructor(suffix: string) {
+        this._suffix = suffix
+    }
+
+    /**
+     * If {@link PathContainer}.`suffix` begins with `prefix`, then this prefix is removed from `suffix`
+     * and method returns `true`.
+     * Otherwise {@link PathContainer} remains unmodified and method returns `false`.
+     *
+     * @param prefix A string against which existing `suffix` is matched
+     */
+    public matchPrefix(prefix: string): boolean {
+        if (this._suffix.startsWith(prefix)) {
+            this._suffix = this._suffix.substring(prefix.length)
+            return true
+        }
+        return false
+    }
 }
