@@ -6,6 +6,11 @@ import * as lms from './model'
 
 export class TaskListSourceModelService extends DefaultSourceModelService<lms.Model, SemanticModelIndex> {
 
+    protected override getSourceModelFileExtension(): string {
+        //HACK: Hardcoded Langium Document file extension (available also in Langium config)
+        return 'tasks'
+    }
+
     protected override combineSemanticModelWithAst(semanticModelIndex: SemanticModelIndex,
         langiumDocument: LangiumDocument<AstNode>): lms.Model {
 
