@@ -5,6 +5,9 @@ import { SemanticModelError } from './semantic-model-error'
 import type { TypeGuard } from '../utils/types'
 import path from 'path'
 import { URI } from 'vscode-uri'
+import { UriConverter } from '../utils/uri-converter'
+import type { LanguageMetaData } from 'langium'
+import type { LangiumModelServerServices } from '../langium-model-server-module'
 
 export interface SemanticModelStorage {
     saveSemanticModelToFile(languageDocumentUri: string, model: unknown): void
@@ -16,6 +19,12 @@ export interface SemanticModelStorage {
  * Copied and adopted from @eclipse-glsp/server-node/src/features/model/abstract-json-model-storage.ts
  */
 export abstract class AbstractSemanticModelStorage implements SemanticModelStorage {
+
+    private languageMetaData: LanguageMetaData
+
+    constructor(services: LangiumModelServerServices) {
+        this.languageMetaData = services.LanguageMetaData
+    }
 
     public saveSemanticModelToFile(languageDocumentUri: string, semanticModel: unknown): void {
         console.debug('Saving semantic model...')
@@ -35,7 +44,13 @@ export abstract class AbstractSemanticModelStorage implements SemanticModelStora
         this.deleteFile(uri)
     }
 
-    protected abstract convertLangiumDocumentUriIntoSourceModelUri(langiumDocumentUri: URI): URI
+    protected convertLangiumDocumentUriIntoSourceModelUri(langiumDocumentUri: URI): URI {
+        return UriConverter.of(langiumDocumentUri)
+            .putFileInSubFolder('semantic')
+            .replaceFileExtension(this.languageMetaData.fileExtensions, '.json')
+            .apply((_, path) => console.debug('Semantic path is', path))
+            .toUri()
+    }
 
     protected loadFromFile(sourceUri: string): unknown
     protected loadFromFile<T>(sourceUri: string, guard: TypeGuard<T>): T

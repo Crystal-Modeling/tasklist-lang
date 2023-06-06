@@ -44,7 +44,7 @@ export const TaskListModule: Module<TaskListServices, PartialLangiumServices & T
         TaskListValidator: () => new TaskListValidator()
     },
     semantic: {
-        SemanticModelStorage: () => new TaskListSemanticModelStorage(),
+        SemanticModelStorage: (services) => new TaskListSemanticModelStorage(services),
         SemanticIndexManager: (services) => new TaskListSemanticIndexManager(services),
         TaskListSemanticModelReconciler: (services) => new TaskListSemanticModelReconciler(services),
     },

@@ -1,3 +1,4 @@
+
 import type { URI } from 'vscode-uri'
 
 export class UriConverter {
@@ -28,7 +29,24 @@ export class UriConverter {
         return new UriConverter(this.uri, modifiedPath)
     }
 
-    public replaceFileExtension(newFileExtension: string): UriConverter {
+    /**
+     * Replace file extension with {@link newFileExtension} if it matches one of the {@link fileExtensionsToLookFor}.
+     * Otherwise returns unmodified {@link UriConverter}
+     * @param fileExtensionsToLookFor An array of possible file extensions. Must begin with a '.'
+     * @param newFileExtension New file extension to replace the old one, if matched one of the {@link fileExtensionsToLookFor}
+     */
+    public replaceFileExtension(fileExtensionsToLookFor: string[], newFileExtension: string): UriConverter {
+        for (const ext of fileExtensionsToLookFor) {
+            const extBeginIndex = this.path.lastIndexOf(ext)
+            if (extBeginIndex > -1) {
+                const modifiedPath = this.path.substring(0, extBeginIndex) + '.' + strip(newFileExtension, '.')
+                return new UriConverter(this.uri, modifiedPath)
+            }
+        }
+        return this
+    }
+
+    public replaceFileExtensionWith(newFileExtension: string): UriConverter {
         const modifiedPath = this.path.replace(/(?<=\.)[a-zA-Z0-9]+$/, strip(newFileExtension, '.'))
         if (!modifiedPath.endsWith(newFileExtension)) {
             return this.addFileExtension(newFileExtension)
@@ -54,6 +72,10 @@ export class UriConverter {
 }
 
 /**
+ * Strips the {@link str} from all leading and trailing characters {@link symbol}. For instance,
+ * ```ts
+ * strip('??How are you? Is everything OK?', '?')// will return 'How are you? Is everything OK'
+ * ```
  * @param str A string to strip
  * @param symbol A character (string of length 1) to strip {@link str} from
  * @returns Stripped {@link str}

@@ -14,5 +14,5 @@ export type LangiumModelServerAddedServices<SM = object, SemI extends SemanticIn
     }
 }
 
-export type LangiumModelServerServices<SM, SemI extends SemanticIndex = SemanticIndex>
+export type LangiumModelServerServices<SM = object, SemI extends SemanticIndex = SemanticIndex>
     = LangiumServices & LangiumModelServerAddedServices<SM, SemI>
