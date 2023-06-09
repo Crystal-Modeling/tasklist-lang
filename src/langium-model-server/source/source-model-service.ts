@@ -1,4 +1,4 @@
-import type { LangiumDocument, LangiumDocuments } from 'langium'
+import type { LangiumDocument, LangiumDocuments, LanguageMetaData } from 'langium'
 import { DocumentState } from 'langium'
 import { URI } from 'vscode-uri'
 import type { LangiumModelServerServices } from '../langium-model-server-module'
@@ -20,15 +20,16 @@ export abstract class DefaultSourceModelService<SM, SemI extends SemanticIndex> 
 
     protected semanticIndexManager: SemanticIndexManager<SemI>
     protected langiumDocuments: LangiumDocuments
+    protected languageMetadata: LanguageMetaData
 
     constructor(services: LangiumModelServerServices<SM, SemI>) {
         this.semanticIndexManager = services.semantic.SemanticIndexManager
         this.langiumDocuments = services.shared.workspace.LangiumDocuments
     }
 
-    getSemanticId(sourceUri: string): string | undefined {
+    public getSemanticId(sourceUri: string): string | undefined {
         const documentUri = UriConverter.of(URI.parse(sourceUri))
-            .replaceFileExtension(this.getSourceModelFileExtension())
+            .replaceFileExtensionWith(this.getSourceModelFileExtension())
             .toUri()
         if (!this.langiumDocuments.hasDocument(documentUri)) {
             return undefined
@@ -58,6 +59,9 @@ export abstract class DefaultSourceModelService<SM, SemI extends SemanticIndex> 
         return this.combineSemanticModelWithAst(semanticModelIndex, langiumDocument)
     }
 
-    protected abstract getSourceModelFileExtension(): string
+    protected getSourceModelFileExtension(): string {
+        return this.languageMetadata.fileExtensions[0]
+    }
+
     protected abstract combineSemanticModelWithAst(semanticModelIndex: SemI, langiumDocument: LangiumDocument): SM
 }
