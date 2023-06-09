@@ -1,10 +1,7 @@
 import { getDocument } from 'langium'
-import { URI } from 'vscode-uri'
-import type { SemanticIndexManager } from '../../../langium-model-server/semantic/semantic-manager'
-import type { SemanticModelStorage } from '../../../langium-model-server/semantic/semantic-storage'
+import { AbstractSemanticIndexManager } from '../../../langium-model-server/semantic/semantic-manager'
+import type { ModelAwareSemanticIndex } from '../../../langium-model-server/semantic/semantic-types'
 import type { Task } from '../../generated/ast'
-import type { TaskListServices } from '../task-list-module'
-import type { TaskListDocument } from '../workspace/documents'
 import { SemanticModel } from './task-list-semantic-model'
 import { SemanticModelIndex } from './task-list-semantic-model-index'
 
@@ -14,62 +11,15 @@ import { SemanticModelIndex } from './task-list-semantic-model-index'
  * to fetch semantic elements globally, i.e., searching through all the managed files.
  * See {@link getTaskId} for example.
  */
-export class TaskListSemanticIndexManager implements SemanticIndexManager<SemanticModelIndex> {
-
-    private semanticModelStorage: SemanticModelStorage
-    private indexRegistryByLanguageDocumentUri: Map<string, AccessibleSemanticModelIndex>
-    private languageDocumentUriById: Map<string, URI>
-
-    public constructor(services: TaskListServices) {
-        this.semanticModelStorage = services.semantic.SemanticModelStorage
-        this.indexRegistryByLanguageDocumentUri = new Map()
-        this.languageDocumentUriById = new Map()
-    }
+export class TaskListSemanticIndexManager extends AbstractSemanticIndexManager<SemanticModelIndex> {
 
     public getTaskId(task: Task): string | undefined {
         return this.getSemanticModelIndex(getDocument(task)).getTaskIdByName(task.name)
     }
 
-    /*
-        OVERRIDING FUNCTIONS SECTION
-    */
-
-    public getLanguageDocumentUri(id: string): URI | undefined {
-        return this.languageDocumentUriById.get(id)
-    }
-
-    public getSemanticModelIndex(languageDocument: TaskListDocument): SemanticModelIndex {
-        return this.getOrLoadSemanticModel(languageDocument.textDocument.uri)
-    }
-
-    public loadSemanticModel(languageDocumentUri: string): void {
+    protected override loadSemanticModelToIndex(languageDocumentUri: string): ModelAwareSemanticIndex<SemanticModelIndex> {
         const semanticModel = this.semanticModelStorage.loadSemanticModelFromFile(languageDocumentUri, SemanticModel.is)
-        const semanticModelIndex = new AccessibleSemanticModelIndex(semanticModel)
-        this.languageDocumentUriById.set(semanticModel.id, URI.parse(languageDocumentUri))
-        this.indexRegistryByLanguageDocumentUri.set(languageDocumentUri, semanticModelIndex)
-    }
-
-    public saveSemanticModel(languageDocumentUri: string): void {
-        const semanticModel = this.getOrLoadSemanticModel(languageDocumentUri).model
-        this.semanticModelStorage.saveSemanticModelToFile(languageDocumentUri, semanticModel)
-    }
-
-    public deleteSemanticModel(languageDocumentUri: string): void {
-        const existingModelIndex = this.indexRegistryByLanguageDocumentUri.get(languageDocumentUri)
-        if (existingModelIndex) {
-            this.indexRegistryByLanguageDocumentUri.delete(languageDocumentUri)
-            this.languageDocumentUriById.delete(existingModelIndex.model.id)
-        }
-        this.semanticModelStorage.deleteSemanticModelFile(languageDocumentUri)
-    }
-
-    private getOrLoadSemanticModel(languageDocumentUri: string): AccessibleSemanticModelIndex {
-        const loadedSemanticModel = this.indexRegistryByLanguageDocumentUri.get(languageDocumentUri)
-        if (loadedSemanticModel) {
-            return loadedSemanticModel
-        }
-        this.loadSemanticModel(languageDocumentUri)
-        return this.indexRegistryByLanguageDocumentUri.get(languageDocumentUri)!
+        return new AccessibleSemanticModelIndex(semanticModel)
     }
 
 }
