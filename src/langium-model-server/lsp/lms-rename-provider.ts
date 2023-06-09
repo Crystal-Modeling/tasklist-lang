@@ -28,10 +28,12 @@ export class LmsRenameProvider extends DefaultRenameProvider {
         const references = this.references.findReferences(targetNode, options)
         const newNameDefinder = this.getNewNameDefiner(targetNode, params)
 
-        const newName = newNameDefinder.newTargetName
-        this.semanticIndexManager.updateNodeName(targetNode, newName)
+        const semanticElement = this.semanticIndexManager.findNamedSemanticElement(targetNode)
+        if (semanticElement) {
+            semanticElement.name = newNameDefinder.targetName
+        }
         references.forEach(reference => {
-            const newName = newNameDefinder.getNewNameForReference(reference)
+            const newName = newNameDefinder.getNameForReference(reference)
             const nodeChange = TextEdit.replace(reference.segment.range, newName)
             const uri = reference.sourceUri.toString()
             if (changes[uri]) {
@@ -54,14 +56,14 @@ export class LmsRenameProvider extends DefaultRenameProvider {
      */
     protected getNewNameDefiner(targetNode: AstNode, params: RenameParams): NewNameDefiner {
         return {
-            getNewNameForReference: _ => params.newName,
-            newTargetName: params.newName
+            getNameForReference: _ => params.newName,
+            targetName: params.newName
         }
     }
 
 }
 
 export interface NewNameDefiner {
-    getNewNameForReference: (referenceDescription: ReferenceDescription) => string
-    readonly newTargetName: string
+    getNameForReference: (referenceDescription: ReferenceDescription) => string
+    readonly targetName: string
 }

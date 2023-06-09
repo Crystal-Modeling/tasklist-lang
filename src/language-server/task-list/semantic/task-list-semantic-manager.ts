@@ -1,9 +1,7 @@
-import type { AstNode } from 'langium'
 import { getDocument } from 'langium'
 import { AbstractSemanticIndexManager } from '../../../langium-model-server/semantic/semantic-manager'
 import type { ModelAwareSemanticIndex } from '../../../langium-model-server/semantic/semantic-types'
 import type { Task } from '../../generated/ast'
-import { isTask } from '../../generated/ast'
 import { SemanticModel } from './task-list-semantic-model'
 import { SemanticModelIndex } from './task-list-semantic-model-index'
 
@@ -17,14 +15,6 @@ export class TaskListSemanticIndexManager extends AbstractSemanticIndexManager<S
 
     public getTaskId(task: Task): string | undefined {
         return this.getSemanticModelIndex(getDocument(task)).getTaskIdByName(task.name)
-    }
-
-    public override updateNodeName(targetNode: AstNode, newName: string): boolean {
-        if (!isTask(targetNode)) {
-            return false
-        }
-        return !!this.getSemanticModelIndex(getDocument(targetNode))
-            .renameTask(targetNode, newName)
     }
 
     protected override loadSemanticModelToIndex(languageDocumentUri: string): ModelAwareSemanticIndex<SemanticModelIndex> {

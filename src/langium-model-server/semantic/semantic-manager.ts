@@ -1,18 +1,18 @@
-import type { AstNode, LangiumDocument } from 'langium'
+import type { AstNode, LangiumDocument, NameProvider } from 'langium'
+import { getDocument } from 'langium'
 import { URI } from 'vscode-uri'
-import type { LangiumModelServerAddedServices } from '../langium-model-server-module'
+import type { LangiumModelServerServices } from '../langium-model-server-module'
 import type { SemanticModelStorage } from './semantic-storage'
-import type { ModelAwareSemanticIndex, SemanticIndex } from './semantic-types'
+import type { ModelAwareSemanticIndex, NamedSemanticElement, SemanticIndex } from './semantic-types'
 
 export interface SemanticIndexManager<SemI extends SemanticIndex = SemanticIndex> {
     getLanguageDocumentUri(id: string): URI | undefined
     /**
-     * Searches for a Semantic element, which corresponds to specified {@link targetNode}. If found, updates its name and return `true`.
-     * Otherwise returns `false`
-     * @param targetNode An {@link AstNode}, which is getting renamed
-     * @param newName New name, that is going to be assigned
+     * Searches for a Semantic element, which corresponds to specified {@link targetNode} by its name.
+     * @returns a view over the semantic element, if found.
+     * @param astNode An {@link AstNode}, which name is used to find a corresponding semantic element
      */
-    updateNodeName(targetNode: AstNode, newName: string): boolean
+    findNamedSemanticElement(astNode: AstNode): NamedSemanticElement | undefined
     getSemanticModelIndex(langiumDocument: LangiumDocument): SemI | undefined
     saveSemanticModel(languageDocumentUri: string): void
     loadSemanticModel(languageDocumentUri: string): void
@@ -22,11 +22,13 @@ export interface SemanticIndexManager<SemI extends SemanticIndex = SemanticIndex
 export abstract class AbstractSemanticIndexManager<SemI extends SemanticIndex> implements SemanticIndexManager<SemI> {
 
     protected semanticModelStorage: SemanticModelStorage
+    protected nameProvider: NameProvider
     private indexRegistryByLanguageDocumentUri: Map<string, ModelAwareSemanticIndex<SemI>>
     private languageDocumentUriById: Map<string, URI>
 
-    public constructor(services: LangiumModelServerAddedServices) {
+    public constructor(services: LangiumModelServerServices) {
         this.semanticModelStorage = services.semantic.SemanticModelStorage
+        this.nameProvider = services.references.NameProvider
         this.indexRegistryByLanguageDocumentUri = new Map()
         this.languageDocumentUriById = new Map()
     }
@@ -35,7 +37,13 @@ export abstract class AbstractSemanticIndexManager<SemI extends SemanticIndex> i
         return this.languageDocumentUriById.get(id)
     }
 
-    public abstract updateNodeName(targetNode: AstNode, newName: string): boolean
+    public findNamedSemanticElement(astNode: AstNode): NamedSemanticElement | undefined {
+        const name = this.nameProvider.getName(astNode)
+        if (!name) {
+            return undefined
+        }
+        return this.getSemanticModelIndex(getDocument(astNode)).findElementByName(name)
+    }
 
     public getSemanticModelIndex(languageDocument: LangiumDocument): SemI {
         return this.getOrLoadSemanticModel(languageDocument.textDocument.uri)

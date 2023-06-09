@@ -1,10 +1,10 @@
 import { MultiMap } from 'langium'
-import type { SemanticModel, SemanticTask, SemanticTransition } from './task-list-semantic-model'
+import type { NamedSemanticElement, SemanticIndex } from '../../../langium-model-server/semantic/semantic-types'
 import { ValueBasedMap } from '../../../langium-model-server/utils/collections'
-import type * as ast from '../../generated/ast'
+import type { SemanticModel, SemanticTask, SemanticTransition } from './task-list-semantic-model'
 
 //TODO: The only reason why I keep _*byId index maps is because I am not certain of the _model format. Probably needs to be removed
-export abstract class SemanticModelIndex {
+export abstract class SemanticModelIndex implements SemanticIndex {
     protected readonly _model: SemanticModel
     private readonly _tasksById: Map<string, SemanticTask> = new Map()
     private readonly _tasksByName: Map<string, SemanticTask> = new Map()
@@ -51,17 +51,21 @@ export abstract class SemanticModelIndex {
         return this._tasksByName.get(name)?.id
     }
 
-    /**
-     * Renames corresponding {@link SemanticTask} and returns its id, if found.
-     */
-    public renameTask(task: ast.Task, newName: string): string | undefined {
-        const oldName = task.name
-        const semanticTask = this._tasksByName.get(oldName)
+    public findElementByName(name: string): NamedSemanticElement | undefined {
+        const semanticTask = this._tasksByName.get(name)
         if (semanticTask) {
-            this._tasksByName.delete(oldName)
-            semanticTask.name = newName
-            this._tasksByName.set(newName, semanticTask)
-            return semanticTask.id
+            const index = this
+            return {
+                id: semanticTask.id,
+                get name(): string {
+                    return semanticTask.name
+                },
+                set name(newName: string) {
+                    if (index._tasksByName.delete(semanticTask.name))
+                        index._tasksByName.set(newName, semanticTask)
+                    semanticTask.name = newName
+                }
+            }
         }
         return undefined
     }
