@@ -1,0 +1,10 @@
+{
+  "id": "bfb8ab01-9b3a-40e1-9685-494e1757df63",
+  "tasks": {
+    "d1dfce0e-661a-4812-b633-0fab50133daf": {
+      "id": "d1dfce0e-661a-4812-b633-0fab50133daf",
+      "name": "t1"
+    }
+  },
+  "transitions": {}
+}

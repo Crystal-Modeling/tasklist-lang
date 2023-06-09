@@ -1,6 +1,7 @@
 import { MultiMap } from 'langium'
 import type { SemanticModel, SemanticTask, SemanticTransition } from './task-list-semantic-model'
 import { ValueBasedMap } from '../../../langium-model-server/utils/collections'
+import type * as ast from '../../generated/ast'
 
 //TODO: The only reason why I keep _*byId index maps is because I am not certain of the _model format. Probably needs to be removed
 export abstract class SemanticModelIndex {
@@ -48,6 +49,21 @@ export abstract class SemanticModelIndex {
 
     public getTaskIdByName(name: string): string | undefined {
         return this._tasksByName.get(name)?.id
+    }
+
+    /**
+     * Renames corresponding {@link SemanticTask} and returns its id, if found.
+     */
+    public renameTask(task: ast.Task, newName: string): string | undefined {
+        const oldName = task.name
+        const semanticTask = this._tasksByName.get(oldName)
+        if (semanticTask) {
+            this._tasksByName.delete(oldName)
+            semanticTask.name = newName
+            this._tasksByName.set(newName, semanticTask)
+            return semanticTask.id
+        }
+        return undefined
     }
 
     public addTask(task: SemanticTask) {

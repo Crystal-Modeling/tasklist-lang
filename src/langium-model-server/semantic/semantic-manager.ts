@@ -1,11 +1,18 @@
-import type { LangiumDocument } from 'langium'
+import type { AstNode, LangiumDocument } from 'langium'
 import { URI } from 'vscode-uri'
 import type { LangiumModelServerAddedServices } from '../langium-model-server-module'
 import type { SemanticModelStorage } from './semantic-storage'
 import type { ModelAwareSemanticIndex, SemanticIndex } from './semantic-types'
 
-export interface SemanticIndexManager<SemI extends SemanticIndex> {
+export interface SemanticIndexManager<SemI extends SemanticIndex = SemanticIndex> {
     getLanguageDocumentUri(id: string): URI | undefined
+    /**
+     * Searches for a Semantic element, which corresponds to specified {@link targetNode}. If found, updates its name and return `true`.
+     * Otherwise returns `false`
+     * @param targetNode An {@link AstNode}, which is getting renamed
+     * @param newName New name, that is going to be assigned
+     */
+    updateNodeName(targetNode: AstNode, newName: string): boolean
     getSemanticModelIndex(langiumDocument: LangiumDocument): SemI | undefined
     saveSemanticModel(languageDocumentUri: string): void
     loadSemanticModel(languageDocumentUri: string): void
@@ -27,6 +34,8 @@ export abstract class AbstractSemanticIndexManager<SemI extends SemanticIndex> i
     public getLanguageDocumentUri(id: string): URI | undefined {
         return this.languageDocumentUriById.get(id)
     }
+
+    public abstract updateNodeName(targetNode: AstNode, newName: string): boolean
 
     public getSemanticModelIndex(languageDocument: LangiumDocument): SemI {
         return this.getOrLoadSemanticModel(languageDocument.textDocument.uri)

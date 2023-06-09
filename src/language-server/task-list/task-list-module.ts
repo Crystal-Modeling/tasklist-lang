@@ -10,6 +10,7 @@ import type { SemanticModelIndex } from './semantic/task-list-semantic-model-ind
 import { TaskListSemanticModelReconciler } from './semantic/task-list-semantic-reconciler'
 import { TaskListSemanticModelStorage } from './semantic/task-list-semantic-storage'
 import { TaskListSourceModelService } from './source/task-list-source-model-service'
+import { LmsRenameProvider } from '../../langium-model-server/lsp/lms-rename-provider'
 
 /**
  * Declaration of custom services - add your own service classes here.
@@ -50,5 +51,8 @@ export const TaskListModule: Module<TaskListServices, PartialLangiumServices & T
     },
     source: {
         SourceModelService: (services) => new TaskListSourceModelService(services)
+    },
+    lsp: {
+        RenameProvider: (services) => new LmsRenameProvider(services)
     }
 }
