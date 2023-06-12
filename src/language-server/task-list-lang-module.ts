@@ -3,14 +3,17 @@ import type {
     LangiumSharedServices
 } from 'langium'
 import {
-    createDefaultModule, createDefaultSharedModule, DocumentState, inject,
+    DocumentState,
+    createDefaultModule, createDefaultSharedModule,
+    inject,
     interruptAndCheck
 } from 'langium'
 import { TaskListGeneratedModule, TaskListLangGeneratedSharedModule } from './generated/module'
+import { TaskListSemanticDomain } from './task-list/semantic/task-list-semantic-domain'
 import type { TaskListServices } from './task-list/task-list-module'
 import { TaskListModule } from './task-list/task-list-module'
 import { registerValidationChecks } from './task-list/validation/task-list-validation'
-import { TaskListSemanticDomain, isTaskListDocument } from './task-list/workspace/documents'
+import { isTaskListDocument } from './task-list/workspace/documents'
 
 /**
  * Create the full set of services required by Langium.
