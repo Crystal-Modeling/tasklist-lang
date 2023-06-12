@@ -1,5 +1,5 @@
 import type * as ast from '../../../generated/ast'
-import type * as semantic from '../../semantic/task-list-semantic-model'
+import type * as id from '../../../../langium-model-server/semantic/semantic-model'
 
 export interface Task {
     id: string
@@ -9,11 +9,11 @@ export interface Task {
 
 export namespace Task {
 
-    export function create(semanticTask: semantic.SemanticTask, task?: ast.Task): Task {
+    export function create(task: id.Identified<ast.Task>): Task {
         return {
-            id: semanticTask.id,
-            name: semanticTask.name,
-            content: task?.content ?? ''
+            id: task.id,
+            name: task.name,
+            content: task.content
         }
     }
 }

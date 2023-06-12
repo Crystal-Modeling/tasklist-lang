@@ -14,26 +14,14 @@ export class TaskListSourceModelService extends AbstractSourceModelService<lms.M
         if (isTaskListDocument(langiumDocument)) {
             //HACK: Relying on the fact that semanticDomain is initialized during previous phases
             const semanticDomain = langiumDocument.semanticDomain!
-            const model = langiumDocument.parseResult.value
-
-            const existingUnusedSemanticTasks = semanticModelIndex.tasksByName
-            for (const task of semanticDomain.getValidTasks(model)) {
-                const semanticTask = existingUnusedSemanticTasks.get(task.name)
-                if (semanticTask) {
-                    existingUnusedSemanticTasks.delete(task.name)
-                    sourceModel.tasks.push(lms.Task.create(semanticTask, task))
-                }//COMMENT: `else` should never actually happen
-            }
-            //COMMENT: Actually, if AST and Semantic models are reconciled, `existingUnusedSemanticTasks.values()` will be empty
-            for (const unusedSemanticTask of existingUnusedSemanticTasks.values()) {
-                sourceModel.tasks.push(lms.Task.create(unusedSemanticTask))
+            for (const task of semanticDomain.getIdentifiedTasks()) {
+                sourceModel.tasks.push(lms.Task.create(task))
             }
 
-            for (const semanticTransition of semanticModelIndex.transitions) {
-                sourceModel.transitions.push(lms.Transition.create(semanticTransition))
+            for (const [semanticId, transition] of semanticDomain.getIdentifiedTransitions()) {
+                sourceModel.transitions.push(lms.Transition.create(semanticId, transition))
             }
         }
-        //COMMENT: This should never actually happen
         return sourceModel
     }
 }

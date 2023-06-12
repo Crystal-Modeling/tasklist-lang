@@ -52,7 +52,7 @@ export class TaskListSemanticModelReconciler {
         //NOTE: ITERATION 2: mapping Transitions
         const existingUnmappedTransitions = semanticModelIndex.transitionsByDerivativeIdentity
         // Preparing data for the iteration (source task id + target task id => Transition).
-        stream(semanticDomain.getIdentifiedTasks(model))
+        stream(semanticDomain.getIdentifiedTasks())
             .flatMap((identifiedTask): TransitionDerivativeIdentity[] => semanticDomain.getValidTargetTasks(identifiedTask)
                 .map(targetTask => [
                     identifiedTask.id,

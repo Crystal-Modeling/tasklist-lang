@@ -10,6 +10,7 @@ export interface TaskListSemanticDomain {
     clear(): void
     setInvalidTasksForModel(model: ast.Model, invalidTasks: Set<ast.Task>): void
     setInvalidReferencesForTask(task: ast.Task, invalidReferences: Set<number>): void
+    // NOTE: This is considered as part of manipulation with AST Nodes
     getValidTasks(model: ast.Model): Array<id.Valid<ast.Task>>
     getValidTargetTasks(sourceTask: id.Valid<ast.Task>): Array<id.Valid<ast.Task>>
     /**
@@ -17,6 +18,7 @@ export interface TaskListSemanticDomain {
      * @param task Valid AST Task node
      * @param semanticId Id, which {@link task} is identified with
      */
+    // NOTE: This is considered as part of manipulation with Source Model preview
     identifyTask(task: id.Valid<ast.Task>, semanticId: string): src.Changes<source.Task> | undefined
     /**
      * Maps Transition derivative identity (there is no AST node corresponded to Transition model,
