@@ -1,9 +1,9 @@
-import type { Valid } from '../../../langium-model-server/semantic/semantic-types'
+import { stream } from 'langium'
 import type * as ast from '../../generated/ast'
 import type { TaskListServices } from '../task-list-module'
 import type { TaskListDocument } from '../workspace/documents'
 import type { TaskListSemanticIndexManager } from './task-list-semantic-manager'
-import type { SemanticTask } from './task-list-semantic-model'
+import type { SemanticTask, TransitionDerivativeIdentity } from './task-list-semantic-model'
 import { SemanticModel } from './task-list-semantic-model'
 
 //TODO: When elaborating LMS into a library, make sure reconciler is defined and linked at that level
@@ -34,57 +34,41 @@ export class TaskListSemanticModelReconciler {
         const semanticDomain = document.semanticDomain!
 
         // NOTE: ITERATION 1: mapping Tasks
-        const newTasks: Array<Valid<ast.Task>> = []
         const existingUnmappedTasks: Map<string, SemanticTask> = semanticModelIndex.tasksByName
-        // Collecting data for the next iteration (source task id + target task => Transition). Notice, that I replaced
-        // source task with source task id (using already mapped data to optimize further mapping)
-        const validTargetTaskByMappedSourceTaskId: Array<[string, Valid<ast.Task>]> = []
         // Actual mapping: marking semantic elements for deletion, and AST nodes to be added
         semanticDomain.getValidTasks(model).forEach(task => {
-            const semanticTask = existingUnmappedTasks.get(task.name)
+            let semanticTask = existingUnmappedTasks.get(task.name)
             if (semanticTask) {
                 existingUnmappedTasks.delete(task.name)
-                semanticDomain.getValidTargetTasks(task)
-                    .forEach(targetTask => validTargetTaskByMappedSourceTaskId.push([semanticTask.id, targetTask]))
             } else {
-                newTasks.push(task)
+                semanticTask = SemanticModel.newTask(task)
+                semanticModelIndex.addTask(semanticTask)
             }
+            semanticDomain.identifyTask(task, semanticTask.id)
         })
-        // Deletion can happen immediately after the mapping within the iteration (always?)
+        // Deletion of not mapped tasks
         semanticModelIndex.deleteTasksWithRelatedTransitions(existingUnmappedTasks.values())
 
         //NOTE: ITERATION 2: mapping Transitions
-        const newTransitionsForMappedSourceTaskId: Array<[string, Valid<ast.Task>]> = []
-        const existingUnmappedTransitions = semanticModelIndex.transitionsBySourceTaskIdAndTargetTaskId
-        // Actual mapping
-        validTargetTaskByMappedSourceTaskId.forEach(([mappedSourceTaskId, targetTask]) => {
-            const targetTaskId = this.semanticIndexManager.getTaskId(targetTask)
-            if (!targetTaskId || !existingUnmappedTransitions.delete([mappedSourceTaskId, targetTaskId])) {
-                newTransitionsForMappedSourceTaskId.push([mappedSourceTaskId, targetTask])
-            }
-        })
+        const existingUnmappedTransitions = semanticModelIndex.transitionsByDerivativeIdentity
+        // Preparing data for the iteration (source task id + target task id => Transition).
+        stream(semanticDomain.getIdentifiedTasks(model))
+            .flatMap((identifiedTask): TransitionDerivativeIdentity[] => semanticDomain.getValidTargetTasks(identifiedTask)
+                .map(targetTask => [
+                    identifiedTask.id,
+                    this.semanticIndexManager.getTaskId(targetTask)
+                ])
+            ) // Actual mapping
+            .forEach(transitionDerivativeIdentity => {
+                let semanticTransition = existingUnmappedTransitions.get(transitionDerivativeIdentity)
+                if (semanticTransition) {
+                    existingUnmappedTransitions.delete(transitionDerivativeIdentity)
+                } else {
+                    semanticTransition = SemanticModel.newTransition(transitionDerivativeIdentity)
+                    semanticModelIndex.addTransition(semanticTransition)
+                }
+                semanticDomain.identifyTransition(transitionDerivativeIdentity, semanticTransition.id)
+            })
         semanticModelIndex.deleteTransitions(existingUnmappedTransitions.values())
-
-        //NOTE: POST-ITERATION: now unmapped source elements can be added to semantic model
-        // Add new Tasks AND prepare new Transitions to be added for these new Tasks
-        for (const task of newTasks) {
-            const semanticTask = SemanticModel.newTask(task)
-            semanticModelIndex.addTask(semanticTask)
-            semanticDomain.getValidTargetTasks(task)
-                .forEach(targetTask => newTransitionsForMappedSourceTaskId.push([semanticTask.id, targetTask]))
-        }
-
-        // Add new Transitions for existing Tasks
-        for (const [sourceTaskId, targetTask] of newTransitionsForMappedSourceTaskId) {
-            const targetTaskId = this.semanticIndexManager.getTaskId(targetTask)
-            /*INCOMPLETE: If other semanticModel files are inconsistent (i.e., target task is missing),
-            then this inconsistency propagates, because transition to this task will neither be created.
-            However, I am not sure this inconsistency can exist: only if 2 files are modified simultaneously, I suppose,
-            because each time LS loads, it performs semantic reconciliation phase for all the documents
-            */
-            if (targetTaskId) {
-                semanticModelIndex.addTransition(SemanticModel.newTransition(sourceTaskId, targetTaskId))
-            }
-        }
     }
 }

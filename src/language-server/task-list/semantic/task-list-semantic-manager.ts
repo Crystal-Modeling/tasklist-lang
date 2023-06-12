@@ -4,6 +4,7 @@ import type { ModelAwareSemanticIndex } from '../../../langium-model-server/sema
 import type { Task } from '../../generated/ast'
 import { SemanticModel } from './task-list-semantic-model'
 import { SemanticModelIndex } from './task-list-semantic-model-index'
+import type { Valid } from '../../../langium-model-server/semantic/semantic-model'
 
 /**
  * Stores {@link SemanticModel} per URI of Langium-managed TextDocument.
@@ -13,8 +14,15 @@ import { SemanticModelIndex } from './task-list-semantic-model-index'
  */
 export class TaskListSemanticIndexManager extends AbstractSemanticIndexManager<SemanticModelIndex> {
 
-    public getTaskId(task: Task): string | undefined {
-        return this.getSemanticModelIndex(getDocument(task)).getTaskIdByName(task.name)
+    public getTaskId(task: Valid<Task>): string {
+        const taskId = this.getSemanticModelIndex(getDocument(task)).getTaskIdByName(task.name)
+        if (!taskId) {
+            //FIXME: What should you really do if it can't find id for Valid target Task?
+            // Possible cases: only if 2 files are modified simultaneously, I suppose,
+            // because each time LS loads, it performs semantic reconciliation phase for all the documents
+            throw new Error('Can\'t find Valid target Task')
+        }
+        return taskId
     }
 
     protected override loadSemanticModelToIndex(languageDocumentUri: string): ModelAwareSemanticIndex<SemanticModelIndex> {

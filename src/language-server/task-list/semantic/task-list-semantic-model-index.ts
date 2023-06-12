@@ -2,7 +2,7 @@ import { MultiMap } from 'langium'
 import type { NamedSemanticElement } from '../../../langium-model-server/semantic/semantic-model'
 import type { SemanticIndex } from '../../../langium-model-server/semantic/semantic-model-index'
 import { ValueBasedMap } from '../../../langium-model-server/utils/collections'
-import type { SemanticModel, SemanticTask, SemanticTransition } from './task-list-semantic-model'
+import type { SemanticModel, SemanticTask, SemanticTransition, TransitionDerivativeIdentity } from './task-list-semantic-model'
 
 //TODO: The only reason why I keep _*byId index maps is because I am not certain of the _model format. Probably needs to be removed
 export abstract class SemanticModelIndex implements SemanticIndex {
@@ -11,7 +11,7 @@ export abstract class SemanticModelIndex implements SemanticIndex {
     private readonly _tasksByName: Map<string, SemanticTask> = new Map()
     private readonly _transitionsById: Map<string, SemanticTransition> = new Map()
     private readonly _transitionsByTaskId: MultiMap<string, SemanticTransition> = new MultiMap()
-    private readonly _transitionsBySourceTaskIdAndTargetTaskId: ValueBasedMap<[string, string], SemanticTransition>
+    private readonly _transitionsByDerivativeIdentity: ValueBasedMap<TransitionDerivativeIdentity, SemanticTransition>
         = new ValueBasedMap()
 
     public constructor(semanticModel: SemanticModel) {
@@ -40,8 +40,8 @@ export abstract class SemanticModelIndex implements SemanticIndex {
         return new Map(this._tasksByName)
     }
 
-    public get transitionsBySourceTaskIdAndTargetTaskId(): ValueBasedMap<[string, string], Readonly<SemanticTransition>> {
-        return this._transitionsBySourceTaskIdAndTargetTaskId.copy()
+    public get transitionsByDerivativeIdentity(): ValueBasedMap<TransitionDerivativeIdentity, Readonly<SemanticTransition>> {
+        return this._transitionsByDerivativeIdentity.copy()
     }
 
     protected get model(): SemanticModel {
@@ -119,7 +119,7 @@ export abstract class SemanticModelIndex implements SemanticIndex {
         this._transitionsById.set(transition.id, transition)
         this._transitionsByTaskId.add(transition.sourceTaskId, transition)
         this._transitionsByTaskId.add(transition.targetTaskId, transition)
-        this._transitionsBySourceTaskIdAndTargetTaskId.set([transition.sourceTaskId, transition.targetTaskId], transition)
+        this._transitionsByDerivativeIdentity.set([transition.sourceTaskId, transition.targetTaskId], transition)
     }
 
     private deleteTransition(transition: SemanticTransition) {
@@ -131,6 +131,6 @@ export abstract class SemanticModelIndex implements SemanticIndex {
         this._transitionsById.delete(transition.id)
         this._transitionsByTaskId.delete(transition.sourceTaskId, transition)
         this._transitionsByTaskId.delete(transition.targetTaskId, transition)
-        this._transitionsBySourceTaskIdAndTargetTaskId.delete([transition.sourceTaskId, transition.targetTaskId])
+        this._transitionsByDerivativeIdentity.delete([transition.sourceTaskId, transition.targetTaskId])
     }
 }
