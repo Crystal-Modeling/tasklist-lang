@@ -16,7 +16,7 @@ export interface SourceModelService<SM> {
     getSemanticId(sourceUri: string): string | undefined
 }
 
-export abstract class DefaultSourceModelService<SM, SemI extends SemanticIndex> implements SourceModelService<SM> {
+export abstract class AbstractSourceModelService<SM, SemI extends SemanticIndex> implements SourceModelService<SM> {
 
     protected semanticIndexManager: SemanticIndexManager<SemI>
     protected langiumDocuments: LangiumDocuments
