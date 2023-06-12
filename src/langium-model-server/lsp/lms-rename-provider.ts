@@ -2,16 +2,16 @@ import type { AstNode, LangiumDocument, ReferenceDescription } from 'langium'
 import { DefaultRenameProvider, findDeclarationNodeAtOffset } from 'langium'
 import type { RenameParams, WorkspaceEdit } from 'vscode-languageserver'
 import { TextEdit } from 'vscode-languageserver'
-import type { SemanticIndexManager } from '../semantic/semantic-manager'
+import type { IdentityManager } from '../semantic/identity-manager'
 import type { LangiumModelServerServices } from '../langium-model-server-module'
 
 export class LmsRenameProvider extends DefaultRenameProvider {
 
-    protected semanticIndexManager: SemanticIndexManager
+    protected identityManager: IdentityManager
 
     constructor(services: LangiumModelServerServices) {
         super(services)
-        this.semanticIndexManager = services.semantic.SemanticIndexManager
+        this.identityManager = services.semantic.IdentityManager
     }
 
     override async rename(document: LangiumDocument, params: RenameParams): Promise<WorkspaceEdit | undefined> {
@@ -28,7 +28,7 @@ export class LmsRenameProvider extends DefaultRenameProvider {
         const references = this.references.findReferences(targetNode, options)
         const newNameDefinder = this.getNewNameDefiner(targetNode, params)
 
-        const semanticElement = this.semanticIndexManager.findNamedSemanticElement(targetNode)
+        const semanticElement = this.identityManager.findNamedIdentity(targetNode)
         if (semanticElement) {
             semanticElement.name = newNameDefinder.targetName
         }

@@ -1,14 +1,14 @@
 import type { LangiumServices } from 'langium'
-import type { SemanticIndexManager } from './semantic/semantic-manager'
-import type { SemanticModelStorage } from './semantic/semantic-storage'
-import type { SemanticIndex } from './semantic/semantic-model-index'
+import type { IdentityManager } from './semantic/identity-manager'
+import type { IdentityStorage } from './semantic/identity-storage'
+import type { IdentityIndex } from './semantic/identity-index'
 import type { SourceModelService } from './source/source-model-service'
 import type { LmsRenameProvider } from './lsp/lms-rename-provider'
 
-export type LangiumModelServerAddedServices<SM = object, SemI extends SemanticIndex = SemanticIndex> = {
+export type LangiumModelServerAddedServices<SM = object, II extends IdentityIndex = IdentityIndex> = {
     semantic: {
-        SemanticModelStorage: SemanticModelStorage,
-        SemanticIndexManager: SemanticIndexManager<SemI>,
+        IdentityStorage: IdentityStorage,
+        IdentityManager: IdentityManager<II>,
     },
     source: {
         SourceModelService: SourceModelService<SM>,
@@ -18,5 +18,5 @@ export type LangiumModelServerAddedServices<SM = object, SemI extends SemanticIn
     }
 }
 
-export type LangiumModelServerServices<SM = object, SemI extends SemanticIndex = SemanticIndex>
-    = LangiumServices & LangiumModelServerAddedServices<SM, SemI>
+export type LangiumModelServerServices<SM = object, II extends IdentityIndex = IdentityIndex>
+    = LangiumServices & LangiumModelServerAddedServices<SM, II>

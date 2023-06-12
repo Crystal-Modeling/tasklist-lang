@@ -1,4 +1,4 @@
-import type { SemanticIdentity } from '../../semantic/semantic-model'
+import type { SemanticIdentity } from '../../semantic/identity'
 
 /**
  * Describes changes made to SourceModel element of type T. Contains new values for changed primitive attributes

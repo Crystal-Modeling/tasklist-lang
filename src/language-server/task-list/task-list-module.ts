@@ -5,17 +5,17 @@ import type {
 import type { LangiumModelServerAddedServices } from '../../langium-model-server/langium-model-server-module'
 import { TaskListValidator } from '../task-list/validation/task-list-validation'
 import type { Model } from './source/model'
-import { TaskListSemanticIndexManager } from './semantic/task-list-semantic-manager'
-import type { SemanticModelIndex } from './semantic/task-list-semantic-model-index'
-import { TaskListSemanticModelReconciler } from './semantic/task-list-semantic-reconciler'
-import { TaskListSemanticModelStorage } from './semantic/task-list-semantic-storage'
+import { TaskListIdentityManager } from './semantic/task-list-identity-manager'
+import type { TaskListIdentityIndex } from './semantic/task-list-identity-index'
+import { TaskListIdentityReconciler } from './semantic/task-list-identity-reconciler'
+import { TaskListIdentityStorage } from './semantic/task-list-identity-storage'
 import { TaskListSourceModelService } from './source/task-list-source-model-service'
 import { LmsRenameProvider } from '../../langium-model-server/lsp/lms-rename-provider'
 
 /**
  * Declaration of custom services - add your own service classes here.
  */
-export type TaskListAddedServices = LangiumModelServerAddedServices<Model, SemanticModelIndex> & {
+export type TaskListAddedServices = LangiumModelServerAddedServices<Model, TaskListIdentityIndex> & {
     validation: {
         TaskListValidator: TaskListValidator
     },
@@ -23,9 +23,9 @@ export type TaskListAddedServices = LangiumModelServerAddedServices<Model, Seman
      * These services are required to leverage Langium Model Server (LMS) 'Langium extension' capabilities
      */
     semantic: {
-        // Redefining the type of SemanticIndexManager to be used in TaskListSemanticModelReconciler
-        SemanticIndexManager: TaskListSemanticIndexManager
-        TaskListSemanticModelReconciler: TaskListSemanticModelReconciler
+        // Redefining the type of IdentityManager to be used in TaskListIdentityReconciler
+        IdentityManager: TaskListIdentityManager
+        TaskListIdentityReconciler: TaskListIdentityReconciler
     }
 }
 
@@ -45,9 +45,9 @@ export const TaskListModule: Module<TaskListServices, PartialLangiumServices & T
         TaskListValidator: () => new TaskListValidator()
     },
     semantic: {
-        SemanticModelStorage: (services) => new TaskListSemanticModelStorage(services),
-        SemanticIndexManager: (services) => new TaskListSemanticIndexManager(services),
-        TaskListSemanticModelReconciler: (services) => new TaskListSemanticModelReconciler(services),
+        IdentityStorage: (services) => new TaskListIdentityStorage(services),
+        IdentityManager: (services) => new TaskListIdentityManager(services),
+        TaskListIdentityReconciler: (services) => new TaskListIdentityReconciler(services),
     },
     source: {
         SourceModelService: (services) => new TaskListSourceModelService(services)

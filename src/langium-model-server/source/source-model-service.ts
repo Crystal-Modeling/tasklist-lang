@@ -2,8 +2,8 @@ import type { LangiumDocument, LangiumDocuments, LanguageMetaData } from 'langiu
 import { DocumentState } from 'langium'
 import { URI } from 'vscode-uri'
 import type { LangiumModelServerServices } from '../langium-model-server-module'
-import type { SemanticIndexManager } from '../semantic/semantic-manager'
-import type { SemanticIndex } from '../semantic/semantic-model-index'
+import type { IdentityManager } from '../semantic/identity-manager'
+import type { IdentityIndex } from '../semantic/identity-index'
 import { UriConverter } from '../utils/uri-converter'
 
 export interface SourceModelService<SM> {
@@ -16,14 +16,14 @@ export interface SourceModelService<SM> {
     getSemanticId(sourceUri: string): string | undefined
 }
 
-export abstract class AbstractSourceModelService<SM, SemI extends SemanticIndex> implements SourceModelService<SM> {
+export abstract class AbstractSourceModelService<SM, SemI extends IdentityIndex> implements SourceModelService<SM> {
 
-    protected semanticIndexManager: SemanticIndexManager<SemI>
+    protected semanticIndexManager: IdentityManager<SemI>
     protected langiumDocuments: LangiumDocuments
     protected languageMetadata: LanguageMetaData
 
     constructor(services: LangiumModelServerServices<SM, SemI>) {
-        this.semanticIndexManager = services.semantic.SemanticIndexManager
+        this.semanticIndexManager = services.semantic.IdentityManager
         this.langiumDocuments = services.shared.workspace.LangiumDocuments
     }
 
@@ -35,7 +35,7 @@ export abstract class AbstractSourceModelService<SM, SemI extends SemanticIndex>
             return undefined
         }
         const langiumDocument = this.langiumDocuments.getOrCreateDocument(documentUri)
-        return this.semanticIndexManager.getSemanticModelIndex(langiumDocument)?.id
+        return this.semanticIndexManager.getIdentityIndex(langiumDocument)?.id
     }
 
     public getById(id: string): SM | undefined {
@@ -52,7 +52,7 @@ export abstract class AbstractSourceModelService<SM, SemI extends SemanticIndex>
         if (langiumDocument.state !== DocumentState.Validated) {
             return undefined
         }
-        const semanticModelIndex = this.semanticIndexManager.getSemanticModelIndex(langiumDocument)
+        const semanticModelIndex = this.semanticIndexManager.getIdentityIndex(langiumDocument)
         if (!semanticModelIndex) {
             return undefined
         }

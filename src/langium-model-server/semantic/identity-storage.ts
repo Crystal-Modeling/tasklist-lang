@@ -1,7 +1,7 @@
 
 import * as fs from 'fs-extra'
 import { fileURLToPath } from 'url'
-import { SemanticModelError } from './semantic-model-error'
+import { IdentityError } from './identity-error'
 import type { TypeGuard } from '../utils/types'
 import path from 'path'
 import { URI } from 'vscode-uri'
@@ -9,16 +9,16 @@ import { UriConverter } from '../utils/uri-converter'
 import type { LanguageMetaData } from 'langium'
 import type { LangiumModelServerServices } from '../langium-model-server-module'
 
-export interface SemanticModelStorage {
-    saveSemanticModelToFile(languageDocumentUri: string, model: unknown): void
-    loadSemanticModelFromFile<T>(languageDocumentUri: string, guard: TypeGuard<T>): T
-    deleteSemanticModelFile(languageDocumentUri: string): void
+export interface IdentityStorage {
+    saveIdentityToFile(languageDocumentUri: string, identity: unknown): void
+    loadIdentityFromFile<T>(languageDocumentUri: string, guard: TypeGuard<T>): T
+    deleteIdentityFile(languageDocumentUri: string): void
 }
 
 /**
  * Copied and adopted from @eclipse-glsp/server-node/src/features/model/abstract-json-model-storage.ts
  */
-export abstract class AbstractSemanticModelStorage implements SemanticModelStorage {
+export abstract class AbstractIdentityStorage implements IdentityStorage {
 
     private languageMetaData: LanguageMetaData
 
@@ -26,29 +26,29 @@ export abstract class AbstractSemanticModelStorage implements SemanticModelStora
         this.languageMetaData = services.LanguageMetaData
     }
 
-    public saveSemanticModelToFile(languageDocumentUri: string, semanticModel: unknown): void {
+    public saveIdentityToFile(languageDocumentUri: string, identity: unknown): void {
         console.debug('Saving semantic model...')
-        const uri = this.convertLangiumDocumentUriIntoSourceModelUri(URI.parse(languageDocumentUri)).toString()
-        this.writeFile(uri, semanticModel)
+        const uri = this.convertLangiumDocumentUriIntoIdentityUri(URI.parse(languageDocumentUri)).toString()
+        this.writeFile(uri, identity)
     }
 
-    public loadSemanticModelFromFile<T>(languageDocumentUri: string, guard: TypeGuard<T>): T {
+    public loadIdentityFromFile<T>(languageDocumentUri: string, guard: TypeGuard<T>): T {
         console.debug('Loading semantic model for URI', languageDocumentUri)
-        const uri = this.convertLangiumDocumentUriIntoSourceModelUri(URI.parse(languageDocumentUri)).toString()
+        const uri = this.convertLangiumDocumentUriIntoIdentityUri(URI.parse(languageDocumentUri)).toString()
         return this.loadFromFile(uri, guard)
     }
 
-    public deleteSemanticModelFile(languageDocumentUri: string): void {
+    public deleteIdentityFile(languageDocumentUri: string): void {
         console.debug('Deleting semantic model for URI', languageDocumentUri)
-        const uri = this.convertLangiumDocumentUriIntoSourceModelUri(URI.parse(languageDocumentUri)).toString()
+        const uri = this.convertLangiumDocumentUriIntoIdentityUri(URI.parse(languageDocumentUri)).toString()
         this.deleteFile(uri)
     }
 
-    protected convertLangiumDocumentUriIntoSourceModelUri(langiumDocumentUri: URI): URI {
+    protected convertLangiumDocumentUriIntoIdentityUri(langiumDocumentUri: URI): URI {
         return UriConverter.of(langiumDocumentUri)
             .putFileInSubFolder('semantic')
             .replaceFileExtension(this.languageMetaData.fileExtensions, '.json')
-            .apply((_, path) => console.debug('Semantic path is', path))
+            .apply((_, path) => console.debug('Identity path is', path))
             .toUri()
     }
 
@@ -59,9 +59,9 @@ export abstract class AbstractSemanticModelStorage implements SemanticModelStora
             const path = this.uriToPath(sourceUri)
             let fileContent = this.readFile(path)
             if (!fileContent) {
-                fileContent = this.createModelForEmptyFile(path)
+                fileContent = this.createIdentityForEmptyFile(path)
                 if (!fileContent) {
-                    throw new SemanticModelError(`Could not load the semantic model. The file '${path}' is empty!.`)
+                    throw new IdentityError(`Could not load the identity. The file '${path}' is empty!.`)
                 }
             }
             if (guard && !guard(fileContent)) {
@@ -69,19 +69,19 @@ export abstract class AbstractSemanticModelStorage implements SemanticModelStora
             }
             return fileContent
         } catch (error) {
-            throw new SemanticModelError(`Could not load model from file: ${sourceUri}`, error)
+            throw new IdentityError(`Could not load model from file: ${sourceUri}`, error)
         }
     }
 
     /**
      * Can be overwritten to customize the behavior if the given file path points to an empty file.
      * The default implementation returns undefined, concrete subclasses can customize this behavior and
-     * return new source model object instead.
+     * return new semantic identity object instead.
      * @param path The path of the empty file.
-     * @returns The new model or `undefined`
+     * @returns The new semantic identity or `undefined`
      */
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    protected createModelForEmptyFile(path: string): unknown | undefined {
+    protected createIdentityForEmptyFile(path: string): unknown | undefined {
         return undefined
     }
 
@@ -96,7 +96,7 @@ export abstract class AbstractSemanticModelStorage implements SemanticModelStora
             }
             return this.parseContent(data)
         } catch (error) {
-            throw new SemanticModelError(`Could not read & parse file contents of '${path}' as json`, error)
+            throw new IdentityError(`Could not read & parse file contents of '${path}' as json`, error)
         }
     }
     protected writeFile(fileUri: string, model: unknown): void {

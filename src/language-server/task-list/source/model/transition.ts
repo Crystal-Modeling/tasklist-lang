@@ -1,4 +1,4 @@
-import type * as identity from '../../semantic/task-list-semantic-model'
+import type * as identity from '../../semantic/task-list-identity'
 
 export interface Transition {
     id: string

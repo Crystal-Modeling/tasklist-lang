@@ -1,5 +1,5 @@
 import type * as ast from '../../../generated/ast'
-import type * as id from '../../../../langium-model-server/semantic/semantic-model'
+import type * as id from '../../../../langium-model-server/semantic/identity'
 
 export interface Task {
     id: string

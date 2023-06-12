@@ -1,5 +1,5 @@
-import type * as id from '../../../langium-model-server/semantic/semantic-model'
-import type * as identity from '../semantic/task-list-semantic-model'
+import type * as id from '../../../langium-model-server/semantic/identity'
+import type * as identity from './task-list-identity'
 import * as src from '../../../langium-model-server/source/model'
 import type * as ast from '../../generated/ast'
 import type * as source from '../source/model'
@@ -93,14 +93,14 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         return validTargetTasks
     }
 
-    public identifyTask(task: id.Valid<ast.Task>, semanticId: string): src.Changes<source.Task, identity.SemanticTask> | undefined {
+    public identifyTask(task: id.Valid<ast.Task>, semanticId: string): src.Changes<source.Task, identity.Task> | undefined {
         const previousTask = this._previousIdentifiedTaskById.get(semanticId)
         const currentTask = this.assignId(task, semanticId)
         this._identifiedTasksById.set(semanticId, currentTask)
         if (!previousTask) {
             return undefined
         }
-        const changes: src.Changes<source.Task, identity.SemanticTask> = {}
+        const changes: src.Changes<source.Task, identity.Task> = {}
         if (previousTask.content !== currentTask.content) {
             changes.content = currentTask.content
         }

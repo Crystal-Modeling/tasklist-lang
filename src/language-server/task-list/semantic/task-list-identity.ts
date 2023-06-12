@@ -1,55 +1,55 @@
 import * as uuid from 'uuid'
-import type { Valid } from '../../../langium-model-server/semantic/semantic-model'
+import type { Valid } from '../../../langium-model-server/semantic/identity'
 import { isDefinedObject, isMappedObject } from '../../../langium-model-server/utils/types'
-import type { Task } from '../../generated/ast'
+import type * as ast from '../../generated/ast'
 
 export type TransitionDerivativeIdentity = [sourceTaskId: string, targetTaskId: string]
 
-export interface SemanticModel {
+export interface Model {
     id: string
-    tasks: { [ID: string]: SemanticTask }
-    transitions: { [ID: string]: SemanticTransition }
+    tasks: { [ID: string]: Task }
+    transitions: { [ID: string]: Transition }
 }
 
-export interface SemanticTask {
+export interface Task {
     id: string
-    name: string
+    name: string // Derivative identity of Task (since its Source Model is based on the Task AstNode)
 }
 
-export interface SemanticTransition {
+export interface Transition {
     id: string
     sourceTaskId: string
     targetTaskId: string
 }
 
-export namespace SemanticModel {
-    export function is(obj: unknown): obj is SemanticModel {
+export namespace Model {
+    export function is(obj: unknown): obj is Model {
         if (!isDefinedObject(obj)) {
             return false
         }
         if (typeof obj.id !== 'string'
-            || !isMappedObject(obj.tasks, 'string', isSemanticTask)
-            || !isMappedObject(obj.transitions, 'string', isSemanticTransition)) {
+            || !isMappedObject(obj.tasks, 'string', isTask)
+            || !isMappedObject(obj.transitions, 'string', isTransition)) {
             return false
         }
 
         return true
     }
 
-    function isSemanticTask(obj: unknown): obj is SemanticTask {
+    function isTask(obj: unknown): obj is Task {
         return isDefinedObject(obj)
             && typeof obj.id === 'string'
             && typeof obj.name === 'string'
     }
 
-    function isSemanticTransition(obj: unknown): obj is SemanticTransition {
+    function isTransition(obj: unknown): obj is Transition {
         return isDefinedObject(obj)
             && typeof obj.id === 'string'
             && typeof obj.sourceTaskId === 'string'
             && typeof obj.targetTaskId === 'string'
     }
 
-    export function newModel(): SemanticModel {
+    export function newModel(): Model {
         return {
             id: uuid.v4(),
             tasks: {},
@@ -57,14 +57,14 @@ export namespace SemanticModel {
         }
     }
 
-    export function newTask(task: Valid<Task>): SemanticTask {
+    export function newTask(task: Valid<ast.Task>): Task {
         return {
             id: uuid.v4(),
             name: task.name
         }
     }
 
-    export function newTransition(transition: TransitionDerivativeIdentity): SemanticTransition {
+    export function newTransition(transition: TransitionDerivativeIdentity): Transition {
         return {
             id: uuid.v4(),
             sourceTaskId: transition[0],

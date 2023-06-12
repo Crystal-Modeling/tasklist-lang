@@ -18,17 +18,17 @@ export function startLMSLanguageServer(services: LangiumSharedServices, lmsServi
 //TODO: When elaborating into a library, make sure LMS is compatible with multiple Langium languages in one server
 function addSemanticModelProcessingHandlers(connection: Connection, lmsServices: LangiumModelServerAddedServices) {
 
-    const semanticIndexManager = lmsServices.semantic.SemanticIndexManager
+    const semanticIndexManager = lmsServices.semantic.IdentityManager
 
     connection.onDidSaveTextDocument(params => {
-        semanticIndexManager.saveSemanticModel(params.textDocument.uri)
+        semanticIndexManager.saveSemanticIdentity(params.textDocument.uri)
     })
 
     connection.onDidChangeWatchedFiles(params => {
         for (const event of params.changes) {
             switch (event.type) {
                 case FileChangeType.Deleted:
-                    semanticIndexManager.deleteSemanticModel(event.uri)
+                    semanticIndexManager.deleteSemanticIdentity(event.uri)
                     break
                 default:
                     break

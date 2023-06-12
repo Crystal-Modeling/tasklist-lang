@@ -5,6 +5,6 @@ export type SemanticIdentity = {
 export type Valid<T> = T & { __semantic: 'valid' }
 export type Identified<T> = Valid<T> & SemanticIdentity
 
-export type NamedSemanticElement = Readonly<SemanticIdentity> & {
+export type NamedSemanticIdentity = Readonly<SemanticIdentity> & {
     name: string
 }
