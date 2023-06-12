@@ -1,7 +1,7 @@
 import type { LangiumServices } from 'langium'
 import type { SemanticIndexManager } from './semantic/semantic-manager'
 import type { SemanticModelStorage } from './semantic/semantic-storage'
-import type { SemanticIndex } from './semantic/semantic-types'
+import type { SemanticIndex } from './semantic/semantic-model-index'
 import type { SourceModelService } from './source/source-model-service'
 import type { LmsRenameProvider } from './lsp/lms-rename-provider'
 

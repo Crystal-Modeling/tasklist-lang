@@ -3,7 +3,7 @@ import { DocumentState } from 'langium'
 import { URI } from 'vscode-uri'
 import type { LangiumModelServerServices } from '../langium-model-server-module'
 import type { SemanticIndexManager } from '../semantic/semantic-manager'
-import type { SemanticIndex } from '../semantic/semantic-types'
+import type { SemanticIndex } from '../semantic/semantic-model-index'
 import { UriConverter } from '../utils/uri-converter'
 
 export interface SourceModelService<SM> {

@@ -1,6 +1,6 @@
 import { getDocument } from 'langium'
 import { AbstractSemanticIndexManager } from '../../../langium-model-server/semantic/semantic-manager'
-import type { ModelAwareSemanticIndex } from '../../../langium-model-server/semantic/semantic-types'
+import type { ModelAwareSemanticIndex } from '../../../langium-model-server/semantic/semantic-model-index'
 import type { Task } from '../../generated/ast'
 import { SemanticModel } from './task-list-semantic-model'
 import { SemanticModelIndex } from './task-list-semantic-model-index'

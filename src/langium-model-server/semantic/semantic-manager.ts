@@ -3,7 +3,8 @@ import { getDocument } from 'langium'
 import { URI } from 'vscode-uri'
 import type { LangiumModelServerServices } from '../langium-model-server-module'
 import type { SemanticModelStorage } from './semantic-storage'
-import type { ModelAwareSemanticIndex, NamedSemanticElement, SemanticIndex } from './semantic-types'
+import type { NamedSemanticElement } from './semantic-model'
+import type { ModelAwareSemanticIndex, SemanticIndex } from './semantic-model-index'
 
 export interface SemanticIndexManager<SemI extends SemanticIndex = SemanticIndex> {
     getLanguageDocumentUri(id: string): URI | undefined

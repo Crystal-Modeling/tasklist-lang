@@ -1,5 +1,6 @@
 import { MultiMap } from 'langium'
-import type { NamedSemanticElement, SemanticIndex } from '../../../langium-model-server/semantic/semantic-types'
+import type { NamedSemanticElement } from '../../../langium-model-server/semantic/semantic-model'
+import type { SemanticIndex } from '../../../langium-model-server/semantic/semantic-model-index'
 import { ValueBasedMap } from '../../../langium-model-server/utils/collections'
 import type { SemanticModel, SemanticTask, SemanticTransition } from './task-list-semantic-model'
 
