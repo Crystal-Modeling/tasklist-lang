@@ -19,7 +19,7 @@ export interface TaskListSemanticDomain {
      * @param semanticId Id, which {@link task} is identified with
      */
     // NOTE: This is considered as part of manipulation with Source Model preview
-    identifyTask(task: id.Valid<ast.Task>, semanticId: string): src.Changes<source.Task> | undefined
+    identifyTask(task: id.Valid<ast.Task>, semanticId: string): src.Update<source.Task> | undefined
     /**
      * Maps Transition derivative identity (there is no AST node corresponded to Transition model,
      * but only a cross reference)
@@ -93,21 +93,23 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         return validTargetTasks
     }
 
-    public identifyTask(task: id.Valid<ast.Task>, semanticId: string): src.Changes<source.Task, identity.Task> | undefined {
+    public identifyTask(task: id.Valid<ast.Task>, semanticId: string): src.Update<source.Task> | undefined {
         const previousTask = this._previousIdentifiedTaskById.get(semanticId)
         const currentTask = this.assignId(task, semanticId)
         this._identifiedTasksById.set(semanticId, currentTask)
         if (!previousTask) {
             return undefined
         }
-        const changes: src.Changes<source.Task, identity.Task> = {}
+        const update: src.Update<source.Task> = { id: semanticId }
+        // Not comparing the task.name, since it cannot be changed
+        // (it plays a role in task Identity, hence with its change it is a different task)
         if (previousTask.content !== currentTask.content) {
-            changes.content = currentTask.content
+            update.content = currentTask.content
         }
-        if (src.Changes.areMade(changes)) {
-            return changes
+        if (src.Update.isEmpty(update)) {
+            return undefined
         }
-        return undefined
+        return update
     }
 
     public identifyTransition(transition: identity.TransitionDerivativeIdentity, semanticId: string): void {
@@ -140,7 +142,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
     }
 
     private assignId(task: id.Valid<ast.Task>, semanticId: string): id.Identified<ast.Task> {
-        return Object.assign(task, {id: semanticId})
+        return Object.assign(task, { id: semanticId })
     }
 
 }

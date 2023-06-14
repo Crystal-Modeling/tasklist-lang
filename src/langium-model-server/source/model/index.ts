@@ -1,3 +1,3 @@
 export * from './api-response'
-export * from './changes'
+export * from './update'
 export * from './semantic-id-response'
