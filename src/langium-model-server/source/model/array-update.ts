@@ -1,5 +1,5 @@
 import type * as id from '../../semantic/identity'
-import type { Update } from './update'
+import { Update } from './update'
 
 /**
  * Describes changes made to SourceModel element of type T
@@ -17,10 +17,15 @@ export namespace ArrayUpdate {
     }
 
     export function addUpdate<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>, elementUpdate: ElementUpdate<T>): void {
-        if (elementUpdate.__kind === ElementAddition) {
-            pushNew(arrayUpdate, elementUpdate.element)
-        } else {
-            pushUpdate(arrayUpdate, elementUpdate.update)
+        switch(elementUpdate.__kind) {
+            case ElementAddition:
+                pushNew(arrayUpdate, elementUpdate.element)
+                break
+            case ElementModification:
+                pushUpdate(arrayUpdate, elementUpdate.update)
+                break
+            case NoElementUpdate:
+                break
         }
     }
 
@@ -50,17 +55,7 @@ export namespace ArrayUpdate {
     }
 }
 
-export type ElementUpdate<T extends id.SemanticIdentity> = ElementAddition<T> | ElementModification<T>
-export namespace ElementUpdate {
-
-    export function newAddition<T extends id.SemanticIdentity>(element: T): ElementUpdate<T> {
-        return { element, __kind: ElementAddition }
-    }
-
-    export function newModification<T extends id.SemanticIdentity>(update: Update<T>): ElementUpdate<T> {
-        return { update, __kind: ElementModification }
-    }
-}
+export type ElementUpdate<T extends id.SemanticIdentity> = ElementAddition<T> | ElementModification<T> | NoElementUpdate
 
 type ElementAddition<T extends id.SemanticIdentity> = {
     __kind: 'ADD'
@@ -73,3 +68,29 @@ type ElementModification<T extends id.SemanticIdentity> = {
     update: Update<T>
 }
 const ElementModification = 'MODIFY'
+
+// Null object when no actual update is detected
+type NoElementUpdate = {
+    __kind: 'NULL'
+}
+const NoElementUpdate = 'NULL'
+
+export namespace ElementUpdate {
+
+    const _noUpdate: NoElementUpdate = { __kind: NoElementUpdate }
+
+    export function addition<T extends id.SemanticIdentity>(element: T): ElementUpdate<T> {
+        return { element, __kind: ElementAddition }
+    }
+
+    export function potentialModification<T extends id.SemanticIdentity>(update: Update<T>): ElementUpdate<T> {
+        if (Update.isEmpty(update)) {
+            return noUpdate()
+        }
+        return { update, __kind: ElementModification }
+    }
+
+    export function noUpdate<T extends id.SemanticIdentity>(): ElementUpdate<T> {
+        return _noUpdate
+    }
+}

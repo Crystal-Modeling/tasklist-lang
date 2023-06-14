@@ -49,10 +49,7 @@ export class TaskListIdentityReconciler {
                 identityTask = Model.newTask(task)
                 identityIndex.addTask(identityTask)
             }
-            const taskUpdate = semanticDomain.identifyTask(task, identityTask.id)
-            if (taskUpdate) {
-                src.ArrayUpdate.addUpdate(tasksUpdate, taskUpdate)
-            }
+            src.ArrayUpdate.addUpdate(tasksUpdate, semanticDomain.identifyTask(task, identityTask.id))
         })
         src.ArrayUpdate.addRemovals(tasksUpdate, existingUnmappedTasks.values())
         // Deletion of not mapped tasks. Even though transitions (on the AST level) are composite children of source Task,
@@ -61,7 +58,7 @@ export class TaskListIdentityReconciler {
 
         //NOTE: ITERATION 2: mapping Transitions
         const existingUnmappedTransitions = identityIndex.transitionsByDerivativeIdentity
-        // Preparing data for the iteration (source task id + target task id => Transition).
+        // Preparing data for the iteration (Transition Derivative Identity (source task id + target task id) => Transition).
         stream(semanticDomain.getIdentifiedTasks())
             .flatMap((sourceTask): TransitionDerivativeIdentity[] => semanticDomain.getValidTargetTasks(sourceTask)
                 .map(targetTask => [
@@ -69,22 +66,19 @@ export class TaskListIdentityReconciler {
                     this.identityManager.getTaskId(targetTask)
                 ])
             ) // Actual mapping
-            .forEach(transitionDerivativeIdentity => {
-                let identityTransition = existingUnmappedTransitions.get(transitionDerivativeIdentity)
+            .forEach(transition => {
+                let identityTransition = existingUnmappedTransitions.get(transition)
                 if (identityTransition) {
-                    existingUnmappedTransitions.delete(transitionDerivativeIdentity)
+                    existingUnmappedTransitions.delete(transition)
                 } else {
-                    identityTransition = Model.newTransition(transitionDerivativeIdentity)
+                    identityTransition = Model.newTransition(transition)
                     identityIndex.addTransition(identityTransition)
                 }
-                const transitionUpdate = semanticDomain.identifyTransition(transitionDerivativeIdentity, identityTransition.id)
-                if (transitionUpdate) {
-                    src.ArrayUpdate.addUpdate(transitionsUpdate, transitionUpdate)
-                }
+                src.ArrayUpdate.addUpdate(transitionsUpdate, semanticDomain.identifyTransition(transition, identityTransition.id))
             })
         src.ArrayUpdate.addRemovals(transitionsUpdate, existingUnmappedTransitions.values())
         identityIndex.deleteTransitions(existingUnmappedTransitions.values())
 
-        return { id: identityIndex.id, tasks: tasksUpdate }
+        return { id: identityIndex.id, tasks: tasksUpdate, transitions: transitionsUpdate }
     }
 }

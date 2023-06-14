@@ -17,22 +17,18 @@ export interface TaskListSemanticDomain {
      * Maps Valid Task node with semantic identity.
      * @param task Valid AST Task node
      * @param semanticId Id, which {@link task} is identified with
-     * @returns the {@link source.Task} {@link src.ElementUpdate} -- when the Task with {@link semanticId} didn't exist or was modified,
-     * or `undefined` if the task remains unchanged
      */
     // NOTE: This is considered as part of manipulation with Source Model preview
-    identifyTask(task: id.Valid<ast.Task>, semanticId: string): src.ElementUpdate<source.Task> | undefined
+    identifyTask(task: id.Valid<ast.Task>, semanticId: string): src.ElementUpdate<source.Task>
     /**
      * Maps Transition derivative identity (there is no AST node corresponded to Transition model,
      * but only a cross reference)
      * @param transition A derivative identity for Transition to map
      * @param semanticId Semantic ID, which {@link transition} is identified with
-     * @returns the {@link source.Transition} {@link src.ElementUpdate} -- when the Transition with {@link semanticId} didn't exist,
-     * or `undefined` if the transition remains unchanged
      */
     // NOTE: Since source model for Transition doesn't have any modifiable attribute, it will not return a Modification Update,
     // but only Addition Update
-    identifyTransition(transition: identity.TransitionDerivativeIdentity, semanticId: string): src.ElementUpdate<source.Transition> | undefined
+    identifyTransition(transition: identity.TransitionDerivativeIdentity, semanticId: string): src.ElementUpdate<source.Transition>
     getIdentifiedTasks(): Iterable<id.Identified<ast.Task>>
     getIdentifiedTransitions(): Iterable<[string, identity.TransitionDerivativeIdentity]>
 }
@@ -97,12 +93,12 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         return validTargetTasks
     }
 
-    public identifyTask(task: id.Valid<ast.Task>, semanticId: string): src.ElementUpdate<source.Task> | undefined {
+    public identifyTask(task: id.Valid<ast.Task>, semanticId: string): src.ElementUpdate<source.Task> {
         const previousTask = this._previousIdentifiedTaskById?.get(semanticId)
         const currentTask = this.assignId(task, semanticId)
         this._identifiedTasksById.set(semanticId, currentTask)
         if (!previousTask) {
-            return src.ElementUpdate.newAddition(source.Task.create(currentTask))
+            return src.ElementUpdate.addition(source.Task.create(currentTask))
         }
         const update: src.Update<source.Task> = { id: semanticId }
         // Not comparing the task.name, since it cannot be changed
@@ -110,20 +106,17 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         if (previousTask.content !== currentTask.content) {
             update.content = currentTask.content
         }
-        if (src.Update.isEmpty(update)) {
-            return undefined
-        }
-        return src.ElementUpdate.newModification(update)
+        return src.ElementUpdate.potentialModification(update)
     }
 
-    public identifyTransition(transition: identity.TransitionDerivativeIdentity, semanticId: string): src.ElementUpdate<source.Transition> | undefined {
+    public identifyTransition(transition: identity.TransitionDerivativeIdentity, semanticId: string): src.ElementUpdate<source.Transition> {
         // NOTE: No previous state is stored, since Transition is uneditable from the language model perspective
         const previousTransition = this._previousIdentifiedTransitionsById?.get(semanticId)
         this._identifiedTransitionsById.set(semanticId, transition)
         if (!previousTransition) {
-            return src.ElementUpdate.newAddition(source.Transition.create(semanticId, transition))
+            return src.ElementUpdate.addition(source.Transition.create(semanticId, transition))
         }
-        return undefined
+        return src.ElementUpdate.noUpdate()
     }
 
     public getIdentifiedTasks(): Iterable<id.Identified<ast.Task>> {
