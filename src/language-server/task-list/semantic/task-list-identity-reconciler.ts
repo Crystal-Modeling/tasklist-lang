@@ -5,6 +5,8 @@ import type { TaskListDocument } from '../workspace/documents'
 import type { TaskListIdentityManager } from './task-list-identity-manager'
 import type { Task, TransitionDerivativeIdentity } from './task-list-identity'
 import { Model } from './task-list-identity'
+import * as src from '../../../langium-model-server/source/model'
+import * as source from '../source/model'
 
 //TODO: When elaborating LMS into a library, make sure reconciler is defined and linked at that level
 export class TaskListIdentityReconciler {
@@ -14,7 +16,7 @@ export class TaskListIdentityReconciler {
         this.identityManager = services.semantic.IdentityManager
     }
 
-    public reconcileIdentityWithLanguageModel(document: TaskListDocument) {
+    public reconcileIdentityWithLanguageModel(document: TaskListDocument): src.Update<source.Model> {
 
         /* NOTE: So, the problem can be characterized as following:
 
@@ -29,6 +31,7 @@ export class TaskListIdentityReconciler {
 
         // Preparation: getting services, and AST root
         const identityIndex = this.identityManager.getIdentityIndex(document)
+        const tasksUpdate: src.ArrayUpdate<source.Task> = {}
         const astModel: ast.Model = document.parseResult.value
         //HACK: Relying on the fact that in this function `document` is in its final State
         const semanticDomain = document.semanticDomain!
@@ -44,9 +47,12 @@ export class TaskListIdentityReconciler {
                 identityTask = Model.newTask(task)
                 identityIndex.addTask(identityTask)
             }
-            semanticDomain.identifyTask(task, identityTask.id)
+            const taskUpdate = semanticDomain.identifyTask(task, identityTask.id)
+            if (taskUpdate)
+                src.ArrayUpdate.pushChange(tasksUpdate, taskUpdate)
         })
-        // Deletion of not mapped tasks
+        // Deletion of not mapped tasks. Even though transitions (on the AST level) are composite children of source Task,
+        // they still have to be deleted separately (to simplify Changes creation)
         identityIndex.deleteTasksWithRelatedTransitions(existingUnmappedTasks.values())
 
         //NOTE: ITERATION 2: mapping Transitions
@@ -70,5 +76,7 @@ export class TaskListIdentityReconciler {
                 semanticDomain.identifyTransition(transitionDerivativeIdentity, identityTransition.id)
             })
         identityIndex.deleteTransitions(existingUnmappedTransitions.values())
+
+        return source.ModelUpdate.create(identityIndex.id, tasksUpdate)
     }
 }

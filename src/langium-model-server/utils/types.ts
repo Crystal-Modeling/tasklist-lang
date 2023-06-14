@@ -32,3 +32,7 @@ export function isMappedObject<T>(obj: unknown, keyType: 'string' | 'number' | '
     }
     return true
 }
+
+export function isArray<T>(obj: unknown, ofType: TypeGuard<T>): obj is T[] {
+    return Array.isArray(obj) && (obj.length === 0 || ofType(obj[0]))
+}
