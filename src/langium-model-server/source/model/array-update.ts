@@ -24,15 +24,15 @@ export namespace ArrayUpdate {
         }
     }
 
-    export function addRemovals<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>, removedIds: string[]): void {
-        arrayUpdate.removedIds = (arrayUpdate.removedIds ?? []).concat(removedIds)
+    export function addRemovals<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>, elements: Iterable<T>): void {
+        arrayUpdate.removedIds = (arrayUpdate.removedIds ?? []).concat(Array.from(elements, el => el.id))
     }
 
-    export function addRemoval<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>, removedId: string): void {
+    export function addRemoval<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>, element: T): void {
         if (!arrayUpdate.removedIds) {
             arrayUpdate.removedIds = []
         }
-        arrayUpdate.removedIds.push(removedId)
+        arrayUpdate.removedIds.push(element.id)
     }
 
     function pushNew<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>, element: T): void {

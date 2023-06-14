@@ -27,10 +27,12 @@ export interface TaskListSemanticDomain {
      * but only a cross reference)
      * @param transition A derivative identity for Transition to map
      * @param semanticId Semantic ID, which {@link transition} is identified with
+     * @returns the {@link source.Transition} {@link src.ElementUpdate} -- when the Transition with {@link semanticId} didn't exist,
+     * or `undefined` if the transition remains unchanged
      */
-    // NOTE: Since source model for Transition doesn't have any modifiable attribute, it will not return a Change
-    // TODO: But then, do I need it at all?.. If it cannot bring any change, and no other model is based on Transition
-    identifyTransition(transition: identity.TransitionDerivativeIdentity, semanticId: string): void
+    // NOTE: Since source model for Transition doesn't have any modifiable attribute, it will not return a Modification Update,
+    // but only Addition Update
+    identifyTransition(transition: identity.TransitionDerivativeIdentity, semanticId: string): src.ElementUpdate<source.Transition> | undefined
     getIdentifiedTasks(): Iterable<id.Identified<ast.Task>>
     getIdentifiedTransitions(): Iterable<[string, identity.TransitionDerivativeIdentity]>
 }
@@ -46,14 +48,14 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
     protected invalidTasks: Set<ast.Task>
     protected invalidReferences: Map<ast.Task, Set<number>>
     private _identifiedTasksById: Map<string, id.Identified<ast.Task>>
-    private _previousIdentifiedTaskById: Map<string, id.Identified<ast.Task>>
+    private _previousIdentifiedTaskById: Map<string, id.Identified<ast.Task>> | undefined
     private _identifiedTransitionsById: Map<string, identity.TransitionDerivativeIdentity>
+    private _previousIdentifiedTransitionsById: Map<string, identity.TransitionDerivativeIdentity> | undefined
 
     constructor() {
         this.invalidTasks = new Set()
         this.invalidReferences = new Map()
         this._identifiedTasksById = new Map()
-        this._previousIdentifiedTaskById = new Map()
         this._identifiedTransitionsById = new Map()
     }
 
@@ -96,7 +98,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
     }
 
     public identifyTask(task: id.Valid<ast.Task>, semanticId: string): src.ElementUpdate<source.Task> | undefined {
-        const previousTask = this._previousIdentifiedTaskById.get(semanticId)
+        const previousTask = this._previousIdentifiedTaskById?.get(semanticId)
         const currentTask = this.assignId(task, semanticId)
         this._identifiedTasksById.set(semanticId, currentTask)
         if (!previousTask) {
@@ -114,9 +116,14 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         return src.ElementUpdate.newModification(update)
     }
 
-    public identifyTransition(transition: identity.TransitionDerivativeIdentity, semanticId: string): void {
+    public identifyTransition(transition: identity.TransitionDerivativeIdentity, semanticId: string): src.ElementUpdate<source.Transition> | undefined {
         // NOTE: No previous state is stored, since Transition is uneditable from the language model perspective
+        const previousTransition = this._previousIdentifiedTransitionsById?.get(semanticId)
         this._identifiedTransitionsById.set(semanticId, transition)
+        if (!previousTransition) {
+            return src.ElementUpdate.newAddition(source.Transition.create(semanticId, transition))
+        }
+        return undefined
     }
 
     public getIdentifiedTasks(): Iterable<id.Identified<ast.Task>> {
@@ -131,8 +138,9 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         this.invalidTasks.clear()
         this.invalidReferences.clear()
         this._previousIdentifiedTaskById = this._identifiedTasksById
-        this._identifiedTasksById.clear()
-        this._identifiedTransitionsById.clear()
+        this._identifiedTasksById = new Map()
+        this._previousIdentifiedTransitionsById = this._identifiedTransitionsById
+        this._identifiedTransitionsById = new Map()
     }
 
     public setInvalidTasksForModel(model: ast.Model, invalidTasks: Set<ast.Task>): void {

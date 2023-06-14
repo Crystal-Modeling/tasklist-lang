@@ -30,8 +30,10 @@ export class TaskListIdentityReconciler {
         */
 
         // Preparation: getting services, and AST root
-        const identityIndex = this.identityManager.getIdentityIndex(document)
         const tasksUpdate: src.ArrayUpdate<source.Task> = {}
+        const transitionsUpdate: src.ArrayUpdate<source.Transition> = {}
+
+        const identityIndex = this.identityManager.getIdentityIndex(document)
         const astModel: ast.Model = document.parseResult.value
         //HACK: Relying on the fact that in this function `document` is in its final State
         const semanticDomain = document.semanticDomain!
@@ -52,7 +54,7 @@ export class TaskListIdentityReconciler {
                 src.ArrayUpdate.addUpdate(tasksUpdate, taskUpdate)
             }
         })
-        src.ArrayUpdate.addRemovals(tasksUpdate, Array.from(existingUnmappedTasks.values(), t => t.id))
+        src.ArrayUpdate.addRemovals(tasksUpdate, existingUnmappedTasks.values())
         // Deletion of not mapped tasks. Even though transitions (on the AST level) are composite children of source Task,
         // they still have to be deleted separately (**to simplify Changes creation**)
         identityIndex.deleteTasks(existingUnmappedTasks.values())
@@ -75,8 +77,12 @@ export class TaskListIdentityReconciler {
                     identityTransition = Model.newTransition(transitionDerivativeIdentity)
                     identityIndex.addTransition(identityTransition)
                 }
-                semanticDomain.identifyTransition(transitionDerivativeIdentity, identityTransition.id)
+                const transitionUpdate = semanticDomain.identifyTransition(transitionDerivativeIdentity, identityTransition.id)
+                if (transitionUpdate) {
+                    src.ArrayUpdate.addUpdate(transitionsUpdate, transitionUpdate)
+                }
             })
+        src.ArrayUpdate.addRemovals(transitionsUpdate, existingUnmappedTransitions.values())
         identityIndex.deleteTransitions(existingUnmappedTransitions.values())
 
         return { id: identityIndex.id, tasks: tasksUpdate }
