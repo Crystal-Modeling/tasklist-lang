@@ -48,9 +48,11 @@ export class TaskListIdentityReconciler {
                 identityIndex.addTask(identityTask)
             }
             const taskUpdate = semanticDomain.identifyTask(task, identityTask.id)
-            if (taskUpdate)
-                src.ArrayUpdate.pushChange(tasksUpdate, taskUpdate)
+            if (taskUpdate) {
+                src.ArrayUpdate.addUpdate(tasksUpdate, taskUpdate)
+            }
         })
+        src.ArrayUpdate.addRemovals(tasksUpdate, Array.from(existingUnmappedTasks.values(), t => t.id))
         // Deletion of not mapped tasks. Even though transitions (on the AST level) are composite children of source Task,
         // they still have to be deleted separately (**to simplify Changes creation**)
         identityIndex.deleteTasks(existingUnmappedTasks.values())

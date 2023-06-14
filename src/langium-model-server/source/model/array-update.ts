@@ -16,24 +16,60 @@ export namespace ArrayUpdate {
         return !arrayUpdate.added && !arrayUpdate.removedIds && !arrayUpdate.changed
     }
 
-    export function pushChange<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>, change: Update<T>): void {
-        if (!arrayUpdate.changed) {
-            arrayUpdate.changed = []
+    export function addUpdate<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>, elementUpdate: ElementUpdate<T>): void {
+        if (elementUpdate.__kind === ElementAddition) {
+            pushNew(arrayUpdate, elementUpdate.element)
+        } else {
+            pushUpdate(arrayUpdate, elementUpdate.update)
         }
-        arrayUpdate.changed.push(change)
     }
 
-    export function pushRemoval<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>, removedId: string): void {
+    export function addRemovals<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>, removedIds: string[]): void {
+        arrayUpdate.removedIds = (arrayUpdate.removedIds ?? []).concat(removedIds)
+    }
+
+    export function addRemoval<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>, removedId: string): void {
         if (!arrayUpdate.removedIds) {
             arrayUpdate.removedIds = []
         }
         arrayUpdate.removedIds.push(removedId)
     }
 
-    export function pushNewElement<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>, newElement: T): void {
+    function pushNew<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>, element: T): void {
         if (!arrayUpdate.added) {
             arrayUpdate.added = []
         }
-        arrayUpdate.added.push(newElement)
+        arrayUpdate.added.push(element)
+    }
+
+    function pushUpdate<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>, update: Update<T>): void {
+        if (!arrayUpdate.changed) {
+            arrayUpdate.changed = []
+        }
+        arrayUpdate.changed.push(update)
     }
 }
+
+export type ElementUpdate<T extends id.SemanticIdentity> = ElementAddition<T> | ElementModification<T>
+export namespace ElementUpdate {
+
+    export function newAddition<T extends id.SemanticIdentity>(element: T): ElementUpdate<T> {
+        return { element, __kind: ElementAddition }
+    }
+
+    export function newModification<T extends id.SemanticIdentity>(update: Update<T>): ElementUpdate<T> {
+        return { update, __kind: ElementModification }
+    }
+}
+
+type ElementAddition<T extends id.SemanticIdentity> = {
+    __kind: 'ADD'
+    element: T
+}
+const ElementAddition = 'ADD'
+
+type ElementModification<T extends id.SemanticIdentity> = {
+    __kind: 'MODIFY'
+    update: Update<T>
+}
+const ElementModification = 'MODIFY'

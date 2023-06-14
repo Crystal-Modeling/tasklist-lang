@@ -2,7 +2,7 @@ import type * as id from '../../../langium-model-server/semantic/identity'
 import type * as identity from './task-list-identity'
 import * as src from '../../../langium-model-server/source/model'
 import type * as ast from '../../generated/ast'
-import type * as source from '../source/model'
+import * as source from '../source/model'
 import type { TaskListDocument } from '../workspace/documents'
 import { getTaskListDocument } from '../workspace/documents'
 
@@ -17,9 +17,11 @@ export interface TaskListSemanticDomain {
      * Maps Valid Task node with semantic identity.
      * @param task Valid AST Task node
      * @param semanticId Id, which {@link task} is identified with
+     * @returns the {@link source.Task} {@link src.ElementUpdate} -- when the Task with {@link semanticId} didn't exist or was modified,
+     * or `undefined` if the task remains unchanged
      */
     // NOTE: This is considered as part of manipulation with Source Model preview
-    identifyTask(task: id.Valid<ast.Task>, semanticId: string): src.Update<source.Task> | undefined
+    identifyTask(task: id.Valid<ast.Task>, semanticId: string): src.ElementUpdate<source.Task> | undefined
     /**
      * Maps Transition derivative identity (there is no AST node corresponded to Transition model,
      * but only a cross reference)
@@ -93,12 +95,12 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         return validTargetTasks
     }
 
-    public identifyTask(task: id.Valid<ast.Task>, semanticId: string): src.Update<source.Task> | undefined {
+    public identifyTask(task: id.Valid<ast.Task>, semanticId: string): src.ElementUpdate<source.Task> | undefined {
         const previousTask = this._previousIdentifiedTaskById.get(semanticId)
         const currentTask = this.assignId(task, semanticId)
         this._identifiedTasksById.set(semanticId, currentTask)
         if (!previousTask) {
-            return undefined
+            return src.ElementUpdate.newAddition(source.Task.create(currentTask))
         }
         const update: src.Update<source.Task> = { id: semanticId }
         // Not comparing the task.name, since it cannot be changed
@@ -109,7 +111,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         if (src.Update.isEmpty(update)) {
             return undefined
         }
-        return update
+        return src.ElementUpdate.newModification(update)
     }
 
     public identifyTransition(transition: identity.TransitionDerivativeIdentity, semanticId: string): void {
