@@ -79,6 +79,10 @@ export class TaskListIdentityReconciler {
         src.ArrayUpdate.addRemovals(transitionsUpdate, existingUnmappedTransitions.values())
         identityIndex.deleteTransitions(existingUnmappedTransitions.values())
 
-        return { id: identityIndex.id, tasks: tasksUpdate, transitions: transitionsUpdate }
+        return {
+            id: identityIndex.id,
+            tasks: src.ArrayUpdate.isEmpty(tasksUpdate) ? undefined : tasksUpdate,
+            transitions: src.ArrayUpdate.isEmpty(transitionsUpdate) ? undefined : transitionsUpdate
+        }
     }
 }
