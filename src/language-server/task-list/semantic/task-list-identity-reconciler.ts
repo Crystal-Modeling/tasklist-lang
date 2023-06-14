@@ -52,8 +52,8 @@ export class TaskListIdentityReconciler {
                 src.ArrayUpdate.pushChange(tasksUpdate, taskUpdate)
         })
         // Deletion of not mapped tasks. Even though transitions (on the AST level) are composite children of source Task,
-        // they still have to be deleted separately (to simplify Changes creation)
-        identityIndex.deleteTasksWithRelatedTransitions(existingUnmappedTasks.values())
+        // they still have to be deleted separately (**to simplify Changes creation**)
+        identityIndex.deleteTasks(existingUnmappedTasks.values())
 
         //NOTE: ITERATION 2: mapping Transitions
         const existingUnmappedTransitions = identityIndex.transitionsByDerivativeIdentity

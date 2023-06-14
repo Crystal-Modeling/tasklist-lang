@@ -1,4 +1,3 @@
-import { MultiMap } from 'langium'
 import type { NamedSemanticIdentity } from '../../../langium-model-server/semantic/identity'
 import type { IdentityIndex } from '../../../langium-model-server/semantic/identity-index'
 import { ValueBasedMap } from '../../../langium-model-server/utils/collections'
@@ -10,7 +9,6 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
     private readonly _tasksById: Map<string, Task> = new Map()
     private readonly _tasksByName: Map<string, Task> = new Map()
     private readonly _transitionsById: Map<string, Transition> = new Map()
-    private readonly _transitionsByTaskId: MultiMap<string, Transition> = new MultiMap()
     private readonly _transitionsByDerivativeIdentity: ValueBasedMap<TransitionDerivativeIdentity, Transition>
         = new ValueBasedMap()
 
@@ -76,10 +74,9 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         this.addTaskToIndex(task)
     }
 
-    public deleteTasksWithRelatedTransitions(tasks: Iterable<Task>) {
+    public deleteTasks(tasks: Iterable<Task>) {
         for (const task of tasks) {
             this.deleteTask(task)
-            this.deleteTransitionsForTask(task.id)
         }
     }
 
@@ -109,16 +106,8 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         }
     }
 
-    private deleteTransitionsForTask(sourceTaskId: string) {
-        for (const transition of this._transitionsByTaskId.get(sourceTaskId)) {
-            this.deleteTransition(transition)
-        }
-    }
-
     private addTransitionToIndex(transition: Transition): void {
         this._transitionsById.set(transition.id, transition)
-        this._transitionsByTaskId.add(transition.sourceTaskId, transition)
-        this._transitionsByTaskId.add(transition.targetTaskId, transition)
         this._transitionsByDerivativeIdentity.set([transition.sourceTaskId, transition.targetTaskId], transition)
     }
 
@@ -129,8 +118,6 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
 
     private removeTransitionFromIndex(transition: Transition) {
         this._transitionsById.delete(transition.id)
-        this._transitionsByTaskId.delete(transition.sourceTaskId, transition)
-        this._transitionsByTaskId.delete(transition.targetTaskId, transition)
         this._transitionsByDerivativeIdentity.delete([transition.sourceTaskId, transition.targetTaskId])
     }
 }
