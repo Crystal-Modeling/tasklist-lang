@@ -12,8 +12,8 @@ export type ArrayUpdate<T extends id.SemanticIdentity> = {
 
 export namespace ArrayUpdate {
 
-    export function hasChanges<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>): boolean {
-        return !!arrayUpdate.added || !!arrayUpdate.removedIds || !!arrayUpdate.changed
+    export function isEmpty<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>): boolean {
+        return !arrayUpdate.added && !arrayUpdate.removedIds && !arrayUpdate.changed
     }
 
     export function pushChange<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>, change: Update<T>): void {

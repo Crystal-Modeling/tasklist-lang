@@ -1,12 +1,12 @@
 import { stream } from 'langium'
+import * as src from '../../../langium-model-server/source/model'
 import type * as ast from '../../generated/ast'
+import type * as source from '../source/model'
 import type { TaskListServices } from '../task-list-module'
 import type { TaskListDocument } from '../workspace/documents'
-import type { TaskListIdentityManager } from './task-list-identity-manager'
 import type { Task, TransitionDerivativeIdentity } from './task-list-identity'
 import { Model } from './task-list-identity'
-import * as src from '../../../langium-model-server/source/model'
-import * as source from '../source/model'
+import type { TaskListIdentityManager } from './task-list-identity-manager'
 
 //TODO: When elaborating LMS into a library, make sure reconciler is defined and linked at that level
 export class TaskListIdentityReconciler {
@@ -77,6 +77,6 @@ export class TaskListIdentityReconciler {
             })
         identityIndex.deleteTransitions(existingUnmappedTransitions.values())
 
-        return source.ModelUpdate.create(identityIndex.id, tasksUpdate)
+        return { id: identityIndex.id, tasks: tasksUpdate }
     }
 }
