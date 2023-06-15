@@ -73,6 +73,7 @@ function addSemanticReconciliationPhase(sharedServices: LangiumSharedServices, t
         console.debug('====== SEMANTIC RECONCILIATION PHASE ======')
         for (const document of documents) {
             if (isTaskListDocument(document)) {
+                console.debug('       For document ', document.textDocument.uri)
                 await interruptAndCheck(cancelToken)
                 const semanticReconciler = taskListServices.semantic.TaskListIdentityReconciler
                 semanticReconciler.reconcileIdentityWithLanguageModel(document)
