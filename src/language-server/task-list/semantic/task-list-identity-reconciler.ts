@@ -49,9 +49,9 @@ export class TaskListIdentityReconciler {
                 identityTask = Model.newTask(task)
                 identityIndex.addTask(identityTask)
             }
-            src.ArrayUpdate.addUpdate(tasksUpdate, semanticDomain.identifyTask(task, identityTask.id))
+            src.ArrayUpdate.apply(tasksUpdate, semanticDomain.identifyTask(task, identityTask.id))
         })
-        src.ArrayUpdate.addRemovals(tasksUpdate, existingUnmappedTasks.values())
+        src.ArrayUpdate.apply(tasksUpdate, src.ArrayUpdateCommand.deletion(existingUnmappedTasks.values()))
         // Deletion of not mapped tasks. Even though transitions (on the AST level) are composite children of source Task,
         // they still have to be deleted separately (**to simplify Changes creation**)
         identityIndex.deleteTasks(existingUnmappedTasks.values())
@@ -74,9 +74,9 @@ export class TaskListIdentityReconciler {
                     identityTransition = Model.newTransition(transition)
                     identityIndex.addTransition(identityTransition)
                 }
-                src.ArrayUpdate.addUpdate(transitionsUpdate, semanticDomain.identifyTransition(transition, identityTransition.id))
+                src.ArrayUpdate.apply(transitionsUpdate, semanticDomain.identifyTransition(transition, identityTransition.id))
             })
-        src.ArrayUpdate.addRemovals(transitionsUpdate, existingUnmappedTransitions.values())
+        src.ArrayUpdate.apply(transitionsUpdate, src.ArrayUpdateCommand.deletion(existingUnmappedTransitions.values()))
         identityIndex.deleteTransitions(existingUnmappedTransitions.values())
 
         return {
