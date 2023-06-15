@@ -1,7 +1,8 @@
 import type { NamedSemanticIdentity } from '../../../langium-model-server/semantic/identity'
 import type { IdentityIndex } from '../../../langium-model-server/semantic/identity-index'
 import { ValueBasedMap } from '../../../langium-model-server/utils/collections'
-import type { Model, Task, Transition, TransitionDerivativeIdentity } from './task-list-identity'
+import type * as semantic from './model'
+import type { Model, Task, Transition } from './task-list-identity'
 
 //TODO: The only reason why I keep _*byId index maps is because I am not certain of the _model format. Probably needs to be removed
 export abstract class TaskListIdentityIndex implements IdentityIndex {
@@ -9,7 +10,7 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
     private readonly _tasksById: Map<string, Task> = new Map()
     private readonly _tasksByName: Map<string, Task> = new Map()
     private readonly _transitionsById: Map<string, Transition> = new Map()
-    private readonly _transitionsByDerivativeIdentity: ValueBasedMap<TransitionDerivativeIdentity, Transition>
+    private readonly _transitionsByDerivativeIdentity: ValueBasedMap<semantic.TransitionDerivativeIdentity, Transition>
         = new ValueBasedMap()
 
     public constructor(semanticModel: Model) {
@@ -38,7 +39,7 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         return new Map(this._tasksByName)
     }
 
-    public get transitionsByDerivativeIdentity(): ValueBasedMap<TransitionDerivativeIdentity, Readonly<Transition>> {
+    public get transitionsByDerivativeIdentity(): ValueBasedMap<semantic.TransitionDerivativeIdentity, Readonly<Transition>> {
         return this._transitionsByDerivativeIdentity.copy()
     }
 
@@ -74,9 +75,9 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         this.addTaskToIndex(task)
     }
 
-    public deleteTasks(tasks: Iterable<Task>) {
-        for (const task of tasks) {
-            this.deleteTask(task)
+    public deleteTasks(taskIds: Iterable<string>) {
+        for (const id of taskIds) {
+            this.deleteTask(id)
         }
     }
 
@@ -85,9 +86,13 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         this._tasksByName.set(task.name, task)
     }
 
-    private deleteTask(task: Task) {
-        delete this._model.tasks[task.id]
-        this.removeTaskFromIndex(task)
+    private deleteTask(taskId: string) {
+        //TODO: Fix the model: there can be no task/transition for some ID
+        const task = this._model.tasks[taskId]
+        if (task) {
+            delete this._model.tasks[taskId]
+            this.removeTaskFromIndex(task)
+        }
     }
 
     private removeTaskFromIndex(task: Task): void {
@@ -100,9 +105,9 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         this.addTransitionToIndex(transition)
     }
 
-    public deleteTransitions(transitions: Iterable<Transition>) {
-        for (const transition of transitions) {
-            this.deleteTransition(transition)
+    public deleteTransitions(transitionIds: Iterable<string>) {
+        for (const id of transitionIds) {
+            this.deleteTransition(id)
         }
     }
 
@@ -111,9 +116,12 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         this._transitionsByDerivativeIdentity.set([transition.sourceTaskId, transition.targetTaskId], transition)
     }
 
-    private deleteTransition(transition: Transition) {
-        delete this._model.transitions[transition.id]
-        this.removeTransitionFromIndex(transition)
+    private deleteTransition(transitionId: string) {
+        const transition = this._model.transitions[transitionId]
+        if (transition) {
+            delete this._model.transitions[transitionId]
+            this.removeTransitionFromIndex(transition)
+        }
     }
 
     private removeTransitionFromIndex(transition: Transition) {

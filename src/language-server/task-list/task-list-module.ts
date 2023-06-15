@@ -3,19 +3,20 @@ import type {
     Module, PartialLangiumServices
 } from 'langium'
 import type { LangiumModelServerAddedServices } from '../../langium-model-server/langium-model-server-module'
+import { LmsRenameProvider } from '../../langium-model-server/lsp/lms-rename-provider'
 import { TaskListValidator } from '../task-list/validation/task-list-validation'
-import type { Model } from './source/model'
-import { TaskListIdentityManager } from './semantic/task-list-identity-manager'
 import type { TaskListIdentityIndex } from './semantic/task-list-identity-index'
+import { TaskListIdentityManager } from './semantic/task-list-identity-manager'
 import { TaskListIdentityReconciler } from './semantic/task-list-identity-reconciler'
 import { TaskListIdentityStorage } from './semantic/task-list-identity-storage'
+import type * as source from './source/model'
 import { TaskListSourceModelService } from './source/task-list-source-model-service'
-import { LmsRenameProvider } from '../../langium-model-server/lsp/lms-rename-provider'
+import { TaskListSourceUpdateManager } from './source/task-list-source-update-manager'
 
 /**
  * Declaration of custom services - add your own service classes here.
  */
-export type TaskListAddedServices = LangiumModelServerAddedServices<Model, TaskListIdentityIndex> & {
+export type TaskListAddedServices = LangiumModelServerAddedServices<source.Model, TaskListIdentityIndex> & {
     validation: {
         TaskListValidator: TaskListValidator
     },
@@ -26,6 +27,9 @@ export type TaskListAddedServices = LangiumModelServerAddedServices<Model, TaskL
         // Redefining the type of IdentityManager to be used in TaskListIdentityReconciler
         IdentityManager: TaskListIdentityManager
         TaskListIdentityReconciler: TaskListIdentityReconciler
+    },
+    source: {
+        SourceUpdateManager: TaskListSourceUpdateManager
     }
 }
 
@@ -50,7 +54,8 @@ export const TaskListModule: Module<TaskListServices, PartialLangiumServices & T
         TaskListIdentityReconciler: (services) => new TaskListIdentityReconciler(services),
     },
     source: {
-        SourceModelService: (services) => new TaskListSourceModelService(services)
+        SourceModelService: (services) => new TaskListSourceModelService(services),
+        SourceUpdateManager: () => new TaskListSourceUpdateManager(),
     },
     lsp: {
         RenameProvider: (services) => new LmsRenameProvider(services)

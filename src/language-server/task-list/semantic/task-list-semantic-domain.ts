@@ -1,36 +1,38 @@
-import type * as id from '../../../langium-model-server/semantic/identity'
-import type * as identity from './task-list-identity'
-import * as src from '../../../langium-model-server/source/model'
+import type { Valid } from '../../../langium-model-server/semantic/model'
+import { Identified } from '../../../langium-model-server/semantic/model'
 import type * as ast from '../../generated/ast'
-import * as source from '../source/model'
 import type { TaskListDocument } from '../workspace/documents'
 import { getTaskListDocument } from '../workspace/documents'
+import type { TransitionDerivativeIdentity } from './model'
+import { IdentifiedTransition } from './model'
 
-export interface TaskListSemanticDomain {
+export interface QueriableTaskListSemanticDomain {
+    getIdentifiedTasks(): Iterable<Identified<ast.Task>>
+    getIdentifiedTransitions(): Iterable<IdentifiedTransition>
+    getPreviousIdentifiedTask(id: string): Identified<ast.Task> | undefined
+    getPreviousIdentifiedTransition(id: string): IdentifiedTransition | undefined
+}
+export interface TaskListSemanticDomain extends QueriableTaskListSemanticDomain {
     clear(): void
     setInvalidTasksForModel(model: ast.Model, invalidTasks: Set<ast.Task>): void
     setInvalidReferencesForTask(task: ast.Task, invalidReferences: Set<number>): void
-    // NOTE: This is considered as part of manipulation with AST Nodes
-    getValidTasks(model: ast.Model): Array<id.Valid<ast.Task>>
-    getValidTargetTasks(sourceTask: id.Valid<ast.Task>): Array<id.Valid<ast.Task>>
+    // NOTE: 👇 This is considered as part of manipulation with AST Nodes
+    getValidTasks(model: ast.Model): Array<Valid<ast.Task>>
+    getValidTargetTasks(sourceTask: Valid<ast.Task>): Array<Valid<ast.Task>>
+    // NOTE: 👇 This is considered as part of manipulation with Semantic Model (Identified<ast.Task> and IdentifiedTransition)
     /**
      * Maps Valid Task node with semantic identity.
      * @param task Valid AST Task node
      * @param semanticId Id, which {@link task} is identified with
      */
-    // NOTE: This is considered as part of manipulation with Source Model preview
-    identifyTask(task: id.Valid<ast.Task>, semanticId: string): src.ReadonlyArrayUpdate<source.Task>
+    identifyTask(task: Valid<ast.Task>, semanticId: string): Identified<ast.Task>
     /**
      * Maps Transition derivative identity (there is no AST node corresponded to Transition model,
      * but only a cross reference)
      * @param transition A derivative identity for Transition to map
      * @param semanticId Semantic ID, which {@link transition} is identified with
      */
-    // NOTE: Since source model for Transition doesn't have any modifiable attribute, it will not return a Modification Update,
-    // but only Addition Update
-    identifyTransition(transition: identity.TransitionDerivativeIdentity, semanticId: string): src.ReadonlyArrayUpdate<source.Transition>
-    getIdentifiedTasks(): Iterable<id.Identified<ast.Task>>
-    getIdentifiedTransitions(): Iterable<[string, identity.TransitionDerivativeIdentity]>
+    identifyTransition(transition: TransitionDerivativeIdentity, semanticId: string): IdentifiedTransition
 }
 
 export namespace TaskListSemanticDomain {
@@ -43,10 +45,11 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
 
     protected invalidTasks: Set<ast.Task>
     protected invalidReferences: Map<ast.Task, Set<number>>
-    private _identifiedTasksById: Map<string, id.Identified<ast.Task>>
-    private _previousIdentifiedTaskById: Map<string, id.Identified<ast.Task>> | undefined
-    private _identifiedTransitionsById: Map<string, identity.TransitionDerivativeIdentity>
-    private _previousIdentifiedTransitionsById: Map<string, identity.TransitionDerivativeIdentity> | undefined
+
+    private _identifiedTasksById: Map<string, Identified<ast.Task>>
+    private _previousIdentifiedTaskById: Map<string, Identified<ast.Task>> | undefined
+    private _identifiedTransitionsById: Map<string, IdentifiedTransition>
+    private _previousIdentifiedTransitionsById: Map<string, IdentifiedTransition> | undefined
 
     constructor() {
         this.invalidTasks = new Set()
@@ -63,16 +66,16 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
 
         So that neither SemanticManager, nor SemanticModelIndex is responsible for traversing AST internals
     */
-    protected isTaskSemanticallyValid(task: ast.Task): task is id.Valid<ast.Task> {
+    protected isTaskSemanticallyValid(task: ast.Task): task is Valid<ast.Task> {
         return !this.invalidTasks.has(task)
     }
 
-    protected isTransitionSemanticallyValid(task: id.Valid<ast.Task>, targetTaskIndex: number): boolean {
+    protected isTransitionSemanticallyValid(task: Valid<ast.Task>, targetTaskIndex: number): boolean {
         return !this.invalidReferences.get(task)?.has(targetTaskIndex)
     }
 
-    public getValidTasks(model: ast.Model): Array<id.Valid<ast.Task>> {
-        const validTasks: Array<id.Valid<ast.Task>> = []
+    public getValidTasks(model: ast.Model): Array<Valid<ast.Task>> {
+        const validTasks: Array<Valid<ast.Task>> = []
         model.tasks.forEach(task => {
             if (this.isTaskSemanticallyValid(task)) {
                 validTasks.push(task)
@@ -81,8 +84,8 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         return validTasks
     }
 
-    public getValidTargetTasks(sourceTask: id.Valid<ast.Task>): Array<id.Valid<ast.Task>> {
-        const validTargetTasks: Array<id.Valid<ast.Task>> = []
+    public getValidTargetTasks(sourceTask: Valid<ast.Task>): Array<Valid<ast.Task>> {
+        const validTargetTasks: Array<Valid<ast.Task>> = []
         sourceTask.references.forEach((targetTaskRef, targetTaskIndex) => {
             const targetTask = targetTaskRef.ref
             if (!!targetTask && this.isTaskSemanticallyValid(targetTask)
@@ -93,38 +96,32 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         return validTargetTasks
     }
 
-    public identifyTask(task: id.Valid<ast.Task>, semanticId: string): src.ReadonlyArrayUpdate<source.Task> {
-        const previousTask = this._previousIdentifiedTaskById?.get(semanticId)
-        const currentTask = this.assignId(task, semanticId)
-        this._identifiedTasksById.set(semanticId, currentTask)
-        if (!previousTask) {
-            return src.ArrayUpdateCommand.addition(source.Task.create(currentTask))
-        }
-        const update: src.Update<source.Task> = { id: semanticId }
-        // Not comparing the task.name, since it cannot be changed
-        // (it plays a role in task Identity, hence with its change it is a different task)
-        if (previousTask.content !== currentTask.content) {
-            update.content = currentTask.content
-        }
-        return src.ArrayUpdateCommand.modification(update)
+    public identifyTask(task: Valid<ast.Task>, semanticId: string): Identified<ast.Task> {
+        const identifiedTask = Identified.identify(task, semanticId)
+        this._identifiedTasksById.set(semanticId, identifiedTask)
+        return identifiedTask
     }
 
-    public identifyTransition(transition: identity.TransitionDerivativeIdentity, semanticId: string): src.ReadonlyArrayUpdate<source.Transition> {
-        // NOTE: No previous state is stored, since Transition is uneditable from the language model perspective
-        const previousTransition = this._previousIdentifiedTransitionsById?.get(semanticId)
-        this._identifiedTransitionsById.set(semanticId, transition)
-        if (!previousTransition) {
-            return src.ArrayUpdateCommand.addition(source.Transition.create(semanticId, transition))
-        }
-        return src.ArrayUpdateCommand.noUpdate()
+    public identifyTransition(transition: TransitionDerivativeIdentity, semanticId: string): IdentifiedTransition {
+        const identifiedTransition = IdentifiedTransition.identify(transition, semanticId)
+        this._identifiedTransitionsById.set(semanticId, identifiedTransition)
+        return identifiedTransition
     }
 
-    public getIdentifiedTasks(): Iterable<id.Identified<ast.Task>> {
+    public getIdentifiedTasks(): Iterable<Identified<ast.Task>> {
         return this._identifiedTasksById.values()
     }
 
-    public getIdentifiedTransitions(): Iterable<[string, identity.TransitionDerivativeIdentity]> {
-        return this._identifiedTransitionsById.entries()
+    public getIdentifiedTransitions(): Iterable<IdentifiedTransition> {
+        return this._identifiedTransitionsById.values()
+    }
+
+    public getPreviousIdentifiedTask(id: string): Identified<ast.Task> | undefined {
+        return this._previousIdentifiedTaskById?.get(id)
+    }
+
+    public getPreviousIdentifiedTransition(id: string): IdentifiedTransition | undefined {
+        return this._previousIdentifiedTransitionsById?.get(id)
     }
 
     public clear() {
@@ -144,16 +141,12 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         this.invalidReferences.set(task, invalidReferences)
     }
 
-    private assignId(task: id.Valid<ast.Task>, semanticId: string): id.Identified<ast.Task> {
-        return Object.assign(task, { id: semanticId })
-    }
-
 }
 
 class PreprocessedTaskListSemanticDomain extends DefaultTaskListSemanticDomain {
 
-    private _validTasksByModel = new Map<ast.Model, Array<id.Valid<ast.Task>>>()
-    private _validTargetTasksBySourceTask = new Map<id.Valid<ast.Task>, Array<id.Valid<ast.Task>>>()
+    private _validTasksByModel = new Map<ast.Model, Array<Valid<ast.Task>>>()
+    private _validTargetTasksBySourceTask = new Map<Valid<ast.Task>, Array<Valid<ast.Task>>>()
     private areValidNodesInitialized = false
 
     public override clear(): void {
@@ -163,14 +156,14 @@ class PreprocessedTaskListSemanticDomain extends DefaultTaskListSemanticDomain {
         super.clear()
     }
 
-    public override getValidTasks(model: ast.Model): Array<id.Valid<ast.Task>> {
+    public override getValidTasks(model: ast.Model): Array<Valid<ast.Task>> {
         if (!this.areValidNodesInitialized) {
             this.initializeValidNodes(model)
         }
         return this._validTasksByModel.get(model) ?? []
     }
 
-    public override getValidTargetTasks(sourceTask: id.Valid<ast.Task>): Array<id.Valid<ast.Task>> {
+    public override getValidTargetTasks(sourceTask: Valid<ast.Task>): Array<Valid<ast.Task>> {
         if (!this.areValidNodesInitialized) {
             this.initializeValidNodes(getTaskListDocument(sourceTask).parseResult.value)
         }
@@ -178,7 +171,7 @@ class PreprocessedTaskListSemanticDomain extends DefaultTaskListSemanticDomain {
     }
 
     private initializeValidNodes(model: ast.Model): void {
-        const validTasks: Array<id.Valid<ast.Task>> = []
+        const validTasks: Array<Valid<ast.Task>> = []
         model.tasks.forEach(task => {
             if (this.isTaskSemanticallyValid(task)) {
                 validTasks.push(task)

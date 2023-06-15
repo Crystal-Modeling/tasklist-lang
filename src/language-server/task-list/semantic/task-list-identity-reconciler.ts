@@ -2,18 +2,22 @@ import { stream } from 'langium'
 import * as src from '../../../langium-model-server/source/model'
 import type * as ast from '../../generated/ast'
 import type * as source from '../source/model'
+import type { TaskListSourceUpdateManager } from '../source/task-list-source-update-manager'
 import type { TaskListServices } from '../task-list-module'
 import type { TaskListDocument } from '../workspace/documents'
-import type { Task, TransitionDerivativeIdentity } from './task-list-identity'
+import type * as semantic from './model'
+import type { Task } from './task-list-identity'
 import { Model } from './task-list-identity'
 import type { TaskListIdentityManager } from './task-list-identity-manager'
 
 //TODO: When elaborating LMS into a library, make sure reconciler is defined and linked at that level
 export class TaskListIdentityReconciler {
     private identityManager: TaskListIdentityManager
+    private sourceUpdateManager: TaskListSourceUpdateManager
 
     public constructor(services: TaskListServices) {
         this.identityManager = services.semantic.IdentityManager
+        this.sourceUpdateManager = services.source.SourceUpdateManager
     }
 
     public reconcileIdentityWithLanguageModel(document: TaskListDocument): src.Update<source.Model> {
@@ -34,6 +38,7 @@ export class TaskListIdentityReconciler {
         const transitionsUpdate: src.ArrayUpdate<source.Transition> = {}
 
         const identityIndex = this.identityManager.getIdentityIndex(document)
+        const updateCalculator = this.sourceUpdateManager.getUpdateCalculator(document)
         const astModel: ast.Model = document.parseResult.value
         //HACK: Relying on the fact that in this function `document` is in its final State
         const semanticDomain = document.semanticDomain!
@@ -49,19 +54,20 @@ export class TaskListIdentityReconciler {
                 identityTask = Model.newTask(task)
                 identityIndex.addTask(identityTask)
             }
-            src.ArrayUpdate.apply(tasksUpdate, semanticDomain.identifyTask(task, identityTask.id))
+            semanticDomain.identifyTask(task, identityTask.id)
         })
-        src.ArrayUpdate.apply(tasksUpdate, src.ArrayUpdateCommand.deletion(existingUnmappedTasks.values()))
         // Deletion of not mapped tasks. Even though transitions (on the AST level) are composite children of source Task,
         // they still have to be deleted separately (**to simplify Changes creation**)
-        identityIndex.deleteTasks(existingUnmappedTasks.values())
+        const calculatedTasksUpdate = updateCalculator.calculateTasksUpdate(existingUnmappedTasks.values())
+        identityIndex.deleteTasks(calculatedTasksUpdate.removedIds ?? [])
+        src.ArrayUpdate.apply(tasksUpdate, calculatedTasksUpdate)
 
         //NOTE: ITERATION 2: mapping Transitions
         const existingUnmappedTransitions = identityIndex.transitionsByDerivativeIdentity
         // Preparing data for the iteration (Transition Derivative Identity (source task id + target task id) => Transition).
         stream(semanticDomain.getIdentifiedTasks())
-            .flatMap((sourceTask): TransitionDerivativeIdentity[] => semanticDomain.getValidTargetTasks(sourceTask)
-                .map(targetTask => [
+            .flatMap(sourceTask => semanticDomain.getValidTargetTasks(sourceTask)
+                .map((targetTask): semantic.TransitionDerivativeIdentity => [
                     sourceTask.id,
                     this.identityManager.getTaskId(targetTask)
                 ])
@@ -74,10 +80,11 @@ export class TaskListIdentityReconciler {
                     identityTransition = Model.newTransition(transition)
                     identityIndex.addTransition(identityTransition)
                 }
-                src.ArrayUpdate.apply(transitionsUpdate, semanticDomain.identifyTransition(transition, identityTransition.id))
+                semanticDomain.identifyTransition(transition, identityTransition.id)
             })
-        src.ArrayUpdate.apply(transitionsUpdate, src.ArrayUpdateCommand.deletion(existingUnmappedTransitions.values()))
-        identityIndex.deleteTransitions(existingUnmappedTransitions.values())
+        const calculatedTransitionsUpdate = updateCalculator.calculateTransitionsUpdate(existingUnmappedTransitions.values())
+        identityIndex.deleteTransitions(calculatedTransitionsUpdate.removedIds ?? [])
+        src.ArrayUpdate.apply(transitionsUpdate, calculatedTransitionsUpdate)
 
         return {
             id: identityIndex.id,

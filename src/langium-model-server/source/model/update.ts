@@ -1,4 +1,5 @@
 import type * as id from '../../semantic/identity'
+import type { KeysOfType, ModelAttribute, OptionalKeys } from '../../utils/types'
 import type { ArrayUpdate } from './array-update'
 
 /**
@@ -31,13 +32,3 @@ type ModelAttributesDeletion<T> = {
 type NestedModelsChanges<T> = {
     [P in KeysOfType<T, id.SemanticIdentity[]>]?: T[P] extends id.SemanticIdentity[] ? ArrayUpdate<T[P][0]> : never
 }
-
-type ModelAttribute = string | number | symbol | boolean | bigint | string[] | number[] | symbol[] | boolean[] | bigint[]
-
-type KeysOfType<T, Type> = {
-    [P in keyof T]-?: T[P] extends Type ? P : never
-}[keyof T]
-
-type OptionalKeys<T> = {
-    [P in keyof T]-?: undefined extends T[P] ? P : never
-}[keyof T]

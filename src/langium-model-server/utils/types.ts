@@ -36,3 +36,13 @@ export function isMappedObject<T>(obj: unknown, keyType: 'string' | 'number' | '
 export function isArray<T>(obj: unknown, ofType: TypeGuard<T>): obj is T[] {
     return Array.isArray(obj) && (obj.length === 0 || ofType(obj[0]))
 }
+
+export type ModelAttribute = string | number | symbol | boolean | bigint | string[] | number[] | symbol[] | boolean[] | bigint[]
+
+export type KeysOfType<T, Type> = {
+    [P in keyof T]-?: T[P] extends Type ? P : never
+}[keyof T]
+
+export type OptionalKeys<T> = {
+    [P in keyof T]-?: undefined extends T[P] ? P : never
+}[keyof T]

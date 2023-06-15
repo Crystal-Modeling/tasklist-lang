@@ -4,7 +4,7 @@ import type { ModelExposedIdentityIndex } from '../../../langium-model-server/se
 import type * as ast from '../../generated/ast'
 import { Model } from './task-list-identity'
 import { TaskListIdentityIndex } from './task-list-identity-index'
-import type { Valid } from '../../../langium-model-server/semantic/identity'
+import type * as sem from '../../../langium-model-server/semantic/model'
 
 /**
  * Stores {@link Model} per URI of Langium-managed TextDocument.
@@ -14,7 +14,7 @@ import type { Valid } from '../../../langium-model-server/semantic/identity'
  */
 export class TaskListIdentityManager extends AbstractIdentityManager<TaskListIdentityIndex> {
 
-    public getTaskId(task: Valid<ast.Task>): string {
+    public getTaskId(task: sem.Valid<ast.Task>): string {
         const taskId = this.getIdentityIndex(getDocument(task)).getTaskIdByName(task.name)
         if (!taskId) {
             //FIXME: What should you really do if it can't find id for Valid target Task?

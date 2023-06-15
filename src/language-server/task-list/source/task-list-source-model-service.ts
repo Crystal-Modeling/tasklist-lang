@@ -2,7 +2,7 @@ import type { AstNode, LangiumDocument } from 'langium'
 import { AbstractSourceModelService } from '../../../langium-model-server/source/source-model-service'
 import type { TaskListIdentityIndex } from '../semantic/task-list-identity-index'
 import { isTaskListDocument } from '../workspace/documents'
-import {Model, Task, Transition} from './model'
+import { Model, Task, Transition } from './model'
 
 export class TaskListSourceModelService extends AbstractSourceModelService<Model, TaskListIdentityIndex> {
 
@@ -18,8 +18,8 @@ export class TaskListSourceModelService extends AbstractSourceModelService<Model
                 sourceModel.tasks.push(Task.create(task))
             }
 
-            for (const [semanticId, transition] of semanticDomain.getIdentifiedTransitions()) {
-                sourceModel.transitions.push(Transition.create(semanticId, transition))
+            for (const transition of semanticDomain.getIdentifiedTransitions()) {
+                sourceModel.transitions.push(Transition.create(transition))
             }
         }
         return sourceModel

@@ -102,7 +102,7 @@ export class ArrayUpdateCommand<T extends id.SemanticIdentity> implements Readon
         return this.NO_UPDATE
     }
 
-    public static all<T extends id.SemanticIdentity>(updates: Iterable<ReadonlyArrayUpdate<T>>): ReadonlyArrayUpdate<T> {
+    public static all<T extends id.SemanticIdentity>(...updates: Array<ReadonlyArrayUpdate<T>>): ReadonlyArrayUpdate<T> {
         const updatesStream = stream(updates)
         const elementsToAdd = this.concatNotEmpty(updatesStream.map(upd => upd.added))
         const idsToRemove = this.concatNotEmpty(updatesStream.map(upd => upd.removedIds))

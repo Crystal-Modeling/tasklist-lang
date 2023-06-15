@@ -1,4 +1,4 @@
-import type * as identity from '../../semantic/task-list-identity'
+import type * as semantic from '../../semantic/model'
 
 export interface Transition {
     id: string
@@ -7,11 +7,11 @@ export interface Transition {
 }
 
 export namespace Transition {
-    export function create(semanticId: string, transition: identity.TransitionDerivativeIdentity): Transition {
+    export function create(transition: semantic.IdentifiedTransition): Transition {
         return {
-            id: semanticId,
-            sourceTaskId: transition[0],
-            targetTaskId: transition[1]
+            id: transition.id,
+            sourceTaskId: transition.name[0],
+            targetTaskId: transition.name[1]
         }
     }
 }

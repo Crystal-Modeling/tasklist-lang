@@ -1,5 +1,5 @@
 import type * as ast from '../../../generated/ast'
-import type * as id from '../../../../langium-model-server/semantic/identity'
+import type * as sem from '../../../../langium-model-server/semantic/model'
 
 export interface Task {
     id: string
@@ -9,7 +9,7 @@ export interface Task {
 
 export namespace Task {
 
-    export function create(task: id.Identified<ast.Task>): Task {
+    export function create(task: sem.Identified<ast.Task>): Task {
         return {
             id: task.id,
             name: task.name,
