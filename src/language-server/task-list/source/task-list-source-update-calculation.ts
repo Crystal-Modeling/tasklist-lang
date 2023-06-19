@@ -1,6 +1,7 @@
 import type * as id from '../../../langium-model-server/semantic/identity'
 import type * as sem from '../../../langium-model-server/semantic/model'
-import type { ReadonlyArrayUpdate, Update } from '../../../langium-model-server/source/model'
+import { Update } from '../../../langium-model-server/source/model'
+import type { ReadonlyArrayUpdate } from '../../../langium-model-server/source/model'
 import { ArrayUpdateCommand } from '../../../langium-model-server/source/model'
 import type { SourceUpdateCalculator } from '../../../langium-model-server/source/source-update-calculation'
 import * as ast from '../../generated/ast'
@@ -28,7 +29,6 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
             this._tasksMarkedForDeletion,
             identitiesToDelete,
             this.semanticDomain.getPreviousIdentifiedTask.bind(this.semanticDomain),
-            id => <Update<Task>>{ id }
         )
 
         return ArrayUpdateCommand.all(...updates, deletion)
@@ -41,7 +41,6 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
             this._transitionsMarkedForDeletion,
             identitiesToDelete,
             this.semanticDomain.getPreviousIdentifiedTransition.bind(this.semanticDomain),
-            id => <Update<Transition>>{ id }
         )
 
         return ArrayUpdateCommand.all(...updates, deletion)
@@ -106,9 +105,7 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
     private deleteModels<ID extends id.SemanticIdentity, SEM extends id.SemanticIdentity, SRC extends id.SemanticIdentity>(
         modelsMarkedForDeletion: Map<string, ID | SEM>,
         modelsToDelete: Iterable<ID>,
-        getPreviousSemanticModel: (id: string) => SEM | undefined,
-        // FIXME: dirty hack
-        createEmptyUpdate: (id: string) => Update<SRC>
+        getPreviousSemanticModel: (id: string) => SEM | undefined
     ): ReadonlyArrayUpdate<SRC> {
         console.debug('******** Existing models marked for deletion', modelsMarkedForDeletion.values())
         if (modelsMarkedForDeletion.size !== 0) {
@@ -123,7 +120,7 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
                 }
             }
             console.debug('Marked models for deletion', modelsMarkedForDeletion.values())
-            const emptyUpdates = Array.from(modelsMarkedForDeletion.keys(), createEmptyUpdate)
+            const emptyUpdates = Array.from(modelsMarkedForDeletion.keys(), Update.createEmpty<SRC>)
             return ArrayUpdateCommand.all(deletion, ArrayUpdateCommand.dissappearance(emptyUpdates))
         }
         for (const model of modelsToDelete) {
@@ -132,6 +129,6 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
             modelsMarkedForDeletion.set(model.id, getPreviousSemanticModel(model.id) ?? model)
         }
         console.debug('Marked models for deletion (No actual deletion)', modelsMarkedForDeletion.values())
-        return ArrayUpdateCommand.dissappearance(Array.from(modelsMarkedForDeletion.keys(), createEmptyUpdate))
+        return ArrayUpdateCommand.dissappearance(Array.from(modelsMarkedForDeletion.keys(), Update.createEmpty<SRC>))
     }
 }

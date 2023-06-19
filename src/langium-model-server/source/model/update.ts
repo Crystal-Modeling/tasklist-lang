@@ -17,6 +17,10 @@ export namespace Update {
         }
         return true
     }
+
+    export function createEmpty<T extends id.SemanticIdentity>(id: string): Update<T> {
+        return <Update<T>>{ id }
+    }
 }
 
 type ModelChanges<T, STATE extends string> = ModelAttributeChanges<T> & ModelStateChanges<STATE> & ModelAttributesDeletion<T> & NestedModelsChanges<T>
