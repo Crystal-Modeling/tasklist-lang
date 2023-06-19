@@ -24,8 +24,12 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
     public calculateTasksUpdate(identitiesToDelete: Iterable<identity.Task>): ReadonlyArrayUpdate<Task> {
         const existingTasks = this.semanticDomain.getIdentifiedTasks()
         const updates = Array.from(existingTasks, task => this.compareTaskWithExistingBefore(task))
-        const deletion: ReadonlyArrayUpdate<Task> = this.deleteModels(this._tasksMarkedForDeletion,
-            identitiesToDelete, this.semanticDomain.getPreviousIdentifiedTask.bind(this.semanticDomain))
+        const deletion: ReadonlyArrayUpdate<Task> = this.deleteModels(
+            this._tasksMarkedForDeletion,
+            identitiesToDelete,
+            this.semanticDomain.getPreviousIdentifiedTask.bind(this.semanticDomain),
+            id => <Update<Task>>{ id }
+        )
 
         return ArrayUpdateCommand.all(...updates, deletion)
     }
@@ -33,8 +37,12 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
     public calculateTransitionsUpdate(identitiesToDelete: Iterable<identity.Transition>): ReadonlyArrayUpdate<Transition> {
         const existingTransitions = this.semanticDomain.getIdentifiedTransitions()
         const updates = Array.from(existingTransitions, transition => this.compareTransitionWithExistingBefore(transition))
-        const deletion: ReadonlyArrayUpdate<Transition> = this.deleteModels(this._transitionsMarkedForDeletion,
-            identitiesToDelete, this.semanticDomain.getPreviousIdentifiedTransition.bind(this.semanticDomain))
+        const deletion: ReadonlyArrayUpdate<Transition> = this.deleteModels(
+            this._transitionsMarkedForDeletion,
+            identitiesToDelete,
+            this.semanticDomain.getPreviousIdentifiedTransition.bind(this.semanticDomain),
+            id => <Update<Transition>>{ id }
+        )
 
         return ArrayUpdateCommand.all(...updates, deletion)
     }
@@ -48,14 +56,14 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
             if (!previousDeletedFromAst) {
                 return ArrayUpdateCommand.addition(Task.create(current))
             }// Existed in AST long before, was marked for deletion, now reappearing: comparing to be on a safe side
-            const update: Update<Task> = { id: semanticId }
+            const reappearance: Update<Task> = { id: semanticId }
             if (ast.isTask(previousDeletedFromAst)) {
                 // Can reappear different now (e.g., if copypasted from external source)
-                if (previousDeletedFromAst.content !== current.content) update.content = current.content
+                if (previousDeletedFromAst.content !== current.content) reappearance.content = current.content
             } else { // RECHECK: A VERY edge case: when an element was marked for deletion, there was no previous Semantic Model for it. Is it at all possible?...
-                update.content = current.content
+                reappearance.content = current.content
             }
-            return ArrayUpdateCommand.modification(update)
+            return ArrayUpdateCommand.reappearance(reappearance)
         } // Existed in AST before
         const update: Update<Task> = { id: semanticId }
         // Not comparing the task.name, since it cannot be changed (existed in previous AST)
@@ -63,7 +71,7 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
         if (previous.content !== current.content) update.content = current.content
         if (previousDeletedFromAst) {// Why it was marked for deletion if it existed in the AST before?
             console.warn(`Task '${semanticId}' with name=${current.name} existed in previous AST, but was marked for deletion.`)
-            // TODO: reflect its appearance (though weird) in semantic model
+            return ArrayUpdateCommand.reappearance({ id: semanticId })
         }
         return ArrayUpdateCommand.modification(update)
     }
@@ -77,8 +85,7 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
             if (!previousDeletedFromAst) {
                 return ArrayUpdateCommand.addition(Transition.create(current))
             }// Existed in AST long before, was marked for deletion, now reappearing: won't compare, since no modifiable attributes
-            // TODO: Mark its appearance instead of noUpdate
-            return ArrayUpdateCommand.noUpdate()
+            return ArrayUpdateCommand.reappearance({ id: semanticId })
         }
         // Since source model for Transition doesn't have any modifiable attribute, it will only return Addition Update
         return ArrayUpdateCommand.noUpdate()
@@ -99,7 +106,9 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
     private deleteModels<ID extends id.SemanticIdentity, SEM extends id.SemanticIdentity, SRC extends id.SemanticIdentity>(
         modelsMarkedForDeletion: Map<string, ID | SEM>,
         modelsToDelete: Iterable<ID>,
-        getPreviousSemanticModel: (id: string) => SEM | undefined
+        getPreviousSemanticModel: (id: string) => SEM | undefined,
+        // FIXME: dirty hack
+        createEmptyUpdate: (id: string) => Update<SRC>
     ): ReadonlyArrayUpdate<SRC> {
         console.debug('******** Existing models marked for deletion', modelsMarkedForDeletion.values())
         if (modelsMarkedForDeletion.size !== 0) {
@@ -114,8 +123,8 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
                 }
             }
             console.debug('Marked models for deletion', modelsMarkedForDeletion.values())
-            // TODO: Instead of no update, return modification, indicating, that elements are about to be deleted
-            return ArrayUpdateCommand.all(deletion, ArrayUpdateCommand.noUpdate())
+            const emptyUpdates = Array.from(modelsMarkedForDeletion.keys(), createEmptyUpdate)
+            return ArrayUpdateCommand.all(deletion, ArrayUpdateCommand.dissappearance(emptyUpdates))
         }
         for (const model of modelsToDelete) {
             // When we receive Semantic ID of the model to be deleted, we first check,
@@ -123,6 +132,6 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
             modelsMarkedForDeletion.set(model.id, getPreviousSemanticModel(model.id) ?? model)
         }
         console.debug('Marked models for deletion (No actual deletion)', modelsMarkedForDeletion.values())
-        return ArrayUpdateCommand.noUpdate()
+        return ArrayUpdateCommand.dissappearance(Array.from(modelsMarkedForDeletion.keys(), createEmptyUpdate))
     }
 }

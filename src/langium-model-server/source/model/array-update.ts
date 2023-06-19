@@ -9,15 +9,17 @@ import { Update } from './update'
 export type ArrayUpdate<T extends id.SemanticIdentity> = {
     added?: T[],
     removedIds?: string[],
-    changed?: Array<Update<T>>
+    changed?: Array<ElementUpdate<T>>
 }
 
 export type ReadonlyArrayUpdate<T extends id.SemanticIdentity> = {
     readonly added?: readonly T[],
     readonly removedIds?: readonly string[]
-    readonly changed?: ReadonlyArray<Update<T>>
+    readonly changed?: ReadonlyArray<ElementUpdate<T>>
 }
 
+export type ElementState = 'DISAPPEARED' | 'REAPPEARED'
+export type ElementUpdate<T extends id.SemanticIdentity> = Update<T, ElementState>
 export namespace ArrayUpdate {
 
     export function isEmpty<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>): boolean {
@@ -68,7 +70,7 @@ export class ArrayUpdateCommand<T extends id.SemanticIdentity> implements Readon
 
     protected _elementsToAdd?: T[]
     protected _idsToRemove?: string[]
-    protected _updatesToAdd?: Array<Update<T>>
+    protected _updatesToAdd?: Array<ElementUpdate<T>>
 
     public static addition<T extends id.SemanticIdentity>(element: T): ReadonlyArrayUpdate<T>
     public static addition<T extends id.SemanticIdentity>(elements: T[]): ReadonlyArrayUpdate<T>
@@ -98,6 +100,14 @@ export class ArrayUpdateCommand<T extends id.SemanticIdentity> implements Readon
         return this.NO_UPDATE
     }
 
+    public static dissappearance<T extends id.SemanticIdentity>(updates: Array<Update<T>>): ReadonlyArrayUpdate<T> {
+        return this.stateChange(updates , 'DISAPPEARED')
+    }
+
+    public static reappearance<T extends id.SemanticIdentity>(updates: Array<Update<T>> | Update<T>): ReadonlyArrayUpdate<T> {
+        return this.stateChange(this.toNonEmptyArray(updates), 'REAPPEARED')
+    }
+
     public static noUpdate<T extends id.SemanticIdentity>(): ReadonlyArrayUpdate<T> {
         return this.NO_UPDATE
     }
@@ -109,6 +119,16 @@ export class ArrayUpdateCommand<T extends id.SemanticIdentity> implements Readon
         const updatesToAdd = this.concatNotEmpty(updatesStream.map(upd => upd.changed))
         if (!!elementsToAdd || !!idsToRemove || !!updatesToAdd) {
             return new ArrayUpdateCommand(elementsToAdd, idsToRemove, updatesToAdd)
+        }
+        return this.NO_UPDATE
+    }
+
+    private static stateChange<T extends id.SemanticIdentity>(updates: Array<Update<T>> | undefined, state: ElementState): ReadonlyArrayUpdate<T> {
+        const updatesToAdd = updates
+        if (updatesToAdd) {
+            // FIXME: You are modifying input parameters here, while it is expected, that they stays untouched?
+            updatesToAdd.forEach(upd => (upd as ElementUpdate<T>).__state = state)
+            return new ArrayUpdateCommand(undefined, undefined, updatesToAdd)
         }
         return this.NO_UPDATE
     }
@@ -126,7 +146,7 @@ export class ArrayUpdateCommand<T extends id.SemanticIdentity> implements Readon
             .reduce((curr, next) => curr.concat(next))
     }
 
-    private constructor(_elementsToAdd?: T[], _idsToRemove?: string[], _updatesToAdd?: Array<Update<T>>) {
+    private constructor(_elementsToAdd?: T[], _idsToRemove?: string[], _updatesToAdd?: Array<ElementUpdate<T>>) {
         this._elementsToAdd = _elementsToAdd
         this._idsToRemove = _idsToRemove
         this._updatesToAdd = _updatesToAdd
@@ -140,7 +160,7 @@ export class ArrayUpdateCommand<T extends id.SemanticIdentity> implements Readon
         return this._idsToRemove
     }
 
-    public get changed(): Array<Update<T>> | undefined {
+    public get changed(): Array<ElementUpdate<T>> | undefined {
         return this._updatesToAdd
     }
 }
