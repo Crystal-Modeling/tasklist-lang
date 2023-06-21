@@ -16,4 +16,4 @@ startLMSLanguageServer(shared, TaskList)
 
 // Start the model server, which uses the same LMS specific services as LS launched above
 const modelServer = startLangiumModelServer(TaskList)
-connection.onShutdown(promisify(modelServer.close))
+connection.onShutdown(promisify(modelServer.shutDown))

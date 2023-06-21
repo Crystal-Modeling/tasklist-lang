@@ -5,6 +5,7 @@ import type { IdentityManager } from './semantic/identity-manager'
 import type { IdentityStorage } from './semantic/identity-storage'
 import type { SourceModelService } from './source/source-model-service'
 import type { SourceUpdateManager } from './source/source-update-manager'
+import type { LangiumSourceModelServer } from './source/source-model-server'
 
 /**
  * LMS services with default implementation available, not required to be overriden
@@ -12,6 +13,9 @@ import type { SourceUpdateManager } from './source/source-update-manager'
 export type LangiumModelServerDefaultServices = {
     lsp: {
         RenameProvider: RenameProvider,
+    },
+    source: {
+        LangiumSourceModelServer: LangiumSourceModelServer,
     }
 }
 
