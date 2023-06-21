@@ -1,17 +1,21 @@
 import type * as http2 from 'http2'
+import type { SemanticIdentity } from '../semantic/identity'
+import type { IdentityIndex } from '../semantic/identity-index'
 import type { LangiumModelServerAddedServices } from '../services'
+import type { LmsDocument } from '../workspace/documents'
 import { ApiResponse, SemanticIdResponse } from './model'
 import type { SourceModelService } from './source-model-service'
 
 type Http2RequestHandler = (stream: http2.ServerHttp2Stream, unmatchedPath: PathContainer,
     headers: http2.IncomingHttpHeaders, flags: number) => Http2RequestHandler | void
 type Http2RequestHandlerProvider<T> = (parameter: T) => Http2RequestHandler
-type LmsHttp2RouterProvider = (services: LangiumModelServerAddedServices) => (
-    (stream: http2.ServerHttp2Stream, headers: http2.IncomingHttpHeaders, flags: number) => void
-)
 
-export const LangiumModelServerRouter: LmsHttp2RouterProvider = (services: LangiumModelServerAddedServices) => (
-    (stream, headers, flags) => {
+type Http2ServerRouter = (stream: http2.ServerHttp2Stream, headers: http2.IncomingHttpHeaders, flags: number) => void
+
+export function LangiumModelServerRouter<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument>(
+    services: LangiumModelServerAddedServices<SM, II, D>
+): Http2ServerRouter {
+    return (stream, headers, flags) => {
         const method = headers[':method']
         const unmatchedPath = new PathContainer(headers[':path'] ?? '')
         let handler: Http2RequestHandler
@@ -33,7 +37,7 @@ export const LangiumModelServerRouter: LmsHttp2RouterProvider = (services: Langi
             nextHandlerChain = nextHandlerChain(stream, unmatchedPath, headers, flags)
         }
     }
-)
+}
 
 const helloWorldHandler: Http2RequestHandler = (stream) => {
     stream.respond({

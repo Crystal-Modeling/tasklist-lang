@@ -1,11 +1,12 @@
 import type { LangiumDocument, LangiumDocuments, LanguageMetaData } from 'langium'
 import { DocumentState } from 'langium'
 import { URI } from 'vscode-uri'
-import type { LangiumModelServerServices } from '../services'
 import type { SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { IdentityManager } from '../semantic/identity-manager'
+import type { LangiumModelServerServices } from '../services'
 import { UriConverter } from '../utils/uri-converter'
+import type { LmsDocument } from '../workspace/documents'
 
 export interface SourceModelService<SM> {
     getById(id: string): SM | undefined
@@ -17,13 +18,13 @@ export interface SourceModelService<SM> {
     getSemanticId(sourceUri: string): string | undefined
 }
 
-export abstract class AbstractSourceModelService<SM extends SemanticIdentity, SemI extends IdentityIndex> implements SourceModelService<SM> {
+export abstract class AbstractSourceModelService<SM extends SemanticIdentity, SemI extends IdentityIndex, D extends LmsDocument> implements SourceModelService<SM> {
 
     protected semanticIndexManager: IdentityManager<SemI>
     protected langiumDocuments: LangiumDocuments
     protected languageMetadata: LanguageMetaData
 
-    constructor(services: LangiumModelServerServices<SM, SemI>) {
+    constructor(services: LangiumModelServerServices<SM, SemI, D>) {
         this.semanticIndexManager = services.semantic.IdentityManager
         this.langiumDocuments = services.shared.workspace.LangiumDocuments
     }

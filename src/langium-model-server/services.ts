@@ -15,26 +15,26 @@ import type { LmsDocumentBuilder } from './workspace/lms-document-builder'
 /**
  * LMS services with default implementation available, not required to be overriden
  */
-export type LangiumModelServerDefaultServices = {
+export type LangiumModelServerDefaultServices<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> = {
     lsp: {
         RenameProvider: RenameProvider,
     },
     workspace: {
-        LmsDocumentBuilder: LmsDocumentBuilder
+        LmsDocumentBuilder: LmsDocumentBuilder<SM, II, D>
     },
     source: {
-        LangiumSourceModelServer: LangiumSourceModelServer,
+        LangiumSourceModelServer: LangiumSourceModelServer<SM, II, D>,
     }
 }
 
-export type LangiumModelServerAbstractServices<SM extends SemanticIdentity = SemanticIdentity, II extends IdentityIndex = IdentityIndex> = {
+export type LangiumModelServerAbstractServices<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> = {
     workspace: {
-        LmsDocumentGuard: TypeGuard<LmsDocument, ExtendableLangiumDocument>
+        LmsDocumentGuard: TypeGuard<D, ExtendableLangiumDocument>
     },
     semantic: {
         IdentityStorage: IdentityStorage,
         IdentityManager: IdentityManager<II>,
-        IdentityReconciler: IdentityReconciler<SM>,
+        IdentityReconciler: IdentityReconciler<SM, D>,
         SemanticDomainFactory: SemanticDomainFactory,
     },
     source: {
@@ -43,11 +43,11 @@ export type LangiumModelServerAbstractServices<SM extends SemanticIdentity = Sem
     }
 }
 
-export type LangiumModelServerAddedServices<SM extends SemanticIdentity = SemanticIdentity, II extends IdentityIndex = IdentityIndex>
-    = LangiumModelServerDefaultServices & LangiumModelServerAbstractServices<SM, II>
+export type LangiumModelServerAddedServices<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument>
+    = LangiumModelServerDefaultServices<SM, II, D> & LangiumModelServerAbstractServices<SM, II, D>
 
-export type LangiumModelServerServices<SM extends SemanticIdentity = SemanticIdentity, II extends IdentityIndex = IdentityIndex>
-    = LangiumServices & LangiumModelServerAddedServices<SM, II>
+export type LangiumModelServerServices<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument>
+    = LangiumServices & LangiumModelServerAddedServices<SM, II, D>
 
-export type PartialLangiumModelServerServices<SM extends SemanticIdentity = SemanticIdentity, II extends IdentityIndex = IdentityIndex>
-    = LangiumModelServerAbstractServices<SM, II> & PartialLangiumServices & DeepPartial<LangiumModelServerDefaultServices>
+export type PartialLangiumModelServerServices<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument>
+    = LangiumModelServerAbstractServices<SM, II, D> & PartialLangiumServices & DeepPartial<LangiumModelServerDefaultServices<SM, II, D>>

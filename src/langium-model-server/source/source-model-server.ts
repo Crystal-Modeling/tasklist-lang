@@ -1,20 +1,25 @@
-import * as http2 from 'http2'
 import * as fs from 'fs-extra'
-import type { LangiumModelServerServices } from '../services'
-import { LangiumModelServerRouter } from './source-model-router'
+import * as http2 from 'http2'
 import path from 'path'
+import type { SemanticIdentity } from '../semantic/identity'
+import type { IdentityIndex } from '../semantic/identity-index'
+import type { LangiumModelServerServices } from '../services'
+import type { LmsDocument } from '../workspace/documents'
+import { LangiumModelServerRouter } from './source-model-router'
 
-export function startLangiumModelServer(lmsServices: LangiumModelServerServices): LangiumSourceModelServer {
+export function startLangiumModelServer
+<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument>(lmsServices: LangiumModelServerServices<SM, II, D>):
+LangiumSourceModelServer<SM, II, D> {
     const server = lmsServices.source.LangiumSourceModelServer
     server.start(8443)
     return server
 }
 
-export class LangiumSourceModelServer {
+export class LangiumSourceModelServer<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> {
 
     protected readonly http2Server: http2.Http2SecureServer
 
-    constructor(services: LangiumModelServerServices) {
+    constructor(services: LangiumModelServerServices<SM, II, D>) {
         const keyPath = path.join(__dirname, '../../ssl/key.pem')
         const certPath = path.join(__dirname, '../../ssl/cert.pem')
         const router = LangiumModelServerRouter(services)

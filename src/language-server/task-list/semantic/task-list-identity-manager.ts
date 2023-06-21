@@ -5,6 +5,8 @@ import type * as ast from '../../generated/ast'
 import { Model } from './task-list-identity'
 import { TaskListIdentityIndex } from './task-list-identity-index'
 import type * as sem from '../../../langium-model-server/semantic/model'
+import type * as source from '../source/model'
+import type { TaskListDocument } from '../workspace/documents'
 
 /**
  * Stores {@link Model} per URI of Langium-managed TextDocument.
@@ -12,7 +14,7 @@ import type * as sem from '../../../langium-model-server/semantic/model'
  * to fetch semantic elements globally, i.e., searching through all the managed files.
  * See {@link getTaskId} for example.
  */
-export class TaskListIdentityManager extends AbstractIdentityManager<TaskListIdentityIndex> {
+export class TaskListIdentityManager extends AbstractIdentityManager<source.Model, TaskListIdentityIndex, TaskListDocument> {
 
     public getTaskId(task: sem.Valid<ast.Task>): string {
         const taskId = this.getIdentityIndex(getDocument(task)).getTaskIdByName(task.name)

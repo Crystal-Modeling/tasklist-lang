@@ -1,13 +1,16 @@
 
 import * as fs from 'fs-extra'
-import { fileURLToPath } from 'url'
-import { IdentityError } from './identity-error'
-import type { TypeGuard } from '../utils/types'
-import path from 'path'
-import { URI } from 'vscode-uri'
-import { UriConverter } from '../utils/uri-converter'
 import type { LanguageMetaData } from 'langium'
+import path from 'path'
+import { fileURLToPath } from 'url'
+import { URI } from 'vscode-uri'
 import type { LangiumModelServerServices } from '../services'
+import type { TypeGuard } from '../utils/types'
+import { UriConverter } from '../utils/uri-converter'
+import type { LmsDocument } from '../workspace/documents'
+import type { SemanticIdentity } from './identity'
+import { IdentityError } from './identity-error'
+import type { IdentityIndex } from './identity-index'
 
 export interface IdentityStorage {
     saveIdentityToFile(languageDocumentUri: string, identity: unknown): void
@@ -18,11 +21,11 @@ export interface IdentityStorage {
 /**
  * Copied and adopted from @eclipse-glsp/server-node/src/features/model/abstract-json-model-storage.ts
  */
-export abstract class AbstractIdentityStorage implements IdentityStorage {
+export abstract class AbstractIdentityStorage<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements IdentityStorage {
 
     private languageMetaData: LanguageMetaData
 
-    constructor(services: LangiumModelServerServices) {
+    constructor(services: LangiumModelServerServices<SM, II, D>) {
         this.languageMetaData = services.LanguageMetaData
     }
 

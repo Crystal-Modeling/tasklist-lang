@@ -1,10 +1,11 @@
 import type { AstNode, LangiumDocument } from 'langium'
 import { AbstractSourceModelService } from '../../../langium-model-server/source/source-model-service'
 import type { TaskListIdentityIndex } from '../semantic/task-list-identity-index'
+import type { TaskListDocument} from '../workspace/documents'
 import { isTaskListDocument } from '../workspace/documents'
 import { Model, Task, Transition } from './model'
 
-export class TaskListSourceModelService extends AbstractSourceModelService<Model, TaskListIdentityIndex> {
+export class TaskListSourceModelService extends AbstractSourceModelService<Model, TaskListIdentityIndex, TaskListDocument> {
 
     protected override combineSemanticModelWithAst(semanticModelIndex: TaskListIdentityIndex,
         langiumDocument: LangiumDocument<AstNode>): Model {

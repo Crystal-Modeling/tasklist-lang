@@ -2,10 +2,10 @@ import type { AstNode, LangiumDocument, NameProvider } from 'langium'
 import { getDocument } from 'langium'
 import { URI } from 'vscode-uri'
 import type { LangiumModelServerServices } from '../services'
-import type { IdentityStorage } from './identity-storage'
-import type { NamedSemanticIdentity } from './identity'
-import type { ModelExposedIdentityIndex, IdentityIndex } from './identity-index'
 import type { LmsDocument } from '../workspace/documents'
+import type { NamedSemanticIdentity, SemanticIdentity } from './identity'
+import type { IdentityIndex, ModelExposedIdentityIndex } from './identity-index'
+import type { IdentityStorage } from './identity-storage'
 
 export interface IdentityManager<II extends IdentityIndex = IdentityIndex> {
     getLanguageDocumentUri(id: string): URI | undefined
@@ -21,14 +21,14 @@ export interface IdentityManager<II extends IdentityIndex = IdentityIndex> {
     deleteSemanticIdentity(languageDocumentUri: string): void
 }
 
-export abstract class AbstractIdentityManager<II extends IdentityIndex> implements IdentityManager<II> {
+export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements IdentityManager<II> {
 
     protected identityStorage: IdentityStorage
     protected nameProvider: NameProvider
     private indexRegistryByLanguageDocumentUri: Map<string, ModelExposedIdentityIndex<II>>
     private languageDocumentUriById: Map<string, URI>
 
-    public constructor(services: LangiumModelServerServices) {
+    public constructor(services: LangiumModelServerServices<SM, II, D>) {
         this.identityStorage = services.semantic.IdentityStorage
         this.nameProvider = services.references.NameProvider
         this.indexRegistryByLanguageDocumentUri = new Map()

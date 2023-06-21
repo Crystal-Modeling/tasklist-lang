@@ -5,19 +5,32 @@ import type * as ast from '../../generated/ast'
 import type * as source from '../source/model'
 import type { TaskListSourceUpdateManager } from '../source/task-list-source-update-manager'
 import type { TaskListServices } from '../task-list-module'
-import type { TaskListDocument } from '../workspace/documents'
+import { type TaskListDocument } from '../workspace/documents'
 import type * as semantic from './model'
 import type { Task } from './task-list-identity'
 import { Model } from './task-list-identity'
 import type { TaskListIdentityManager } from './task-list-identity-manager'
 
-export class TaskListIdentityReconciler implements IdentityReconciler<source.Model>{
+export class TaskListIdentityReconciler implements IdentityReconciler<source.Model, TaskListDocument>{
     private identityManager: TaskListIdentityManager
     private sourceUpdateManager: TaskListSourceUpdateManager
 
     public constructor(services: TaskListServices) {
         this.identityManager = services.semantic.IdentityManager
         this.sourceUpdateManager = services.source.SourceUpdateManager
+    }
+    identityReconciliationIterations = [
+        this.reconcileTasks.bind(this),
+        this.reconcileTransitions.bind(this),
+    ]
+
+    private reconcileTasks(_document: TaskListDocument, _update: src.Update<source.Model>) {
+        // const doc: LmsDocument<ast.Model> = document
+        // this.reconcileTransitions(doc, update)
+    }
+
+    private reconcileTransitions(_document: TaskListDocument, _update: src.Update<source.Model>) {
+
     }
 
     public reconcileIdentityWithLanguageModel(document: TaskListDocument): src.Update<source.Model> {

@@ -4,12 +4,15 @@ import type { RenameParams, WorkspaceEdit } from 'vscode-languageserver'
 import { TextEdit } from 'vscode-languageserver'
 import type { IdentityManager } from '../semantic/identity-manager'
 import type { LangiumModelServerServices } from '../services'
+import type { SemanticIdentity } from '../semantic/identity'
+import type { IdentityIndex } from '../semantic/identity-index'
+import type { LmsDocument } from '../workspace/documents'
 
-export class LmsRenameProvider extends DefaultRenameProvider {
+export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> extends DefaultRenameProvider {
 
     protected identityManager: IdentityManager
 
-    constructor(services: LangiumModelServerServices) {
+    constructor(services: LangiumModelServerServices<SM, II, D>) {
         super(services)
         this.identityManager = services.semantic.IdentityManager
     }

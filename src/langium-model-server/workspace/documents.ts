@@ -9,12 +9,15 @@ export type ExtendableLangiumDocument<T extends AstNode = AstNode> = Override<La
  * A Langium document holds the parse result (AST and CST) and any additional state that is derived
  * from the AST, e.g. the result of scope precomputation.
  */
-export interface LmsDocument<T extends AstNode = AstNode> extends ExtendableLangiumDocument<T> {
+export type LmsDocument<T extends AstNode = AstNode> = ExtendableLangiumDocument<T> & SemanticAwareDocument & {
+    state: LmsDocumentState
+}
+
+export type SemanticAwareDocument = {
     /**
      * This property is initialized during Validation phase to be considered during Identity Reconciliation phase
      */
     semanticDomain?: SemanticDomain
-    state: LmsDocumentState
 }
 
 /**
