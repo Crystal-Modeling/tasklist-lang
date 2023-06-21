@@ -1,7 +1,6 @@
 import type { Valid } from '../../../langium-model-server/semantic/model'
 import { Identified } from '../../../langium-model-server/semantic/model'
 import type * as ast from '../../generated/ast'
-import type { TaskListDocument } from '../workspace/documents'
 import { getTaskListDocument } from '../workspace/documents'
 import type { TransitionDerivativeIdentity } from './model'
 import { IdentifiedTransition } from './model'
@@ -36,8 +35,9 @@ export interface TaskListSemanticDomain extends QueriableTaskListSemanticDomain 
 }
 
 export namespace TaskListSemanticDomain {
-    export function initialize(document: TaskListDocument) {
-        document.semanticDomain = new PreprocessedTaskListSemanticDomain()
+
+    export function create() {
+        return new PreprocessedTaskListSemanticDomain()
     }
 }
 

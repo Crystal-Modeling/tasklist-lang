@@ -10,12 +10,12 @@ import type { LangiumModelServerAddedServices } from '../services'
  * @param services Same {@link LangiumSharedServices} used in {@link startLanguageServer}
  * @param lmsServices Additional {@link LangiumModelServerAddedServices} introduced by langium-model-server module
  */
+//TODO: When elaborating into a library, make sure LMS is compatible with multiple Langium languages in one server
 export function startLMSLanguageServer(services: LangiumSharedServices, lmsServices: LangiumModelServerAddedServices): void {
     startLanguageServer(services)
     addIdentityProcessingHandlers(services.lsp.Connection!, lmsServices)
 }
 
-//TODO: When elaborating into a library, make sure LMS is compatible with multiple Langium languages in one server
 function addIdentityProcessingHandlers(connection: Connection, lmsServices: LangiumModelServerAddedServices) {
 
     const semanticIndexManager = lmsServices.semantic.IdentityManager

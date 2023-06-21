@@ -1,28 +1,26 @@
 import type { Module } from 'langium'
-import type { LangiumModelServerAddedServices, LangiumModelServerServices, PartialLangiumModelServerServices } from '../../langium-model-server/services'
+import type { LangiumModelServerServices, PartialLangiumModelServerServices } from '../../langium-model-server/services'
 import { TaskListValidator } from '../task-list/validation/task-list-validation'
-import type { TaskListIdentityIndex } from './semantic/task-list-identity-index'
 import { TaskListIdentityManager } from './semantic/task-list-identity-manager'
 import { TaskListIdentityReconciler } from './semantic/task-list-identity-reconciler'
 import { TaskListIdentityStorage } from './semantic/task-list-identity-storage'
-import type * as source from './source/model'
+import { TaskListSemanticDomain } from './semantic/task-list-semantic-domain'
 import { TaskListSourceModelService } from './source/task-list-source-model-service'
 import { TaskListSourceUpdateManager } from './source/task-list-source-update-manager'
+import { isTaskListDocument } from './workspace/documents'
+import type { TaskListIdentityIndex } from './semantic/task-list-identity-index'
+import type * as source from './source/model'
 
 /**
  * Declaration of custom services - add your own service classes here.
  */
-export type TaskListAddedServices = LangiumModelServerAddedServices<source.Model, TaskListIdentityIndex> & {
+export type TaskListAddedServices = {
     validation: {
         TaskListValidator: TaskListValidator
     },
-    /**
-     * These services are required to leverage Langium Model Server (LMS) 'Langium extension' capabilities
-     */
     semantic: {
         // Redefining the type of IdentityManager to be used in TaskListIdentityReconciler
         IdentityManager: TaskListIdentityManager
-        TaskListIdentityReconciler: TaskListIdentityReconciler
     },
     source: {
         // Redefining the type
@@ -34,21 +32,25 @@ export type TaskListAddedServices = LangiumModelServerAddedServices<source.Model
  * Union of Langium default services and your custom services - use this as constructor parameter
  * of custom service classes.
  */
-export type TaskListServices = LangiumModelServerServices & TaskListAddedServices
+export type TaskListServices = LangiumModelServerServices<source.Model, TaskListIdentityIndex> & TaskListAddedServices
 
 /**
  * Dependency injection module that overrides Langium default services and contributes the
  * declared custom services. The Langium defaults can be partially specified to override only
  * selected services, while the custom services must be fully specified.
  */
-export const TaskListModule: Module<TaskListServices, PartialLangiumModelServerServices & TaskListAddedServices> = {
+export const TaskListModule: Module<TaskListServices, PartialLangiumModelServerServices<source.Model, TaskListIdentityIndex> & TaskListAddedServices> = {
     validation: {
         TaskListValidator: () => new TaskListValidator()
+    },
+    workspace: {
+        LmsDocumentGuard: () => isTaskListDocument
     },
     semantic: {
         IdentityStorage: (services) => new TaskListIdentityStorage(services),
         IdentityManager: (services) => new TaskListIdentityManager(services),
-        TaskListIdentityReconciler: (services) => new TaskListIdentityReconciler(services),
+        IdentityReconciler: (services) => new TaskListIdentityReconciler(services),
+        SemanticDomainFactory: () => TaskListSemanticDomain.create,
     },
     source: {
         SourceModelService: (services) => new TaskListSourceModelService(services),

@@ -3,18 +3,14 @@ import type {
     LangiumSharedServices
 } from 'langium'
 import {
-    DocumentState,
     createDefaultModule, createDefaultSharedModule,
-    inject,
-    interruptAndCheck
+    inject
 } from 'langium'
+import { LangiumModelServerDefaultModule } from '../langium-model-server/langium-model-server-module'
 import { TaskListGeneratedModule, TaskListLangGeneratedSharedModule } from './generated/module'
-import { TaskListSemanticDomain } from './task-list/semantic/task-list-semantic-domain'
 import type { TaskListServices } from './task-list/task-list-module'
 import { TaskListModule } from './task-list/task-list-module'
 import { registerValidationChecks } from './task-list/validation/task-list-validation'
-import { isTaskListDocument } from './task-list/workspace/documents'
-import { LangiumModelServerDefaultModule } from '../langium-model-server/langium-model-server-module'
 
 /**
  * Create the full set of services required by Langium.
@@ -46,41 +42,6 @@ export function createTaskListLangServices(context: DefaultSharedModuleContext):
         TaskListModule
     )
     shared.ServiceRegistry.register(TaskList)
-    addSemanticDomainInitializationPhase(shared)
     registerValidationChecks(TaskList)
-    addSemanticReconciliationPhase(shared, TaskList)
     return { shared, TaskList }
-}
-
-function addSemanticDomainInitializationPhase(sharedServices: LangiumSharedServices) {
-    const documentBuilder = sharedServices.workspace.DocumentBuilder
-    documentBuilder.onBuildPhase(DocumentState.IndexedReferences, async (documents, cancelToken) => {
-        for (const document of documents) {
-            if (isTaskListDocument(document)) {
-                await interruptAndCheck(cancelToken)
-                if (!document.semanticDomain) {
-                    console.log(`Initializing semantic domain for  ${document.uri.toString()}`)
-                    TaskListSemanticDomain.initialize(document)
-                } else {
-                    document.semanticDomain.clear()
-                }
-            }
-        }
-    })
-}
-
-function addSemanticReconciliationPhase(sharedServices: LangiumSharedServices, taskListServices: TaskListServices) {
-    const documentBuilder = sharedServices.workspace.DocumentBuilder
-    documentBuilder.onBuildPhase(DocumentState.Validated, async (documents, cancelToken) => {
-        console.debug('====== SEMANTIC RECONCILIATION PHASE ======')
-        for (const document of documents) {
-            if (isTaskListDocument(document)) {
-                console.debug('       For document ', document.textDocument.uri)
-                await interruptAndCheck(cancelToken)
-                const semanticReconciler = taskListServices.semantic.TaskListIdentityReconciler
-                semanticReconciler.reconcileIdentityWithLanguageModel(document)
-            }
-
-        }
-    })
 }

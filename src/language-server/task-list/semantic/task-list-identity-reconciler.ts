@@ -1,4 +1,5 @@
 import { stream } from 'langium'
+import type { IdentityReconciler } from '../../../langium-model-server/semantic/identity-reconciler'
 import * as src from '../../../langium-model-server/source/model'
 import type * as ast from '../../generated/ast'
 import type * as source from '../source/model'
@@ -10,8 +11,7 @@ import type { Task } from './task-list-identity'
 import { Model } from './task-list-identity'
 import type { TaskListIdentityManager } from './task-list-identity-manager'
 
-//TODO: When elaborating LMS into a library, make sure reconciler is defined and linked at that level
-export class TaskListIdentityReconciler {
+export class TaskListIdentityReconciler implements IdentityReconciler<source.Model>{
     private identityManager: TaskListIdentityManager
     private sourceUpdateManager: TaskListSourceUpdateManager
 

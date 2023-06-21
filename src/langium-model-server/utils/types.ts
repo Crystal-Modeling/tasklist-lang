@@ -5,7 +5,10 @@
  *
  * Utility type to describe typeguard functions.
  */
-export type TypeGuard<T> = (element: any, ...args: any[]) => element is T
+export type TypeGuard<T extends O, O=any> = (element: O) => element is T
+export type Override<T, K extends (keyof T), O> = Omit<T, K> & {
+    [P in K]: O
+}
 
 export function isDefinedObject(obj: unknown): obj is any {
     return !!obj && typeof obj === 'object'

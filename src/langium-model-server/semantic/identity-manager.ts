@@ -5,6 +5,7 @@ import type { LangiumModelServerServices } from '../services'
 import type { IdentityStorage } from './identity-storage'
 import type { NamedSemanticIdentity } from './identity'
 import type { ModelExposedIdentityIndex, IdentityIndex } from './identity-index'
+import type { LmsDocument } from '../workspace/documents'
 
 export interface IdentityManager<II extends IdentityIndex = IdentityIndex> {
     getLanguageDocumentUri(id: string): URI | undefined
@@ -46,7 +47,7 @@ export abstract class AbstractIdentityManager<II extends IdentityIndex> implemen
         return this.getIdentityIndex(getDocument(astNode)).findElementByName(name)
     }
 
-    public getIdentityIndex(languageDocument: LangiumDocument): II {
+    public getIdentityIndex(languageDocument: LmsDocument): II {
         return this.getOrLoadIdentity(languageDocument.textDocument.uri)
     }
 
