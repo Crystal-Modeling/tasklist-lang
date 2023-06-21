@@ -1,7 +1,7 @@
 import type { LangiumDocument, LangiumDocuments, LanguageMetaData } from 'langium'
 import { DocumentState } from 'langium'
 import { URI } from 'vscode-uri'
-import type { LangiumModelServerServices } from '../langium-model-server-module'
+import type { LangiumModelServerServices } from '../services'
 import type { SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { IdentityManager } from '../semantic/identity-manager'

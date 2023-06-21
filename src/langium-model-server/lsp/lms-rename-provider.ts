@@ -3,7 +3,7 @@ import { DefaultRenameProvider, findDeclarationNodeAtOffset } from 'langium'
 import type { RenameParams, WorkspaceEdit } from 'vscode-languageserver'
 import { TextEdit } from 'vscode-languageserver'
 import type { IdentityManager } from '../semantic/identity-manager'
-import type { LangiumModelServerServices } from '../langium-model-server-module'
+import type { LangiumModelServerServices } from '../services'
 
 export class LmsRenameProvider extends DefaultRenameProvider {
 

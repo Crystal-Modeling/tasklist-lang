@@ -88,6 +88,9 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         const validTargetTasks: Array<Valid<ast.Task>> = []
         sourceTask.references.forEach((targetTaskRef, targetTaskIndex) => {
             const targetTask = targetTaskRef.ref
+            // Assuming foreign task is semantically valid as soon as a reference to it is resolved
+            // TODO: Incorporate identity reconcilitation to the document building process, and make sure it runs in separate iterations,
+            // i.e., first all the tasks (in all the documents) are identified, then only transition identification begins
             if (!!targetTask && this.isTaskSemanticallyValid(targetTask)
                 && this.isTransitionSemanticallyValid(sourceTask, targetTaskIndex)) {
                 validTargetTasks.push(targetTask)

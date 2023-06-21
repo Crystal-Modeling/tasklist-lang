@@ -1,7 +1,7 @@
 import type { AstNode, LangiumDocument, NameProvider } from 'langium'
 import { getDocument } from 'langium'
 import { URI } from 'vscode-uri'
-import type { LangiumModelServerServices } from '../langium-model-server-module'
+import type { LangiumModelServerServices } from '../services'
 import type { IdentityStorage } from './identity-storage'
 import type { NamedSemanticIdentity } from './identity'
 import type { ModelExposedIdentityIndex, IdentityIndex } from './identity-index'

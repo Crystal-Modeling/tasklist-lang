@@ -1,5 +1,5 @@
 import type * as http2 from 'http2'
-import type { LangiumModelServerAddedServices } from '../langium-model-server-module'
+import type { LangiumModelServerAddedServices } from '../services'
 import { ApiResponse, SemanticIdResponse } from './model'
 import type { SourceModelService } from './source-model-service'
 

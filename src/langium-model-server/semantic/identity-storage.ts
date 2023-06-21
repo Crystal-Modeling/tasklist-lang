@@ -7,7 +7,7 @@ import path from 'path'
 import { URI } from 'vscode-uri'
 import { UriConverter } from '../utils/uri-converter'
 import type { LanguageMetaData } from 'langium'
-import type { LangiumModelServerServices } from '../langium-model-server-module'
+import type { LangiumModelServerServices } from '../services'
 
 export interface IdentityStorage {
     saveIdentityToFile(languageDocumentUri: string, identity: unknown): void

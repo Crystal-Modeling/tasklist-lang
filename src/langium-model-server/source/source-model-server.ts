@@ -1,6 +1,6 @@
 import * as http2 from 'http2'
 import * as fs from 'fs-extra'
-import type { LangiumModelServerAddedServices } from '../langium-model-server-module'
+import type { LangiumModelServerAddedServices } from '../services'
 import { LangiumModelServerRouter } from './source-model-router'
 import path from 'path'
 
@@ -17,4 +17,8 @@ export function startLangiumModelServer(lmsServices: LangiumModelServerAddedServ
         .on('sessionError', console.error)
         .on('stream', router)
         .listen(8443)
+}
+
+export class LangiumSourceModelServer {
+
 }

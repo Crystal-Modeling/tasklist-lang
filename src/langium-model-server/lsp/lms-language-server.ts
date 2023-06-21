@@ -2,7 +2,7 @@ import type { LangiumSharedServices} from 'langium'
 import { startLanguageServer } from 'langium'
 import type { Connection} from 'vscode-languageserver'
 import { FileChangeType } from 'vscode-languageserver'
-import type { LangiumModelServerAddedServices } from '../langium-model-server-module'
+import type { LangiumModelServerAddedServices } from '../services'
 
 /**
  * Entry point function to launch LMS language server.

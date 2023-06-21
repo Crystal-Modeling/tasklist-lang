@@ -1,25 +1,10 @@
-import type { LangiumServices } from 'langium'
-import type { LmsRenameProvider } from './lsp/lms-rename-provider'
-import type { SemanticIdentity } from './semantic/identity'
-import type { IdentityIndex } from './semantic/identity-index'
-import type { IdentityManager } from './semantic/identity-manager'
-import type { IdentityStorage } from './semantic/identity-storage'
-import type { SourceModelService } from './source/source-model-service'
-import type { SourceUpdateManager } from './source/source-update-manager'
+import type { Module } from 'langium'
+import type { LangiumModelServerDefaultServices, LangiumModelServerServices } from './services'
+import { LmsRenameProvider } from './lsp/lms-rename-provider'
 
-export type LangiumModelServerAddedServices<SM extends SemanticIdentity = SemanticIdentity, II extends IdentityIndex = IdentityIndex> = {
-    semantic: {
-        IdentityStorage: IdentityStorage,
-        IdentityManager: IdentityManager<II>,
-    },
-    source: {
-        SourceModelService: SourceModelService<SM>,
-        SourceUpdateManager: SourceUpdateManager<SM>
-    },
+export const LangiumModelServerDefaultModule: Module<LangiumModelServerServices, LangiumModelServerDefaultServices> = {
     lsp: {
-        RenameProvider: LmsRenameProvider,
+        RenameProvider: (services) => new LmsRenameProvider(services)
     }
 }
 
-export type LangiumModelServerServices<SM extends SemanticIdentity = SemanticIdentity, II extends IdentityIndex = IdentityIndex>
-    = LangiumServices & LangiumModelServerAddedServices<SM, II>

@@ -1,9 +1,5 @@
-import type {
-    LangiumServices,
-    Module, PartialLangiumServices
-} from 'langium'
-import type { LangiumModelServerAddedServices } from '../../langium-model-server/langium-model-server-module'
-import { LmsRenameProvider } from '../../langium-model-server/lsp/lms-rename-provider'
+import type { Module } from 'langium'
+import type { LangiumModelServerAddedServices, LangiumModelServerServices, PartialLangiumModelServerServices } from '../../langium-model-server/services'
 import { TaskListValidator } from '../task-list/validation/task-list-validation'
 import type { TaskListIdentityIndex } from './semantic/task-list-identity-index'
 import { TaskListIdentityManager } from './semantic/task-list-identity-manager'
@@ -29,6 +25,7 @@ export type TaskListAddedServices = LangiumModelServerAddedServices<source.Model
         TaskListIdentityReconciler: TaskListIdentityReconciler
     },
     source: {
+        // Redefining the type
         SourceUpdateManager: TaskListSourceUpdateManager
     }
 }
@@ -37,14 +34,14 @@ export type TaskListAddedServices = LangiumModelServerAddedServices<source.Model
  * Union of Langium default services and your custom services - use this as constructor parameter
  * of custom service classes.
  */
-export type TaskListServices = LangiumServices & TaskListAddedServices
+export type TaskListServices = LangiumModelServerServices & TaskListAddedServices
 
 /**
  * Dependency injection module that overrides Langium default services and contributes the
  * declared custom services. The Langium defaults can be partially specified to override only
  * selected services, while the custom services must be fully specified.
  */
-export const TaskListModule: Module<TaskListServices, PartialLangiumServices & TaskListAddedServices> = {
+export const TaskListModule: Module<TaskListServices, PartialLangiumModelServerServices & TaskListAddedServices> = {
     validation: {
         TaskListValidator: () => new TaskListValidator()
     },
@@ -57,7 +54,4 @@ export const TaskListModule: Module<TaskListServices, PartialLangiumServices & T
         SourceModelService: (services) => new TaskListSourceModelService(services),
         SourceUpdateManager: () => new TaskListSourceUpdateManager(),
     },
-    lsp: {
-        RenameProvider: (services) => new LmsRenameProvider(services)
-    }
 }

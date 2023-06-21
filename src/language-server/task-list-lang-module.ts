@@ -14,6 +14,7 @@ import type { TaskListServices } from './task-list/task-list-module'
 import { TaskListModule } from './task-list/task-list-module'
 import { registerValidationChecks } from './task-list/validation/task-list-validation'
 import { isTaskListDocument } from './task-list/workspace/documents'
+import { LangiumModelServerDefaultModule } from '../langium-model-server/langium-model-server-module'
 
 /**
  * Create the full set of services required by Langium.
@@ -41,6 +42,7 @@ export function createTaskListLangServices(context: DefaultSharedModuleContext):
     const TaskList = inject(
         createDefaultModule({ shared }),
         TaskListGeneratedModule,
+        LangiumModelServerDefaultModule,
         TaskListModule
     )
     shared.ServiceRegistry.register(TaskList)
