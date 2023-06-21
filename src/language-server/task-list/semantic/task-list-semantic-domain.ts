@@ -64,7 +64,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         - Transition is valid for Semantic Model (is unique by name within a Task).
         - Aggregate functions: getValidTasks, getValidTargetTasks, which deals with Model/Task internals
 
-        So that neither SemanticManager, nor SemanticModelIndex is responsible for traversing AST internals
+        So that neither SemanticManager, nor IdentityIndex is responsible for traversing AST internals
     */
     protected isTaskSemanticallyValid(task: ast.Task): task is Valid<ast.Task> {
         return !this.invalidTasks.has(task)

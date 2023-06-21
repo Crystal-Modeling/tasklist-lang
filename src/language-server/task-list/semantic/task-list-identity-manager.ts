@@ -45,6 +45,6 @@ export class TaskListIdentityManager extends AbstractIdentityManager<TaskListIde
 class AccessibleTaskListIdentityIndex extends TaskListIdentityIndex {
 
     public override get model(): Model {
-        return this._model
+        return super.model
     }
 }

@@ -12,11 +12,11 @@ import type { LangiumModelServerAddedServices } from '../services'
  */
 export function startLMSLanguageServer(services: LangiumSharedServices, lmsServices: LangiumModelServerAddedServices): void {
     startLanguageServer(services)
-    addSemanticModelProcessingHandlers(services.lsp.Connection!, lmsServices)
+    addIdentityProcessingHandlers(services.lsp.Connection!, lmsServices)
 }
 
 //TODO: When elaborating into a library, make sure LMS is compatible with multiple Langium languages in one server
-function addSemanticModelProcessingHandlers(connection: Connection, lmsServices: LangiumModelServerAddedServices) {
+function addIdentityProcessingHandlers(connection: Connection, lmsServices: LangiumModelServerAddedServices) {
 
     const semanticIndexManager = lmsServices.semantic.IdentityManager
 

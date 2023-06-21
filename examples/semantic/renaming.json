@@ -1,10 +1,14 @@
 {
-  "id": "bfb8ab01-9b3a-40e1-9685-494e1757df63",
-  "tasks": {
-    "d1dfce0e-661a-4812-b633-0fab50133daf": {
-      "id": "d1dfce0e-661a-4812-b633-0fab50133daf",
-      "name": "t1"
+  "id": "fa9702fa-35d6-44e8-a2d6-4d2e0a6c0f02",
+  "tasks": [
+    {
+      "id": "318208f7-2162-48e4-9e0d-23feb9b19e2b",
+      "name": "ga"
+    },
+    {
+      "id": "338b0d33-3b1d-4d85-b442-07f944f12338",
+      "name": "aga"
     }
-  },
-  "transitions": {}
+  ],
+  "transitions": []
 }

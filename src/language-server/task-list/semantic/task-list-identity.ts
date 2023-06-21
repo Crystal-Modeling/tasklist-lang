@@ -1,13 +1,13 @@
 import * as uuid from 'uuid'
 import type * as sem from '../../../langium-model-server/semantic/model'
 import type * as semantic from './model'
-import { isDefinedObject, isMappedObject } from '../../../langium-model-server/utils/types'
+import { isArray, isDefinedObject } from '../../../langium-model-server/utils/types'
 import type * as ast from '../../generated/ast'
 
 export interface Model {
     id: string
-    tasks: { [ID: string]: Task }
-    transitions: { [ID: string]: Transition }
+    tasks: Task[]
+    transitions: Transition[]
 }
 
 export interface Task {
@@ -27,8 +27,8 @@ export namespace Model {
             return false
         }
         if (typeof obj.id !== 'string'
-            || !isMappedObject(obj.tasks, 'string', isTask)
-            || !isMappedObject(obj.transitions, 'string', isTransition)) {
+            || !isArray(obj.tasks, isTask)
+            || !isArray(obj.transitions, isTransition)) {
             return false
         }
 
@@ -51,8 +51,8 @@ export namespace Model {
     export function newModel(): Model {
         return {
             id: uuid.v4(),
-            tasks: {},
-            transitions: {}
+            tasks: [],
+            transitions: []
         }
     }
 
