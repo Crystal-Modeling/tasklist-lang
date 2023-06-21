@@ -26,6 +26,10 @@ export namespace ArrayUpdate {
         return !arrayUpdate.added && !arrayUpdate.removedIds && !arrayUpdate.changed
     }
 
+    export function createEmpty<T extends id.SemanticIdentity>(): ArrayUpdate<T> {
+        return {}
+    }
+
     export function apply<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>, arrayUpdateCommand: ReadonlyArrayUpdate<T>): void {
         if (arrayUpdateCommand.added) {
             arrayUpdate.added = addNew(arrayUpdate.added, arrayUpdateCommand.added)

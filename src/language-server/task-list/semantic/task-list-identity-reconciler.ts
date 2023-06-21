@@ -19,44 +19,34 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         this.identityManager = services.semantic.IdentityManager
         this.sourceUpdateManager = services.source.SourceUpdateManager
     }
+
+    /* NOTE: So, the problem can be characterized as following:
+
+    - I do mapping from existing structure (AST), not optimized for search element by derivative identity (name)
+    - I do mapping to identity, which I have control for, therefore, can make it indexed, and optimized for data manipulations
+    - That is why I traverse the language model!
+    - When the source model (AST) is not linear (with nested submodels), I do traversing in several iterations.
+    In previous iteration I prepare data for the next iteration (`targetTasksByMappedSourceTaskId`)
+    - I need the concept of language model _semantical validity_, that is, which node from AST do I map to Source Model?
+      = which AST node I assume correct enough to track his identity?
+    */
     identityReconciliationIterations = [
+        // NOTE: ITERATION 1: mapping Tasks
         this.reconcileTasks.bind(this),
+        //NOTE: ITERATION 2: mapping Transitions
         this.reconcileTransitions.bind(this),
     ]
 
-    private reconcileTasks(_document: TaskListDocument, _update: src.Update<source.Model>) {
-        // const doc: LmsDocument<ast.Model> = document
-        // this.reconcileTransitions(doc, update)
-    }
+    // Example of how Identity of Ast-based element is reconciled
+    private reconcileTasks(document: TaskListDocument, update: src.Update<source.Model>) {
 
-    private reconcileTransitions(_document: TaskListDocument, _update: src.Update<source.Model>) {
-
-    }
-
-    public reconcileIdentityWithLanguageModel(document: TaskListDocument): src.Update<source.Model> {
-
-        /* NOTE: So, the problem can be characterized as following:
-
-        - I do mapping from existing structure (AST), not optimized for search element by derivative identity (name)
-        - I do mapping to identity, which I have control for, therefore, can make it indexed, and optimized for data manipulations
-        - That is why I traverse the language model!
-        - When the source model (AST) is not linear (with nested submodels), I do traversing in several iterations.
-        In previous iteration I prepare data for the next iteration (`targetTasksByMappedSourceTaskId`)
-        - I need the concept of language model _semantical validity_, that is, which node from AST do I map to Source Model?
-          = which AST node I assume correct enough to track his identity?
-        */
-
-        // Preparation: getting services, and AST root
-        const tasksUpdate: src.ArrayUpdate<source.Task> = {}
-        const transitionsUpdate: src.ArrayUpdate<source.Transition> = {}
+        const tasksUpdate = src.ArrayUpdate.createEmpty<source.Task>()
 
         const identityIndex = this.identityManager.getIdentityIndex(document)
         const updateCalculator = this.sourceUpdateManager.getUpdateCalculator(document)
-        const astModel: ast.Model = document.parseResult.value
-        //HACK: Relying on the fact that in this function `document` is in its final State
         const semanticDomain = document.semanticDomain!
+        const astModel: ast.Model = document.parseResult.value
 
-        // NOTE: ITERATION 1: mapping Tasks
         const existingUnmappedTasks: Map<string, Task> = identityIndex.tasksByName
         // Actual mapping: marking semantic elements for deletion, and AST nodes to be added
         semanticDomain.getValidTasks(astModel).forEach(task => {
@@ -76,7 +66,18 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         identityIndex.deleteTasks(calculatedTasksUpdate.removedIds ?? [])
         src.ArrayUpdate.apply(tasksUpdate, calculatedTasksUpdate)
 
-        //NOTE: ITERATION 2: mapping Transitions
+        update.tasks = src.ArrayUpdate.isEmpty(tasksUpdate) ? undefined : tasksUpdate
+    }
+
+    // Example of how Identity of non Ast-based element is reconciled
+    private reconcileTransitions(document: TaskListDocument, update: src.Update<source.Model>) {
+
+        const transitionsUpdate = src.ArrayUpdate.createEmpty<source.Transition>()
+
+        const identityIndex = this.identityManager.getIdentityIndex(document)
+        const updateCalculator = this.sourceUpdateManager.getUpdateCalculator(document)
+        const semanticDomain = document.semanticDomain!
+
         const existingUnmappedTransitions = identityIndex.transitionsByDerivativeIdentity
         // Preparing data for the iteration (Transition Derivative Identity (source task id + target task id) => Transition).
         stream(semanticDomain.getIdentifiedTasks())
@@ -101,10 +102,6 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         identityIndex.deleteTransitions(calculatedTransitionsUpdate.removedIds ?? [])
         src.ArrayUpdate.apply(transitionsUpdate, calculatedTransitionsUpdate)
 
-        return {
-            id: identityIndex.id,
-            tasks: src.ArrayUpdate.isEmpty(tasksUpdate) ? undefined : tasksUpdate,
-            transitions: src.ArrayUpdate.isEmpty(transitionsUpdate) ? undefined : transitionsUpdate
-        }
+        update.transitions = src.ArrayUpdate.isEmpty(transitionsUpdate) ? undefined : transitionsUpdate
     }
 }
