@@ -1,31 +1,15 @@
-import { getDocument } from 'langium'
-import { AbstractIdentityManager } from '../../../langium-model-server/semantic/identity-manager'
 import type { ModelExposedIdentityIndex } from '../../../langium-model-server/semantic/identity-index'
-import type * as ast from '../../generated/ast'
-import { Model } from './task-list-identity'
-import { TaskListIdentityIndex } from './task-list-identity-index'
-import type * as sem from '../../../langium-model-server/semantic/model'
+import { AbstractIdentityManager } from '../../../langium-model-server/semantic/identity-manager'
 import type * as source from '../source/model'
 import type { TaskListDocument } from '../workspace/documents'
+import { Model } from './task-list-identity'
+import { TaskListIdentityIndex } from './task-list-identity-index'
 
 /**
  * Stores {@link Model} per URI of Langium-managed TextDocument.
- * It has control over all {@link TaskListIdentityIndex}es existing. Therefore, it is a point of contact
- * to fetch semantic elements globally, i.e., searching through all the managed files.
- * See {@link getTaskId} for example.
+ * It has control over all {@link TaskListIdentityIndex}es existing.
  */
 export class TaskListIdentityManager extends AbstractIdentityManager<source.Model, TaskListIdentityIndex, TaskListDocument> {
-
-    public getTaskId(task: sem.Valid<ast.Task>): string {
-        const taskId = this.getIdentityIndex(getDocument(task)).getTaskIdByName(task.name)
-        if (!taskId) {
-            //FIXME: What should you really do if it can't find id for Valid target Task?
-            // Possible cases: only if 2 files are modified simultaneously, I suppose,
-            // because each time LS loads, it performs semantic reconciliation phase for all the documents
-            throw new Error('Can\'t find Valid target Task')
-        }
-        return taskId
-    }
 
     protected override loadIdentityToIndex(languageDocumentUri: string): ModelExposedIdentityIndex<TaskListIdentityIndex> {
         const identityModel = this.identityStorage.loadIdentityFromFile(languageDocumentUri, Model.is)

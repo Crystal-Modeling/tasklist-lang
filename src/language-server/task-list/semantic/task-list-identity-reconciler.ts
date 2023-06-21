@@ -1,4 +1,3 @@
-import { stream } from 'langium'
 import type { IdentityReconciler } from '../../../langium-model-server/semantic/identity-reconciler'
 import * as src from '../../../langium-model-server/source/model'
 import type * as ast from '../../generated/ast'
@@ -6,7 +5,6 @@ import type * as source from '../source/model'
 import type { TaskListSourceUpdateManager } from '../source/task-list-source-update-manager'
 import type { TaskListServices } from '../task-list-module'
 import { type TaskListDocument } from '../workspace/documents'
-import type * as semantic from './model'
 import type { Task } from './task-list-identity'
 import { Model } from './task-list-identity'
 import type { TaskListIdentityManager } from './task-list-identity-manager'
@@ -79,14 +77,7 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         const semanticDomain = document.semanticDomain!
 
         const existingUnmappedTransitions = identityIndex.transitionsByDerivativeIdentity
-        // Preparing data for the iteration (Transition Derivative Identity (source task id + target task id) => Transition).
-        stream(semanticDomain.getIdentifiedTasks())
-            .flatMap(sourceTask => semanticDomain.getValidTargetTasks(sourceTask)
-                .map((targetTask): semantic.TransitionDerivativeIdentity => [
-                    sourceTask.id,
-                    this.identityManager.getTaskId(targetTask)
-                ])
-            ) // Actual mapping
+        semanticDomain.getTransitionDerivativeIdentities()
             .forEach(transition => {
                 let identityTransition = existingUnmappedTransitions.get(transition)
                 if (identityTransition) {
