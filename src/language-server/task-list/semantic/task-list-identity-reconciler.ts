@@ -31,14 +31,12 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
     identityReconciliationIterations = [
         // NOTE: ITERATION 1: mapping Tasks
         this.reconcileTasks.bind(this),
-        //NOTE: ITERATION 2: mapping Transitions
+        // NOTE: ITERATION 2: mapping Transitions
         this.reconcileTransitions.bind(this),
     ]
 
     // Example of how Identity of Ast-based element is reconciled
     private reconcileTasks(document: TaskListDocument, update: src.Update<source.Model>) {
-
-        const tasksUpdate = src.ArrayUpdate.createEmpty<source.Task>()
 
         const identityIndex = this.identityManager.getIdentityIndex(document)
         const updateCalculator = this.sourceUpdateManager.getUpdateCalculator(document)
@@ -59,18 +57,15 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         })
         // Deletion of not mapped tasks. Even though transitions (on the AST level) are composite children of source Task,
         // they still have to be deleted separately (**to simplify Changes creation**)
-        const calculatedTasksUpdate = updateCalculator.calculateTasksUpdate(existingUnmappedTasks.values())
-        console.debug('===> Calculated Tasks Update', calculatedTasksUpdate)
-        identityIndex.deleteTasks(calculatedTasksUpdate.removedIds ?? [])
-        src.ArrayUpdate.apply(tasksUpdate, calculatedTasksUpdate)
+        const tasksUpdate = updateCalculator.calculateTasksUpdate(existingUnmappedTasks.values())
+        console.debug('===> Calculated Tasks Update', tasksUpdate)
+        identityIndex.deleteTasks(tasksUpdate.removedIds ?? [])
 
         update.tasks = src.ArrayUpdate.isEmpty(tasksUpdate) ? undefined : tasksUpdate
     }
 
     // Example of how Identity of non Ast-based element is reconciled
     private reconcileTransitions(document: TaskListDocument, update: src.Update<source.Model>) {
-
-        const transitionsUpdate = src.ArrayUpdate.createEmpty<source.Transition>()
 
         const identityIndex = this.identityManager.getIdentityIndex(document)
         const updateCalculator = this.sourceUpdateManager.getUpdateCalculator(document)
@@ -88,10 +83,9 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
                 }
                 semanticDomain.identifyTransition(transition, identityTransition.id)
             })
-        const calculatedTransitionsUpdate = updateCalculator.calculateTransitionsUpdate(existingUnmappedTransitions.values())
-        console.debug('===> Calculated Transitions Update', calculatedTransitionsUpdate)
-        identityIndex.deleteTransitions(calculatedTransitionsUpdate.removedIds ?? [])
-        src.ArrayUpdate.apply(transitionsUpdate, calculatedTransitionsUpdate)
+        const transitionsUpdate = updateCalculator.calculateTransitionsUpdate(existingUnmappedTransitions.values())
+        console.debug('===> Calculated Transitions Update', transitionsUpdate)
+        identityIndex.deleteTransitions(transitionsUpdate.removedIds ?? [])
 
         update.transitions = src.ArrayUpdate.isEmpty(transitionsUpdate) ? undefined : transitionsUpdate
     }

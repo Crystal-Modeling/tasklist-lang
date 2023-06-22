@@ -25,7 +25,7 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
     public calculateTasksUpdate(identitiesToDelete: Iterable<identity.Task>): ReadonlyArrayUpdate<Task> {
         const existingTasks = this.semanticDomain.getIdentifiedTasks()
         const updates = Array.from(existingTasks, task => this.compareTaskWithExistingBefore(task))
-        const deletion: ReadonlyArrayUpdate<Task> = this.deleteModels(
+        const deletion: ReadonlyArrayUpdate<Task> = deleteModels(
             this._tasksMarkedForDeletion,
             identitiesToDelete,
             this.semanticDomain.getPreviousIdentifiedTask.bind(this.semanticDomain),
@@ -37,7 +37,7 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
     public calculateTransitionsUpdate(identitiesToDelete: Iterable<identity.Transition>): ReadonlyArrayUpdate<Transition> {
         const existingTransitions = this.semanticDomain.getIdentifiedTransitions()
         const updates = Array.from(existingTransitions, transition => this.compareTransitionWithExistingBefore(transition))
-        const deletion: ReadonlyArrayUpdate<Transition> = this.deleteModels(
+        const deletion: ReadonlyArrayUpdate<Transition> = deleteModels(
             this._transitionsMarkedForDeletion,
             identitiesToDelete,
             this.semanticDomain.getPreviousIdentifiedTransition.bind(this.semanticDomain),
@@ -90,45 +90,47 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
         return ArrayUpdateCommand.noUpdate()
     }
 
-    /**
-     * Computes {@link ReadonlyArrayUpdate} for {@link modelsToDelete} by comparing them with {@link modelsMarkedForDeletion}.
-     *
-     * ❗This function should be invoked only after all other updates are prepared, so that **reappeared nodes are unmarked for deletion**
-     * @param modelsMarkedForDeletion Current registry of Semantic Models (or Semantic Identity in rare cases
-     * when semantic models are unavailable), that were deleted from the AST, but not yet deleted from Semantic Identity model.
-     * @param modelsToDelete Semantic Identities to be deleted (or soft deleted); they are absent already in AST
-     * (and thus in current Semantic Model), but are expected to be present in previous Semantic Model
-     * fetched by {@link getPreviousSemanticModel}.
-     * @param getPreviousSemanticModel Fetches corresponding previous Semantic Model from SemanticDomain
-     * @returns Semantic Model Update for this deletion request
-     */
-    private deleteModels<ID extends id.SemanticIdentity, SEM extends id.SemanticIdentity, SRC extends id.SemanticIdentity>(
-        modelsMarkedForDeletion: Map<string, ID | SEM>,
-        modelsToDelete: Iterable<ID>,
-        getPreviousSemanticModel: (id: string) => SEM | undefined
-    ): ReadonlyArrayUpdate<SRC> {
-        console.debug('******** Existing models marked for deletion', modelsMarkedForDeletion.values())
-        if (modelsMarkedForDeletion.size !== 0) {
-            const deletion = ArrayUpdateCommand.deletion<SRC>(modelsMarkedForDeletion.values())
-            const deletedModels = new Set(modelsMarkedForDeletion.keys())
-            modelsMarkedForDeletion.clear()
-            for (const model of modelsToDelete) {
-                if (!deletedModels.has(model.id)) {
-                    // When we receive Semantic ID of the model to be deleted, we first check,
-                    // if _Semantic Model_ with such ID existed before, since Semantic Model stores all attributes
-                    modelsMarkedForDeletion.set(model.id, getPreviousSemanticModel(model.id) ?? model)
-                }
-            }
-            console.debug('Marked models for deletion', modelsMarkedForDeletion.values())
-            const emptyUpdates = Array.from(modelsMarkedForDeletion.keys(), Update.createEmpty<SRC>)
-            return ArrayUpdateCommand.all(deletion, ArrayUpdateCommand.dissappearance(emptyUpdates))
-        }
+}
+
+/**
+ * Computes {@link ReadonlyArrayUpdate} for {@link modelsToDelete} by comparing them with {@link modelsMarkedForDeletion}.
+ *
+ * ❗This function should be invoked only after all other updates are prepared, so that **reappeared nodes are unmarked for deletion**
+ * @param modelsMarkedForDeletion Current registry of Semantic Models (or Semantic Identity in rare cases
+ * when semantic models are unavailable), that were deleted from the AST, but not yet deleted from Semantic Identity model.
+ * @param modelsToDelete Semantic Identities to be deleted (or soft deleted); they are absent already in AST
+ * (and thus in current Semantic Model), but are expected to be present in previous Semantic Model
+ * fetched by {@link getPreviousSemanticModel}.
+ * @param getPreviousSemanticModel Fetches corresponding previous Semantic Model from SemanticDomain
+ * @returns Semantic Model Update for this deletion request
+ */
+function deleteModels<ID extends id.SemanticIdentity, SEM extends id.SemanticIdentity, SRC extends id.SemanticIdentity>(
+    modelsMarkedForDeletion: Map<string, ID | SEM>,
+    modelsToDelete: Iterable<ID>,
+    getPreviousSemanticModel: (id: string) => SEM | undefined
+): ReadonlyArrayUpdate<SRC> {
+    console.debug('******** Existing models marked for deletion', modelsMarkedForDeletion.values())
+    if (modelsMarkedForDeletion.size !== 0) {
+        const deletion = ArrayUpdateCommand.deletion<SRC>(modelsMarkedForDeletion.values())
+        const deletedModels = new Set(modelsMarkedForDeletion.keys())
+        modelsMarkedForDeletion.clear()
         for (const model of modelsToDelete) {
-            // When we receive Semantic ID of the model to be deleted, we first check,
-            // if _Semantic Model_ with such ID existed before, since Semantic Model stores all attributes
-            modelsMarkedForDeletion.set(model.id, getPreviousSemanticModel(model.id) ?? model)
+            if (!deletedModels.has(model.id)) {
+                // When we receive Semantic ID of the model to be deleted, we first check,
+                // if _Semantic Model_ with such ID existed before, since Semantic Model stores all attributes
+                modelsMarkedForDeletion.set(model.id, getPreviousSemanticModel(model.id) ?? model)
+            }
         }
-        console.debug('Marked models for deletion (No actual deletion)', modelsMarkedForDeletion.values())
-        return ArrayUpdateCommand.dissappearance(Array.from(modelsMarkedForDeletion.keys(), Update.createEmpty<SRC>))
+        console.debug('Marked models for deletion', modelsMarkedForDeletion.values())
+        const dissappearances = ArrayUpdateCommand
+            .dissappearance(Array.from(modelsMarkedForDeletion.keys(), Update.createEmpty<SRC>))
+        return ArrayUpdateCommand.all(deletion, dissappearances)
     }
+    for (const model of modelsToDelete) {
+        // When we receive Semantic ID of the model to be deleted, we first check,
+        // if _Semantic Model_ with such ID existed before, since Semantic Model stores all attributes
+        modelsMarkedForDeletion.set(model.id, getPreviousSemanticModel(model.id) ?? model)
+    }
+    console.debug('Marked models for deletion (No actual deletion)', modelsMarkedForDeletion.values())
+    return ArrayUpdateCommand.dissappearance(Array.from(modelsMarkedForDeletion.keys(), Update.createEmpty<SRC>))
 }

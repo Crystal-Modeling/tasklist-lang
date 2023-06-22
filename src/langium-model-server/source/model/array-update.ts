@@ -22,7 +22,7 @@ export type ElementState = 'DISAPPEARED' | 'REAPPEARED'
 export type ElementUpdate<T extends id.SemanticIdentity> = Update<T, ElementState>
 export namespace ArrayUpdate {
 
-    export function isEmpty<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>): boolean {
+    export function isEmpty<T extends id.SemanticIdentity>(arrayUpdate: ReadonlyArrayUpdate<T>): boolean {
         return !arrayUpdate.added && !arrayUpdate.removedIds && !arrayUpdate.changed
     }
 
