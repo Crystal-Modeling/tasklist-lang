@@ -10,8 +10,12 @@ export type Update<T extends id.SemanticIdentity, STATE extends string = never> 
 export namespace Update {
 
     export function isEmpty<T extends id.SemanticIdentity, S extends string>(update: Update<T, S>): boolean {
+        const updateRecord = update as Record<string | number | symbol, object>
         for (const key in update) {
-            if (key !== 'id' && key && Object.prototype.hasOwnProperty.call(update, key)) {
+            // TODO: Currently I check here also that the value != undefined. However, I think it shouldn't be, since:
+            // 1. I strive to only assign values if they changed
+            // 2. For optional attributes I designed __removeAttribute properties
+            if (key !== 'id' && Object.prototype.hasOwnProperty.call(update, key) && !!updateRecord[key]) {
                 return false
             }
         }

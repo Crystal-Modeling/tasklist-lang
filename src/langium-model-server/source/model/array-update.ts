@@ -53,24 +53,9 @@ export namespace ArrayUpdate {
     }
 }
 
-class NullArrayUpdateCommand<T extends id.SemanticIdentity> implements ReadonlyArrayUpdate<T> {
-
-    public get added(): undefined {
-        return undefined
-    }
-
-    public get removedIds(): undefined {
-        return undefined
-    }
-
-    public get changed(): undefined {
-        return undefined
-    }
-}
-
 export class ArrayUpdateCommand<T extends id.SemanticIdentity> implements ReadonlyArrayUpdate<T> {
 
-    private static NO_UPDATE = new NullArrayUpdateCommand()
+    private static NO_UPDATE = Object.seal({})
 
     protected _elementsToAdd?: T[]
     protected _idsToRemove?: string[]
@@ -105,7 +90,7 @@ export class ArrayUpdateCommand<T extends id.SemanticIdentity> implements Readon
     }
 
     public static dissappearance<T extends id.SemanticIdentity>(updates: Array<Update<T>>): ReadonlyArrayUpdate<T> {
-        return this.stateChange(updates , 'DISAPPEARED')
+        return this.stateChange(this.toNonEmptyArray(updates), 'DISAPPEARED')
     }
 
     public static reappearance<T extends id.SemanticIdentity>(updates: Array<Update<T>> | Update<T>): ReadonlyArrayUpdate<T> {

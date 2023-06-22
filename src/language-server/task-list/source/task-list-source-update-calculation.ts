@@ -56,7 +56,7 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
             if (!previousDeletedFromAst) {
                 return ArrayUpdateCommand.addition(Task.create(current))
             }// Existed in AST long before, was marked for deletion, now reappearing: comparing to be on a safe side
-            const reappearance: Update<Task> = { id: semanticId }
+            const reappearance: Update<Task> = Update.createEmpty(semanticId)
             if (ast.isTask(previousDeletedFromAst)) {
                 // Can reappear different now (e.g., if copypasted from external source)
                 if (previousDeletedFromAst.content !== current.content) reappearance.content = current.content
@@ -65,13 +65,13 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
             }
             return ArrayUpdateCommand.reappearance(reappearance)
         } // Existed in AST before
-        const update: Update<Task> = { id: semanticId }
+        const update: Update<Task> = Update.createEmpty(semanticId)
         // Not comparing the task.name, since it cannot be changed (existed in previous AST)
         // (it plays a role in task Identity, hence with its change it is a different task)
         if (previous.content !== current.content) update.content = current.content
         if (previousDeletedFromAst) {// Why it was marked for deletion if it existed in the AST before?
             console.warn(`Task '${semanticId}' with name=${current.name} existed in previous AST, but was marked for deletion.`)
-            return ArrayUpdateCommand.reappearance({ id: semanticId })
+            return ArrayUpdateCommand.reappearance(update)
         }
         return ArrayUpdateCommand.modification(update)
     }
@@ -85,7 +85,7 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
             if (!previousDeletedFromAst) {
                 return ArrayUpdateCommand.addition(Transition.create(current))
             }// Existed in AST long before, was marked for deletion, now reappearing: won't compare, since no modifiable attributes
-            return ArrayUpdateCommand.reappearance({ id: semanticId })
+            return ArrayUpdateCommand.reappearance(Update.createEmpty<Transition>(semanticId))
         }
         // Since source model for Transition doesn't have any modifiable attribute, it will only return Addition Update
         return ArrayUpdateCommand.noUpdate()

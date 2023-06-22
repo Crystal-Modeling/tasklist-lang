@@ -62,7 +62,7 @@ export class LmsDocumentBuilder<SM extends id.SemanticIdentity, II extends Ident
         updatesForLmsDocuments.forEach((update, lmsDocument) => {
             lmsDocument.state = LmsDocumentState.Identified
             console.debug('=====> For document ', lmsDocument.textDocument.uri)
-            console.debug('Calculated update is', update)
+            console.debug(`Calculated update (${update.id}) is`, (src.Update.isEmpty(update) ? 'EMPTY' : update))
         })
         await interruptAndCheck(cancelToken)
     }
