@@ -7,10 +7,10 @@ export interface ApiResponse {
 
 export namespace ApiResponse {
 
-    export function create(message: string, code: 404): ApiResponse {
+    export function create(message: string, code: 404 | 501): ApiResponse {
         return {
             code: code,
-            type: 'NOT_FOUND',
+            type: code === 404 ? 'NOT_FOUND' : 'NOT_IMPLEMENTED',
             message
         }
     }

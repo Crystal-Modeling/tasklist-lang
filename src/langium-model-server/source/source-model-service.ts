@@ -1,12 +1,11 @@
 import type { LangiumDocument, LangiumDocuments, LanguageMetaData } from 'langium'
-import { DocumentState } from 'langium'
 import { URI } from 'vscode-uri'
 import type { SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { IdentityManager } from '../semantic/identity-manager'
 import type { LangiumModelServerServices } from '../services'
 import { UriConverter } from '../utils/uri-converter'
-import type { LmsDocument } from '../workspace/documents'
+import { LmsDocumentState, type LmsDocument } from '../workspace/documents'
 
 export interface SourceModelService<SM> {
     getById(id: string): SM | undefined
@@ -50,8 +49,7 @@ export abstract class AbstractSourceModelService<SM extends SemanticIdentity, Se
         }
         const langiumDocument = this.langiumDocuments.getOrCreateDocument(documentUri)
         //TODO: Change this to return Promise, if the document didn't reach the desired state.
-        // Also override DocumentBuilder, to augument new final state (SemanticModelReconciled)
-        if (langiumDocument.state !== DocumentState.Validated) {
+        if (langiumDocument.state < LmsDocumentState.Identified) {
             return undefined
         }
         const semanticModelIndex = this.semanticIndexManager.getIdentityIndex(langiumDocument)

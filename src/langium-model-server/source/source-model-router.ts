@@ -16,14 +16,13 @@ export function LangiumModelServerRouter<SM extends SemanticIdentity, II extends
     services: LangiumModelServerAddedServices<SM, II, D>
 ): Http2ServerRouter {
     return (stream, headers, flags) => {
-        const method = headers[':method']
         const unmatchedPath = new PathContainer(headers[':path'] ?? '')
         let handler: Http2RequestHandler
 
         if (unmatchedPath.matchPrefix('/')) {
             if (unmatchedPath.suffix === '') {
                 handler = helloWorldHandler
-            } else if (unmatchedPath.matchPrefix('models/') && method === 'GET') {
+            } else if (unmatchedPath.matchPrefix('models/')) {
                 handler = provideModelHandler(services.source.SourceModelService)
             } else {
                 handler = notFoundHandler
@@ -49,6 +48,37 @@ const helloWorldHandler: Http2RequestHandler = (stream) => {
 
 const provideModelHandler: Http2RequestHandlerProvider<SourceModelService<object>> = (service) => {
 
+    const modelHandler: Http2RequestHandler = (_, unmatchedPath, headers) => {
+        const id = unmatchedPath.matchPrefix(/^[^\/]+/)
+        if (!id) {
+            return notFoundHandler
+        }
+
+        const getModelHandler: Http2RequestHandler = (stream) => {
+            console.debug(`Getting the model by id '${id}'`)
+            const sourceModel = service.getById(id)
+
+            if (!sourceModel) {
+                respondWithJson(stream, ApiResponse.create(`Source model with id '${id}' not found`, 404))
+            } else {
+                respondWithJson(stream, sourceModel, 200)
+            }
+        }
+        const subscribeToModelChangesHandler: Http2RequestHandler = () => {
+            console.debug(`Subscribing to the model by id '${id}'`)
+            return notImplementedMethodHandler
+        }
+
+        const method = headers[':method']
+        if (unmatchedPath.matchPrefix('/subscriptions')) {
+            if (method === 'POST')
+                return subscribeToModelChangesHandler
+            return notImplementedMethodHandler
+        }
+        if (method === 'GET')
+            return getModelHandler
+        return notImplementedMethodHandler
+    }
     const getModelIdHandler: Http2RequestHandler = (stream, unmatchedPath) => {
         //HACK: LMS should be unaware of the requester. By adding dependency on GLSP Notation URI I break this (temporarily)
         const notationUri = unmatchedPath.suffix
@@ -60,27 +90,25 @@ const provideModelHandler: Http2RequestHandlerProvider<SourceModelService<object
             respondWithJson(stream, SemanticIdResponse.create(semanticId), 200)
         }
     }
-    const getModelHandler: Http2RequestHandler = (stream, unmatchedPath) => {
-        const id = unmatchedPath.suffix
-        const sourceModel = service.getById(id)
 
-        if (!sourceModel) {
-            respondWithJson(stream, ApiResponse.create(`Source model with id '${id}' not found`, 404))
-        } else {
-            respondWithJson(stream, sourceModel, 200)
-        }
-    }
-
-    return (_, unmatchedPath) => {
+    return (_, unmatchedPath, headers) => {
         if (unmatchedPath.matchPrefix('id/')) {
-            return getModelIdHandler
+            if (headers[':method'] === 'GET')
+                return getModelIdHandler
+            return notImplementedMethodHandler
         }
-        return getModelHandler
+        return modelHandler
     }
 }
+
 const notFoundHandler: Http2RequestHandler = (stream, unmatchedPath, header) => {
     respondWithJson(stream,
         ApiResponse.create(`Path '${header[':path']}' not found (unmatched suffix '${unmatchedPath.suffix}')`, 404))
+}
+
+const notImplementedMethodHandler: Http2RequestHandler = (stream, unmatchedPath, header) => {
+    respondWithJson(stream,
+        ApiResponse.create(`Path '${header[':path']}' is not implemented for method '${header[':method']}' (unmatched suffix '${unmatchedPath.suffix}')`, 501))
 }
 
 function respondWithJson(stream: http2.ServerHttp2Stream, response: ApiResponse): void
@@ -109,16 +137,28 @@ class PathContainer {
 
     /**
      * If {@link PathContainer}.`suffix` begins with `prefix`, then this prefix is removed from `suffix`
-     * and method returns `true`.
-     * Otherwise {@link PathContainer} remains unmodified and method returns `false`.
+     * and method returns the matched prefix.
+     * Otherwise {@link PathContainer} remains unmodified and method returns `undefined`.
      *
-     * @param prefix A string against which existing `suffix` is matched
+     * @param prefix A string or RegExp against which existing `suffix` is matched
      */
-    public matchPrefix(prefix: string): boolean {
-        if (this._suffix.startsWith(prefix)) {
-            this._suffix = this._suffix.substring(prefix.length)
-            return true
+    public matchPrefix(prefix: string | RegExp): string | undefined {
+        let prefixString: string | undefined
+        if (typeof prefix === 'string') {
+            if (this._suffix.startsWith(prefix)) {
+                prefixString = prefix
+            }
+        } else {
+            const prefixRegExp = prefix.source.startsWith('^') ? prefix : new RegExp('^' + prefix.source, prefix.flags)
+            const matchResult = this._suffix.match(prefixRegExp)
+            if (matchResult) {
+                prefixString = matchResult[0]
+            }
         }
-        return false
+        if (prefixString !== undefined) {
+            this._suffix = this._suffix.substring(prefixString.length)
+            return prefixString
+        }
+        return undefined
     }
 }
