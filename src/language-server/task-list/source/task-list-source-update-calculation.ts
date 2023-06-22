@@ -59,16 +59,16 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
             const reappearance: Update<Task> = Update.createEmpty(semanticId)
             if (ast.isTask(previousDeletedFromAst)) {
                 // Can reappear different now (e.g., if copypasted from external source)
-                if (previousDeletedFromAst.content !== current.content) reappearance.content = current.content
+                Update.assignIfUpdated(reappearance, 'content', previousDeletedFromAst.content, current.content, '')
             } else { // RECHECK: A VERY edge case: when an element was marked for deletion, there was no previous Semantic Model for it. Is it at all possible?...
-                reappearance.content = current.content
+                Update.assign(reappearance, 'content', current.content, '')
             }
             return ArrayUpdateCommand.reappearance(reappearance)
         } // Existed in AST before
         const update: Update<Task> = Update.createEmpty(semanticId)
         // Not comparing the task.name, since it cannot be changed (existed in previous AST)
         // (it plays a role in task Identity, hence with its change it is a different task)
-        if (previous.content !== current.content) update.content = current.content
+        Update.assignIfUpdated(update, 'content', previous.content, current.content, '')
         if (previousDeletedFromAst) {// Why it was marked for deletion if it existed in the AST before?
             console.warn(`Task '${semanticId}' with name=${current.name} existed in previous AST, but was marked for deletion.`)
             return ArrayUpdateCommand.reappearance(update)
