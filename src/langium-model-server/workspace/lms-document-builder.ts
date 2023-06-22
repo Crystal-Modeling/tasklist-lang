@@ -53,14 +53,17 @@ export class LmsDocumentBuilder<SM extends id.SemanticIdentity, II extends Ident
             const lmsDocument: ExtendableLangiumDocument = document
             if (this.isLmsDocument(lmsDocument) && semanticId) {
                 updatesForLmsDocuments.set(lmsDocument, src.Update.createEmpty<SM>(semanticId))
-                console.debug('       For document ', document.textDocument.uri)
             }
         }
         await interruptAndCheck(cancelToken)
         for (const iteration of this.identityReconciler.identityReconciliationIterations) {
             updatesForLmsDocuments.forEach((update, lmsDocument) => iteration(lmsDocument, update))
         }
-        updatesForLmsDocuments.forEach((_, lmsDocument) => lmsDocument.state = LmsDocumentState.Identified)
+        updatesForLmsDocuments.forEach((update, lmsDocument) => {
+            lmsDocument.state = LmsDocumentState.Identified
+            console.debug('=====> For document ', lmsDocument.textDocument.uri)
+            console.debug('Calculated update is', update)
+        })
         await interruptAndCheck(cancelToken)
     }
 
