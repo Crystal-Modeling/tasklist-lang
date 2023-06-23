@@ -1,3 +1,4 @@
+import type * as http2 from 'http2'
 import type { LangiumDocument, LangiumDocuments, LanguageMetaData } from 'langium'
 import { URI } from 'vscode-uri'
 import type { SemanticIdentity } from '../semantic/identity'
@@ -6,7 +7,6 @@ import type { IdentityManager } from '../semantic/identity-manager'
 import type { LangiumModelServerServices } from '../services'
 import { UriConverter } from '../utils/uri-converter'
 import { LmsDocumentState, type LmsDocument } from '../workspace/documents'
-import type * as http2 from 'http2'
 
 export interface SourceModelService<SM> {
     getById(id: string): SM | undefined
@@ -28,6 +28,7 @@ export abstract class AbstractSourceModelService<SM extends SemanticIdentity, Se
     constructor(services: LangiumModelServerServices<SM, SemI, D>) {
         this.semanticIndexManager = services.semantic.IdentityManager
         this.langiumDocuments = services.shared.workspace.LangiumDocuments
+        this.languageMetadata = services.LanguageMetaData
     }
 
     public getSemanticId(sourceUri: string): string | undefined {
