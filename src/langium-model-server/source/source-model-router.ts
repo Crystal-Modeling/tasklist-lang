@@ -1,10 +1,9 @@
 import * as http2 from 'http2'
 import type { SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
-import type { LangiumModelServerAddedServices } from '../services'
+import type { LangiumModelServerAddedServices, LmsSourceServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
 import { ApiResponse, SemanticIdResponse } from './model'
-import type { SourceModelService } from './source-model-service'
 
 type Http2RequestHandler = (stream: http2.ServerHttp2Stream, unmatchedPath: PathContainer,
     headers: http2.IncomingHttpHeaders, flags: number) => Http2RequestHandler | void
@@ -23,7 +22,7 @@ export function LangiumModelServerRouter<SM extends SemanticIdentity, II extends
             if (unmatchedPath.suffix === '') {
                 handler = helloWorldHandler
             } else if (unmatchedPath.matchPrefix('models/')) {
-                handler = provideModelHandler(services.source.SourceModelService)
+                handler = provideModelHandler(services.source)
             } else {
                 handler = notFoundHandler
             }
@@ -46,7 +45,10 @@ const helloWorldHandler: Http2RequestHandler = (stream) => {
     stream.end('Hello World')
 }
 
-const provideModelHandler: Http2RequestHandlerProvider<SourceModelService<object>> = (service) => {
+const provideModelHandler: Http2RequestHandlerProvider<LmsSourceServices<object>> = (sourceServices) => {
+
+    const sourceModelService = sourceServices.SourceModelService
+    const sourceModelSubscriptions = sourceServices.SourceModelSubscriptions
 
     const modelHandler: Http2RequestHandler = (_, unmatchedPath, headers) => {
         const id = unmatchedPath.matchPrefix(/^[^\/]+/)
@@ -56,7 +58,7 @@ const provideModelHandler: Http2RequestHandlerProvider<SourceModelService<object
 
         const getModelHandler: Http2RequestHandler = (stream) => {
             console.debug(`Getting the model by id '${id}'`)
-            const sourceModel = service.getById(id)
+            const sourceModel = sourceModelService.getById(id)
 
             if (!sourceModel) {
                 respondWithJson(stream, ApiResponse.create(`Source model with id '${id}' not found`, 404))
@@ -66,8 +68,8 @@ const provideModelHandler: Http2RequestHandlerProvider<SourceModelService<object
         }
         const subscribeToModelChangesHandler: Http2RequestHandler = (stream) => {
             console.debug(`Subscribing to the model by id '${id}'`)
-            service.subscribeToModel(id, stream)
-            setUpStreamForSSE(stream, 200, { status: 'OK', id })
+            sourceModelSubscriptions.addSubscription(stream, id)
+            setUpStreamForSSE(stream, ApiResponse.create(`Created subscription to model with id ${id}`, 201))
         }
 
         const method = headers[':method']
@@ -83,7 +85,7 @@ const provideModelHandler: Http2RequestHandlerProvider<SourceModelService<object
     const getModelIdHandler: Http2RequestHandler = (stream, unmatchedPath) => {
         //HACK: LMS should be unaware of the requester. By adding dependency on GLSP Notation URI I break this (temporarily)
         const notationUri = unmatchedPath.suffix
-        const semanticId = service.getSemanticId(notationUri)
+        const semanticId = sourceModelService.getSemanticId(notationUri)
 
         if (!semanticId) {
             respondWithJson(stream, ApiResponse.create(`Source model sitting next to URI '${notationUri}' not found`, 404))
@@ -125,7 +127,12 @@ function respondWithJson(stream: http2.ServerHttp2Stream, response: ApiResponse 
     stream.end(JSON.stringify(response))
 }
 
-function setUpStreamForSSE(stream: http2.ServerHttp2Stream, status: number, response?: object): void {
+function setUpStreamForSSE(stream: http2.ServerHttp2Stream, response: ApiResponse): void
+function setUpStreamForSSE(stream: http2.ServerHttp2Stream, response: object, status: number): void
+function setUpStreamForSSE(stream: http2.ServerHttp2Stream, response: ApiResponse | object, status?: number): void {
+    if (!status) {
+        status = (response as ApiResponse).code
+    }
     stream.respond({
         [http2.constants.HTTP2_HEADER_STATUS]: status,
         [http2.constants.HTTP2_HEADER_CONTENT_TYPE]: 'application/x-ndjson',

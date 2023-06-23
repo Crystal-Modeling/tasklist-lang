@@ -8,6 +8,7 @@ import type { IdentityReconciler } from '../semantic/identity-reconciler'
 import type { SemanticDomainFactory } from '../semantic/semantic-domain'
 import type { LangiumModelServerServices } from '../services'
 import * as src from '../source/model'
+import type { SourceModelSubscriptions } from '../source/source-model-subscriptions'
 import type { TypeGuard } from '../utils/types'
 import { LmsDocumentState, type ExtendableLangiumDocument, type LmsDocument } from './documents'
 
@@ -16,16 +17,18 @@ export interface LmsDocumentBuilder {
 }
 export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements LmsDocumentBuilder {
 
-    protected createSemanticDomain: SemanticDomainFactory
-    protected isLmsDocument: TypeGuard<D, ExtendableLangiumDocument>
-    protected identityReconciler: IdentityReconciler<SM, D>
-    protected identityManager: IdentityManager
+    protected readonly createSemanticDomain: SemanticDomainFactory
+    protected readonly isLmsDocument: TypeGuard<D, ExtendableLangiumDocument>
+    protected readonly identityReconciler: IdentityReconciler<SM, D>
+    protected readonly identityManager: IdentityManager
+    protected readonly sourceModelSubscriptions: SourceModelSubscriptions
 
     constructor(services: LangiumModelServerServices<SM, II, D>) {
         this.createSemanticDomain = services.semantic.SemanticDomainFactory
         this.isLmsDocument = services.workspace.LmsDocumentGuard
         this.identityReconciler = services.semantic.IdentityReconciler
         this.identityManager = services.semantic.IdentityManager
+        this.sourceModelSubscriptions = services.source.SourceModelSubscriptions
 
         const documentBuilder = services.shared.workspace.DocumentBuilder
         documentBuilder.onBuildPhase(DocumentState.IndexedReferences, this.initializeSemanticDomain.bind(this))
@@ -69,6 +72,15 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
                 (src.Update.isEmpty(update) ? 'EMPTY' : JSON.stringify(update, undefined, 2)))
         })
         await interruptAndCheck(cancelToken)
+
+        for (const update of updatesForLmsDocuments.values()) {
+            if (src.Update.isEmpty(update)) continue
+            for (const subscription of this.sourceModelSubscriptions.getSubscriptions(update.id)) {
+                console.debug('Pushing update for model with id', update.id)
+                subscription.write(JSON.stringify(update))
+                await interruptAndCheck(cancelToken)
+            }
+        }
     }
 
 }

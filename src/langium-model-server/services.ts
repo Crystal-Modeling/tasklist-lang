@@ -11,6 +11,7 @@ import type { SourceUpdateManager } from './source/source-update-manager'
 import type { TypeGuard } from './utils/types'
 import type { ExtendableLangiumDocument, LmsDocument } from './workspace/documents'
 import type { LmsDocumentBuilder } from './workspace/lms-document-builder'
+import type { SourceModelSubscriptions } from './source/source-model-subscriptions'
 
 /**
  * LMS services with default implementation available, not required to be overriden
@@ -24,6 +25,7 @@ export type LangiumModelServerDefaultServices = {
     },
     source: {
         LangiumSourceModelServer: LangiumSourceModelServer,
+        SourceModelSubscriptions: SourceModelSubscriptions
     }
 }
 
@@ -42,6 +44,9 @@ export type LangiumModelServerAbstractServices<SM extends SemanticIdentity, II e
         SourceUpdateManager: SourceUpdateManager<SM>
     }
 }
+
+export type LmsSourceServices<SM extends object>
+    = Pick<LangiumModelServerAddedServices<SM & SemanticIdentity, IdentityIndex, LmsDocument>, 'source'>['source']
 
 export type LangiumModelServerAddedServices<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument>
     = LangiumModelServerDefaultServices & LangiumModelServerAbstractServices<SM, II, D>

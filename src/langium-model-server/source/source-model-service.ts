@@ -1,4 +1,3 @@
-import type * as http2 from 'http2'
 import type { LangiumDocument, LangiumDocuments, LanguageMetaData } from 'langium'
 import { URI } from 'vscode-uri'
 import type { SemanticIdentity } from '../semantic/identity'
@@ -16,7 +15,6 @@ export interface SourceModelService<SM> {
      * Currently I assume that only file extension is different from Langium source file extension
      */
     getSemanticId(sourceUri: string): string | undefined
-    subscribeToModel(id: string, stream: http2.ServerHttp2Stream): void
 }
 
 export abstract class AbstractSourceModelService<SM extends SemanticIdentity, SemI extends IdentityIndex, D extends LmsDocument> implements SourceModelService<SM> {
@@ -60,17 +58,6 @@ export abstract class AbstractSourceModelService<SM extends SemanticIdentity, Se
             return undefined
         }
         return this.combineSemanticModelWithAst(semanticModelIndex, langiumDocument)
-    }
-
-    public subscribeToModel(id: string, stream: http2.ServerHttp2Stream): void {
-        setTimeout(() => {
-            console.debug('Sending a push message')
-            stream.write(JSON.stringify({ msg: 'Here is a Push message :) for id ' + id }))
-        }, 2_000)
-        setTimeout(() => {
-            console.debug('Ending the subscription stream')
-            stream.end(JSON.stringify({ msg: 'This is the end' }))
-        }, 400_000)
     }
 
     protected getSourceModelFileExtension(): string {
