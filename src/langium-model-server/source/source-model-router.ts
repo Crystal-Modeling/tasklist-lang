@@ -1,4 +1,4 @@
-import type * as http2 from 'http2'
+import * as http2 from 'http2'
 import type { SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { LangiumModelServerAddedServices } from '../services'
@@ -64,9 +64,10 @@ const provideModelHandler: Http2RequestHandlerProvider<SourceModelService<object
                 respondWithJson(stream, sourceModel, 200)
             }
         }
-        const subscribeToModelChangesHandler: Http2RequestHandler = () => {
+        const subscribeToModelChangesHandler: Http2RequestHandler = (stream) => {
             console.debug(`Subscribing to the model by id '${id}'`)
-            return notImplementedMethodHandler
+            service.subscribeToModel(id, stream)
+            setUpStreamForSSE(stream, 200, { status: 'OK', id })
         }
 
         const method = headers[':method']
@@ -118,10 +119,19 @@ function respondWithJson(stream: http2.ServerHttp2Stream, response: ApiResponse 
         status = (response as ApiResponse).code
     }
     stream.respond({
-        'content-type': 'application/json; charset=utf-8',
-        ':status': status
+        [http2.constants.HTTP2_HEADER_CONTENT_TYPE]: 'application/json; charset=utf-8',
+        [http2.constants.HTTP2_HEADER_STATUS]: status
     })
     stream.end(JSON.stringify(response))
+}
+
+function setUpStreamForSSE(stream: http2.ServerHttp2Stream, status: number, response?: object): void {
+    stream.respond({
+        [http2.constants.HTTP2_HEADER_STATUS]: status,
+        [http2.constants.HTTP2_HEADER_CONTENT_TYPE]: 'application/x-ndjson',
+        [http2.constants.HTTP2_HEADER_CACHE_CONTROL]: 'no-cache, no-store',
+    })
+    stream.write(JSON.stringify(response))
 }
 
 class PathContainer {

@@ -7,9 +7,11 @@ import type { LangiumModelServerServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
 import { LangiumModelServerRouter } from './source-model-router'
 
-export function startLangiumModelServer
-<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument>(lmsServices: LangiumModelServerServices<SM, II, D>):
-LangiumSourceModelServer<SM, II, D> {
+export function startLangiumModelServer<
+    SM extends SemanticIdentity,
+    II extends IdentityIndex,
+    D extends LmsDocument
+>(lmsServices: LangiumModelServerServices<SM, II, D>): LangiumSourceModelServer<SM, II, D> {
     const server = lmsServices.source.LangiumSourceModelServer
     server.start(8443)
     return server
@@ -31,6 +33,14 @@ export class LangiumSourceModelServer<SM extends SemanticIdentity, II extends Id
         })
             .on('sessionError', console.error)
             .on('stream', router)
+            .on('request', (req) => {
+                if (req.headers[':method'] === 'POST' && req.headers[':path']?.match(/^\/models\/[^\/]*\/subscriptions/)) {
+                    console.debug('Model subscription request:', req.headers[':method'], req.headers[':path'],)
+                    req.socket.setTimeout(0)
+                    req.socket.setNoDelay(true)
+                    req.socket.setKeepAlive(true)
+                }
+            })
     }
 
     public start(port: number): void {
