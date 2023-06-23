@@ -70,7 +70,7 @@ export abstract class AbstractSourceModelService<SM extends SemanticIdentity, Se
         setTimeout(() => {
             console.debug('Ending the subscription stream')
             stream.end(JSON.stringify({ msg: 'This is the end' }))
-        }, 10_000)
+        }, 400_000)
     }
 
     protected getSourceModelFileExtension(): string {
