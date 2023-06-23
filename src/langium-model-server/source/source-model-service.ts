@@ -63,8 +63,14 @@ export abstract class AbstractSourceModelService<SM extends SemanticIdentity, Se
     }
 
     public subscribeToModel(id: string, stream: http2.ServerHttp2Stream): void {
-        setTimeout(() => stream.push(JSON.stringify({ msg: 'Here is a Push message :) for id ' + id })), 2_000)
-        setTimeout(() => stream.end(JSON.stringify({ msg: 'This is the end' })), 10_000)
+        setTimeout(() => {
+            console.debug('Sending a push message')
+            stream.write(JSON.stringify({ msg: 'Here is a Push message :) for id ' + id }))
+        }, 2_000)
+        setTimeout(() => {
+            console.debug('Ending the subscription stream')
+            stream.end(JSON.stringify({ msg: 'This is the end' }))
+        }, 10_000)
     }
 
     protected getSourceModelFileExtension(): string {
