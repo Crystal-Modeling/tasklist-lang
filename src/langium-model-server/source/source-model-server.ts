@@ -11,13 +11,18 @@ export function startLangiumModelServer<
     SM extends SemanticIdentity,
     II extends IdentityIndex,
     D extends LmsDocument
->(lmsServices: LangiumModelServerServices<SM, II, D>): LangiumSourceModelServer<SM, II, D> {
+>(lmsServices: LangiumModelServerServices<SM, II, D>): LangiumSourceModelServer {
     const server = lmsServices.source.LangiumSourceModelServer
     server.start(8443)
     return server
 }
 
-export class LangiumSourceModelServer<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> {
+export interface LangiumSourceModelServer {
+    start(port: number): void
+    shutDown(callback?: (err?: Error | undefined) => void): void
+}
+
+export class DefaultLangiumSourceModelServer<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements LangiumSourceModelServer {
 
     protected readonly http2Server: http2.Http2SecureServer
 

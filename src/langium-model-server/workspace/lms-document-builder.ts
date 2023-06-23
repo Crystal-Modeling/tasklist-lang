@@ -11,7 +11,10 @@ import * as src from '../source/model'
 import type { TypeGuard } from '../utils/types'
 import { LmsDocumentState, type ExtendableLangiumDocument, type LmsDocument } from './documents'
 
-export class LmsDocumentBuilder<SM extends id.SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> {
+export interface LmsDocumentBuilder {
+
+}
+export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements LmsDocumentBuilder {
 
     protected createSemanticDomain: SemanticDomainFactory
     protected isLmsDocument: TypeGuard<D, ExtendableLangiumDocument>

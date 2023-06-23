@@ -15,15 +15,15 @@ import type { LmsDocumentBuilder } from './workspace/lms-document-builder'
 /**
  * LMS services with default implementation available, not required to be overriden
  */
-export type LangiumModelServerDefaultServices<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> = {
+export type LangiumModelServerDefaultServices = {
     lsp: {
         RenameProvider: RenameProvider,
     },
     workspace: {
-        LmsDocumentBuilder: LmsDocumentBuilder<SM, II, D>
+        LmsDocumentBuilder: LmsDocumentBuilder
     },
     source: {
-        LangiumSourceModelServer: LangiumSourceModelServer<SM, II, D>,
+        LangiumSourceModelServer: LangiumSourceModelServer,
     }
 }
 
@@ -44,10 +44,10 @@ export type LangiumModelServerAbstractServices<SM extends SemanticIdentity, II e
 }
 
 export type LangiumModelServerAddedServices<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument>
-    = LangiumModelServerDefaultServices<SM, II, D> & LangiumModelServerAbstractServices<SM, II, D>
+    = LangiumModelServerDefaultServices & LangiumModelServerAbstractServices<SM, II, D>
 
 export type LangiumModelServerServices<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument>
     = LangiumServices & LangiumModelServerAddedServices<SM, II, D>
 
 export type PartialLangiumModelServerServices<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument>
-    = LangiumModelServerAbstractServices<SM, II, D> & PartialLangiumServices & DeepPartial<LangiumModelServerDefaultServices<SM, II, D>>
+    = LangiumModelServerAbstractServices<SM, II, D> & PartialLangiumServices & DeepPartial<LangiumModelServerDefaultServices>
