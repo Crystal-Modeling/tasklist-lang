@@ -12,10 +12,6 @@ export class LmsSourceModelSubscriptions implements SourceModelSubscriptions {
 
     addSubscription(subscriptionStream: ServerHttp2Stream, id: string): void {
         this.modelSubscriptions.add(id, subscriptionStream)
-        setTimeout(() => {
-            console.debug('Ending the subscription stream')
-            subscriptionStream.end()
-        }, 40_000)
         // RECHECK: Not sure if it is the right event to listen to when the stream gets disposed
         subscriptionStream.once('close', () => {
             console.debug('The connection for id', id, 'got closed')
