@@ -26,6 +26,13 @@ export namespace ArrayUpdate {
         return !arrayUpdate.added && !arrayUpdate.removedIds && !arrayUpdate.changed
     }
 
+    // FIXME: A quick solution to ensure API contracts (object getters are not available during JSON.toString)
+    export function create<T extends id.SemanticIdentity>(readonlyUpdate: ReadonlyArrayUpdate<T>): ArrayUpdate<T> {
+        const result = createEmpty<T>()
+        apply(result, readonlyUpdate)
+        return result
+    }
+
     export function createEmpty<T extends id.SemanticIdentity>(): ArrayUpdate<T> {
         return {}
     }

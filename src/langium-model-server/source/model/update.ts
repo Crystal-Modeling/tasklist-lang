@@ -1,6 +1,6 @@
 import type * as id from '../../semantic/identity'
 import type { KeysOfType, ModelAttribute, OptionalKeys, PrimitiveModelAttribute } from '../../utils/types'
-import type { ReadonlyArrayUpdate } from './array-update'
+import type { ArrayUpdate } from './array-update'
 
 /**
  * Describes changes made to SourceModel element of type T
@@ -56,7 +56,7 @@ type ModelAttributesDeletion<T> = {
 }
 
 type NestedModelsChanges<T> = {
-    [P in KeysOfType<T, id.SemanticIdentity[]>]?: T[P] extends id.SemanticIdentity[] ? ReadonlyArrayUpdate<T[P][0]> : never
+    [P in KeysOfType<T, id.SemanticIdentity[]>]?: T[P] extends id.SemanticIdentity[] ? ArrayUpdate<T[P][0]> : never
 }
 
 type PrimitiveModelAttributeChangesRequiredKeysOfType<T extends id.SemanticIdentity, V extends PrimitiveModelAttribute> =

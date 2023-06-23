@@ -60,7 +60,7 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         const tasksUpdate = updateCalculator.calculateTasksUpdate(existingUnmappedTasks.values())
         identityIndex.deleteTasks(tasksUpdate.removedIds ?? [])
 
-        if (!src.ArrayUpdate.isEmpty(tasksUpdate)) update.tasks = tasksUpdate
+        if (!src.ArrayUpdate.isEmpty(tasksUpdate)) update.tasks = src.ArrayUpdate.create(tasksUpdate)
     }
 
     // Example of how Identity of non Ast-based element is reconciled
@@ -85,6 +85,6 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         const transitionsUpdate = updateCalculator.calculateTransitionsUpdate(existingUnmappedTransitions.values())
         identityIndex.deleteTransitions(transitionsUpdate.removedIds ?? [])
 
-        if (!src.ArrayUpdate.isEmpty(transitionsUpdate)) update.transitions = transitionsUpdate
+        if (!src.ArrayUpdate.isEmpty(transitionsUpdate)) update.transitions = src.ArrayUpdate.create(transitionsUpdate)
     }
 }
