@@ -1,20 +1,24 @@
 import type { AstNode, LangiumDocument, ReferenceDescription } from 'langium'
-import { DefaultRenameProvider, findDeclarationNodeAtOffset } from 'langium'
+import { DefaultRenameProvider, findDeclarationNodeAtOffset, getDocument } from 'langium'
 import type { RenameParams, WorkspaceEdit } from 'vscode-languageserver'
 import { TextEdit } from 'vscode-languageserver'
-import type { IdentityManager } from '../semantic/identity-manager'
-import type { LangiumModelServerServices } from '../services'
 import type { SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
+import type { IdentityManager } from '../semantic/identity-manager'
+import type { LangiumModelServerServices } from '../services'
+import * as src from '../source/model'
+import type { SourceModelSubscriptions } from '../source/source-model-subscriptions'
 import type { LmsDocument } from '../workspace/documents'
 
 export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> extends DefaultRenameProvider {
 
     protected identityManager: IdentityManager
+    protected sourceModelSubscriptions: SourceModelSubscriptions
 
     constructor(services: LangiumModelServerServices<SM, II, D>) {
         super(services)
         this.identityManager = services.semantic.IdentityManager
+        this.sourceModelSubscriptions = services.source.SourceModelSubscriptions
     }
 
     override async rename(document: LangiumDocument, params: RenameParams): Promise<WorkspaceEdit | undefined> {
@@ -31,9 +35,19 @@ export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityI
         const references = this.references.findReferences(targetNode, options)
         const newNameDefinder = this.getNewNameDefiner(targetNode, params)
 
-        const semanticElement = this.identityManager.findNamedIdentity(targetNode)
-        if (semanticElement) {
-            semanticElement.name = newNameDefinder.targetName
+        const rootIdentityIndex = this.identityManager.getIdentityIndex(getDocument(targetNode))
+        console.debug('Found identity index for the document:', rootIdentityIndex)
+        if (rootIdentityIndex) {
+            const semanticElement = this.identityManager.findAstBasedIdentity(targetNode)
+            console.debug('Found semanticElement for the targetNode:', semanticElement)
+            if (semanticElement && semanticElement.updateName(newNameDefinder.targetName)) {
+                console.debug('After updating semantic element, its name has changed')
+                const rename = src.Rename.create(semanticElement.id, semanticElement.name)
+                console.debug('Looking for subscriptions for id', rootIdentityIndex.id)
+                for (const sub of this.sourceModelSubscriptions.getSubscriptions(rootIdentityIndex.id)) {
+                    sub.pushRename(rename)
+                }
+            }
         }
         references.forEach(reference => {
             const newName = newNameDefinder.getNameForReference(reference)

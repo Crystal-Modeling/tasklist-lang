@@ -1,6 +1,7 @@
 import type { Stream } from 'langium'
 import { stream } from 'langium'
 import type * as id from '../../semantic/identity'
+import type { ElementUpdate } from './element-update'
 import { Update } from './update'
 
 /**
@@ -18,8 +19,6 @@ export type ReadonlyArrayUpdate<T extends id.SemanticIdentity> = {
     readonly changed?: ReadonlyArray<ElementUpdate<T>>
 }
 
-export type ElementState = 'DISAPPEARED' | 'REAPPEARED'
-export type ElementUpdate<T extends id.SemanticIdentity> = Update<T, ElementState>
 export namespace ArrayUpdate {
 
     export function isEmpty<T extends id.SemanticIdentity>(arrayUpdate: ReadonlyArrayUpdate<T>): boolean {
@@ -86,22 +85,14 @@ export class ArrayUpdateCommand<T extends id.SemanticIdentity> implements Readon
         return this.NO_UPDATE
     }
 
-    public static modification<T extends id.SemanticIdentity>(update: Update<T>): ReadonlyArrayUpdate<T>
-    public static modification<T extends id.SemanticIdentity>(updates: Array<Update<T>>): ReadonlyArrayUpdate<T>
-    public static modification<T extends id.SemanticIdentity>(updates: Update<T> | Array<Update<T>>): ReadonlyArrayUpdate<T> {
+    public static modification<T extends id.SemanticIdentity>(update: ElementUpdate<T>): ReadonlyArrayUpdate<T>
+    public static modification<T extends id.SemanticIdentity>(updates: Array<ElementUpdate<T>>): ReadonlyArrayUpdate<T>
+    public static modification<T extends id.SemanticIdentity>(updates: ElementUpdate<T> | Array<ElementUpdate<T>>): ReadonlyArrayUpdate<T> {
         const updatesToAdd = this.toNonEmptyArray(updates, (upd) => !Update.isEmpty(upd))
         if (updatesToAdd) {
             return new ArrayUpdateCommand(undefined, undefined, updatesToAdd)
         }
         return this.NO_UPDATE
-    }
-
-    public static dissappearance<T extends id.SemanticIdentity>(updates: Array<Update<T>>): ReadonlyArrayUpdate<T> {
-        return this.stateChange(this.toNonEmptyArray(updates), 'DISAPPEARED')
-    }
-
-    public static reappearance<T extends id.SemanticIdentity>(updates: Array<Update<T>> | Update<T>): ReadonlyArrayUpdate<T> {
-        return this.stateChange(this.toNonEmptyArray(updates), 'REAPPEARED')
     }
 
     public static noUpdate<T extends id.SemanticIdentity>(): ReadonlyArrayUpdate<T> {
@@ -115,16 +106,6 @@ export class ArrayUpdateCommand<T extends id.SemanticIdentity> implements Readon
         const updatesToAdd = this.concatNotEmpty(updatesStream.map(upd => upd.changed))
         if (!!elementsToAdd || !!idsToRemove || !!updatesToAdd) {
             return new ArrayUpdateCommand(elementsToAdd, idsToRemove, updatesToAdd)
-        }
-        return this.NO_UPDATE
-    }
-
-    private static stateChange<T extends id.SemanticIdentity>(updates: Array<Update<T>> | undefined, state: ElementState): ReadonlyArrayUpdate<T> {
-        const updatesToAdd = updates
-        if (updatesToAdd) {
-            // FIXME: You are modifying input parameters here, while it is expected, that they stays untouched?
-            updatesToAdd.forEach(upd => (upd as ElementUpdate<T>).__state = state)
-            return new ArrayUpdateCommand(undefined, undefined, updatesToAdd)
         }
         return this.NO_UPDATE
     }

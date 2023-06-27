@@ -22,19 +22,19 @@ export namespace Update {
         return true
     }
 
-    export function createEmpty<T extends id.SemanticIdentity>(id: string): Update<T> {
+    export function createEmpty<T extends id.SemanticIdentity, S extends string = never>(id: string): Update<T, S> {
         return <Update<T>>{ id }
     }
 
     // NOTE: Values taken from AST node can still be evaluated to undefined, even if they are required by type description
-    export function assignIfUpdated<T extends id.SemanticIdentity, V extends PrimitiveModelAttribute>(update: Update<T>,
+    export function assignIfUpdated<T extends id.SemanticIdentity, V extends PrimitiveModelAttribute, S extends string>(update: Update<T, S>,
         key: PrimitiveModelAttributeChangesRequiredKeysOfType<T, V>, value: V | undefined, newValue: V | undefined, defaultValue: V): void {
         if ((newValue ?? defaultValue) !== (value ?? defaultValue)) {
             (update as Record<PrimitiveModelAttributeChangesRequiredKeysOfType<T, V>, V>)[key] = newValue ?? defaultValue
         }
     }
 
-    export function assign<T extends id.SemanticIdentity, V extends PrimitiveModelAttribute>(update: Update<T>,
+    export function assign<T extends id.SemanticIdentity, V extends PrimitiveModelAttribute, S extends string>(update: Update<T, S>,
         key: PrimitiveModelAttributeChangesRequiredKeysOfType<T, V>, newValue: V | undefined, defaultValue: V) {
         (update as Record<PrimitiveModelAttributeChangesRequiredKeysOfType<T, V>, V>)[key] = newValue ?? defaultValue
     }

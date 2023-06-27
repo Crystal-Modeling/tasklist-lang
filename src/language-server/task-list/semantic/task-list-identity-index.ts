@@ -1,4 +1,4 @@
-import type { NamedSemanticIdentity } from '../../../langium-model-server/semantic/identity'
+import type { RenameableSemanticIdentity } from '../../../langium-model-server/semantic/identity'
 import type { IdentityIndex } from '../../../langium-model-server/semantic/identity-index'
 import { ValueBasedMap } from '../../../langium-model-server/utils/collections'
 import type * as semantic from './model'
@@ -38,7 +38,7 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         return this._tasksByName.get(name)?.id
     }
 
-    public findElementByName(name: string): NamedSemanticIdentity | undefined {
+    public findElementByName(name: string): RenameableSemanticIdentity | undefined {
         const semanticTask = this._tasksByName.get(name)
         if (semanticTask) {
             const index = this
@@ -47,11 +47,15 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
                 get name(): string {
                     return semanticTask.name
                 },
-                set name(newName: string) {
-                    if (index._tasksByName.delete(semanticTask.name))
-                        index._tasksByName.set(newName, semanticTask)
-                    semanticTask.name = newName
-                }
+                updateName(newName): boolean {
+                    if (semanticTask.name !== newName) {
+                        if (index._tasksByName.delete(semanticTask.name))
+                            index._tasksByName.set(newName, semanticTask)
+                        semanticTask.name = newName
+                        return true
+                    }
+                    return false
+                },
             }
         }
         return undefined

@@ -1,25 +1,45 @@
 import type { ServerHttp2Stream } from 'http2'
 import { MultiMap } from 'langium'
+import type * as id from '../semantic/identity'
+import type { Rename, Update } from './model'
 
 export interface SourceModelSubscriptions {
     addSubscription(subscriptionStream: ServerHttp2Stream, id: string): void
-    getSubscriptions(id: string): Iterable<ServerHttp2Stream>
+    getSubscriptions(modelId: string): Iterable<SourceModelSubscription>
+}
+
+export class SourceModelSubscription {
+    private readonly stream: ServerHttp2Stream
+
+    constructor(stream: ServerHttp2Stream) {
+        this.stream = stream
+    }
+
+    public pushUpdate<SM extends id.SemanticIdentity>(update: Update<SM>): void {
+        console.debug('Pushing update for model with id', update.id)
+        this.stream.write(JSON.stringify(update))
+    }
+
+    public pushRename(rename: Rename): void {
+        console.debug('Pushing rename for submodel with id', rename.id)
+        this.stream.write(JSON.stringify(rename))
+    }
 }
 
 export class LmsSourceModelSubscriptions implements SourceModelSubscriptions {
 
-    private modelSubscriptions = new MultiMap<string, ServerHttp2Stream>()
+    private modelSubscriptions = new MultiMap<string, SourceModelSubscription>()
 
     addSubscription(subscriptionStream: ServerHttp2Stream, id: string): void {
-        this.modelSubscriptions.add(id, subscriptionStream)
-        // RECHECK: Not sure if it is the right event to listen to when the stream gets disposed
+        const subscription = new SourceModelSubscription(subscriptionStream)
+        this.modelSubscriptions.add(id, subscription)
         subscriptionStream.once('close', () => {
             console.debug('The connection for id', id, 'got closed')
-            this.modelSubscriptions.delete(id, subscriptionStream)
+            this.modelSubscriptions.delete(id, subscription)
         })
     }
 
-    getSubscriptions(id: string): Iterable<ServerHttp2Stream> {
-        return this.modelSubscriptions.get(id)
+    getSubscriptions(modelId: string): Iterable<SourceModelSubscription> {
+        return this.modelSubscriptions.get(modelId)
     }
 }

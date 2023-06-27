@@ -3,7 +3,7 @@ import { getDocument } from 'langium'
 import { URI } from 'vscode-uri'
 import type { LangiumModelServerServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
-import type { NamedSemanticIdentity, SemanticIdentity } from './identity'
+import type { RenameableSemanticIdentity, SemanticIdentity } from './identity'
 import type { IdentityIndex, ModelExposedIdentityIndex } from './identity-index'
 import type { IdentityStorage } from './identity-storage'
 
@@ -14,7 +14,7 @@ export interface IdentityManager<II extends IdentityIndex = IdentityIndex> {
      * @returns a view over the identity element, if found.
      * @param astNode An {@link AstNode}, which name is used to find a corresponding semantic identity
      */
-    findNamedIdentity(astNode: AstNode): NamedSemanticIdentity | undefined
+    findAstBasedIdentity(astNode: AstNode): RenameableSemanticIdentity | undefined
     getIdentityIndex(langiumDocument: LangiumDocument): II | undefined
     saveSemanticIdentity(languageDocumentUri: string): void
     loadSemanticIdentity(languageDocumentUri: string): void
@@ -39,7 +39,7 @@ export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II ex
         return this.languageDocumentUriById.get(id)
     }
 
-    public findNamedIdentity(astNode: AstNode): NamedSemanticIdentity | undefined {
+    public findAstBasedIdentity(astNode: AstNode): RenameableSemanticIdentity | undefined {
         const name = this.nameProvider.getName(astNode)
         if (!name) {
             return undefined
