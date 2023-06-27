@@ -1,7 +1,7 @@
 import type { ServerHttp2Stream } from 'http2'
 import { MultiMap } from 'langium'
 import type * as id from '../semantic/identity'
-import { Rename, Update } from './model'
+import type { Rename, Update } from './model'
 
 export interface SourceModelSubscriptions {
     addSubscription(subscriptionStream: ServerHttp2Stream, id: string): void
