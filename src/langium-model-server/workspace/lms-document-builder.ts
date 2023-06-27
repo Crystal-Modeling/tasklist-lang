@@ -76,8 +76,8 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
         for (const update of updatesForLmsDocuments.values()) {
             if (src.Update.isEmpty(update)) continue
             for (const subscription of this.sourceModelSubscriptions.getSubscriptions(update.id)) {
-                console.debug('Pushing update for model with id', update.id)
-                subscription.write(JSON.stringify(update))
+                subscription.pushUpdate(update)
+                // FIXME: Here we can omit pushing some updates, if the operation has been interrupted
                 await interruptAndCheck(cancelToken)
             }
         }
