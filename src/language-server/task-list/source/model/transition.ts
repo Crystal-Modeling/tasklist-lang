@@ -1,4 +1,4 @@
-import type * as semantic from '../../semantic/task-list-semantic-model'
+import type * as semantic from '../../semantic/model'
 
 export interface Transition {
     id: string
@@ -7,7 +7,11 @@ export interface Transition {
 }
 
 export namespace Transition {
-    export function create(semanticTransition: semantic.SemanticTransition): Transition {
-        return { ...semanticTransition }
+    export function create(transition: semantic.IdentifiedTransition): Transition {
+        return {
+            id: transition.id,
+            sourceTaskId: transition.name[0],
+            targetTaskId: transition.name[1]
+        }
     }
 }

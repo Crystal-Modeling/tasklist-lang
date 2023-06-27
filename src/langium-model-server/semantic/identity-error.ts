@@ -1,4 +1,4 @@
-export class SemanticModelError extends Error {
+export class IdentityError extends Error {
     // eslint-disable-next-line @typescript-eslint/no-parameter-properties
     constructor(message: string, override readonly cause?: unknown) {
         super(message)

@@ -1,39 +1,28 @@
 import type { AstNode, LangiumDocument } from 'langium'
-import { DefaultSourceModelService } from '../../../langium-model-server/source/source-model-service'
-import type { SemanticModelIndex } from '../semantic/task-list-semantic-model-index'
+import { AbstractSourceModelService } from '../../../langium-model-server/source/source-model-service'
+import type { TaskListIdentityIndex } from '../semantic/task-list-identity-index'
+import type { TaskListDocument} from '../workspace/documents'
 import { isTaskListDocument } from '../workspace/documents'
-import * as lms from './model'
+import { Model, Task, Transition } from './model'
 
-export class TaskListSourceModelService extends DefaultSourceModelService<lms.Model, SemanticModelIndex> {
+export class TaskListSourceModelService extends AbstractSourceModelService<Model, TaskListIdentityIndex, TaskListDocument> {
 
-    protected override combineSemanticModelWithAst(semanticModelIndex: SemanticModelIndex,
-        langiumDocument: LangiumDocument<AstNode>): lms.Model {
+    protected override combineSemanticModelWithAst(semanticModelIndex: TaskListIdentityIndex,
+        langiumDocument: LangiumDocument<AstNode>): Model {
 
-        const sourceModel = lms.Model.create(semanticModelIndex.id)
+        const sourceModel = Model.create(semanticModelIndex.id)
 
         if (isTaskListDocument(langiumDocument)) {
             //HACK: Relying on the fact that semanticDomain is initialized during previous phases
             const semanticDomain = langiumDocument.semanticDomain!
-            const model = langiumDocument.parseResult.value
-
-            const existingUnusedSemanticTasks = semanticModelIndex.tasksByName
-            for (const task of semanticDomain.getValidTasks(model)) {
-                const semanticTask = existingUnusedSemanticTasks.get(task.name)
-                if (semanticTask) {
-                    existingUnusedSemanticTasks.delete(task.name)
-                    sourceModel.tasks.push(lms.Task.create(semanticTask, task))
-                }//COMMENT: `else` should never actually happen
-            }
-            //COMMENT: Actually, if AST and Semantic models are reconciled, `existingUnusedSemanticTasks.values()` will be empty
-            for (const unusedSemanticTask of existingUnusedSemanticTasks.values()) {
-                sourceModel.tasks.push(lms.Task.create(unusedSemanticTask))
+            for (const task of semanticDomain.getIdentifiedTasks()) {
+                sourceModel.tasks.push(Task.create(task))
             }
 
-            for (const semanticTransition of semanticModelIndex.transitions) {
-                sourceModel.transitions.push(lms.Transition.create(semanticTransition))
+            for (const transition of semanticDomain.getIdentifiedTransitions()) {
+                sourceModel.transitions.push(Transition.create(transition))
             }
         }
-        //COMMENT: This should never actually happen
         return sourceModel
     }
 }

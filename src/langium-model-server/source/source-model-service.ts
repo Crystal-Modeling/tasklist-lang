@@ -1,10 +1,11 @@
 import type { LangiumDocument, LangiumDocuments, LanguageMetaData } from 'langium'
-import { DocumentState } from 'langium'
 import { URI } from 'vscode-uri'
-import type { LangiumModelServerServices } from '../langium-model-server-module'
-import type { SemanticIndexManager } from '../semantic/semantic-manager'
-import type { SemanticIndex } from '../semantic/semantic-types'
+import type { SemanticIdentity } from '../semantic/identity'
+import type { IdentityIndex } from '../semantic/identity-index'
+import type { IdentityManager } from '../semantic/identity-manager'
+import type { LangiumModelServerServices } from '../services'
 import { UriConverter } from '../utils/uri-converter'
+import { LmsDocumentState, type LmsDocument } from '../workspace/documents'
 
 export interface SourceModelService<SM> {
     getById(id: string): SM | undefined
@@ -16,15 +17,16 @@ export interface SourceModelService<SM> {
     getSemanticId(sourceUri: string): string | undefined
 }
 
-export abstract class DefaultSourceModelService<SM, SemI extends SemanticIndex> implements SourceModelService<SM> {
+export abstract class AbstractSourceModelService<SM extends SemanticIdentity, SemI extends IdentityIndex, D extends LmsDocument> implements SourceModelService<SM> {
 
-    protected semanticIndexManager: SemanticIndexManager<SemI>
+    protected semanticIndexManager: IdentityManager<SemI>
     protected langiumDocuments: LangiumDocuments
     protected languageMetadata: LanguageMetaData
 
-    constructor(services: LangiumModelServerServices<SM, SemI>) {
-        this.semanticIndexManager = services.semantic.SemanticIndexManager
+    constructor(services: LangiumModelServerServices<SM, SemI, D>) {
+        this.semanticIndexManager = services.semantic.IdentityManager
         this.langiumDocuments = services.shared.workspace.LangiumDocuments
+        this.languageMetadata = services.LanguageMetaData
     }
 
     public getSemanticId(sourceUri: string): string | undefined {
@@ -35,7 +37,7 @@ export abstract class DefaultSourceModelService<SM, SemI extends SemanticIndex> 
             return undefined
         }
         const langiumDocument = this.langiumDocuments.getOrCreateDocument(documentUri)
-        return this.semanticIndexManager.getSemanticModelIndex(langiumDocument)?.id
+        return this.semanticIndexManager.getIdentityIndex(langiumDocument)?.id
     }
 
     public getById(id: string): SM | undefined {
@@ -48,11 +50,10 @@ export abstract class DefaultSourceModelService<SM, SemI extends SemanticIndex> 
         }
         const langiumDocument = this.langiumDocuments.getOrCreateDocument(documentUri)
         //TODO: Change this to return Promise, if the document didn't reach the desired state.
-        // Also override DocumentBuilder, to augument new final state (SemanticModelReconciled)
-        if (langiumDocument.state !== DocumentState.Validated) {
+        if (langiumDocument.state < LmsDocumentState.Identified) {
             return undefined
         }
-        const semanticModelIndex = this.semanticIndexManager.getSemanticModelIndex(langiumDocument)
+        const semanticModelIndex = this.semanticIndexManager.getIdentityIndex(langiumDocument)
         if (!semanticModelIndex) {
             return undefined
         }
