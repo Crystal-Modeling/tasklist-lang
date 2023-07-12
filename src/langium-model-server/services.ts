@@ -7,11 +7,12 @@ import type { IdentityStorage } from './semantic/identity-storage'
 import type { SemanticDomainFactory } from './semantic/semantic-domain'
 import type { LangiumSourceModelServer } from './source/source-model-server'
 import type { SourceModelService } from './source/source-model-service'
+import type { SourceModelSubscriptions } from './source/source-model-subscriptions'
+import type { SourceUpdateCombiner } from './source/source-update-combiner'
 import type { SourceUpdateManager } from './source/source-update-manager'
 import type { TypeGuard } from './utils/types'
 import type { ExtendableLangiumDocument, LmsDocument } from './workspace/documents'
 import type { LmsDocumentBuilder } from './workspace/lms-document-builder'
-import type { SourceModelSubscriptions } from './source/source-model-subscriptions'
 
 /**
  * LMS services with default implementation available, not required to be overriden
@@ -41,7 +42,8 @@ export type LangiumModelServerAbstractServices<SM extends SemanticIdentity, II e
     },
     source: {
         SourceModelService: SourceModelService<SM>,
-        SourceUpdateManager: SourceUpdateManager<SM>
+        SourceUpdateManager: SourceUpdateManager<SM>,
+        SourceUpdateCombiner: SourceUpdateCombiner<SM>
     }
 }
 
