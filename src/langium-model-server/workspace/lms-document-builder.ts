@@ -23,6 +23,8 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
     protected readonly identityManager: IdentityManager
     protected readonly sourceModelSubscriptions: SourceModelSubscriptions
 
+    protected readonly updatesForLmsDocuments: Map<D, src.Update<SM>> = new Map()
+
     constructor(services: LangiumModelServerServices<SM, II, D>) {
         this.createSemanticDomain = services.semantic.SemanticDomainFactory
         this.isLmsDocument = services.workspace.LmsDocumentGuard
@@ -53,19 +55,18 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
 
     protected async reconcileIdentity(documents: LangiumDocument[], cancelToken: CancellationToken) {
         console.debug('====== IDENTITY RECONCILIATION PHASE ======')
-        const updatesForLmsDocuments: Map<D, src.Update<SM>> = new Map()
         for (const document of documents) {
             const semanticId = this.identityManager.getIdentityIndex(document)?.id
             const lmsDocument: ExtendableLangiumDocument = document
-            if (this.isLmsDocument(lmsDocument) && semanticId) {
-                updatesForLmsDocuments.set(lmsDocument, src.Update.createEmpty<SM>(semanticId))
+            if (this.isLmsDocument(lmsDocument) && semanticId && !this.updatesForLmsDocuments.has(lmsDocument)) {
+                this.updatesForLmsDocuments.set(lmsDocument, src.Update.createEmpty<SM>(semanticId))
             }
         }
         await interruptAndCheck(cancelToken)
         for (const iteration of this.identityReconciler.identityReconciliationIterations) {
-            updatesForLmsDocuments.forEach((update, lmsDocument) => iteration(lmsDocument, update))
+            this.updatesForLmsDocuments.forEach((update, lmsDocument) => iteration(lmsDocument, update))
         }
-        updatesForLmsDocuments.forEach((update, lmsDocument) => {
+        this.updatesForLmsDocuments.forEach((update, lmsDocument) => {
             lmsDocument.state = LmsDocumentState.Identified
             console.debug('=====> For document ', lmsDocument.textDocument.uri)
             console.debug(`Calculated update (${update.id}) is`,
@@ -73,13 +74,20 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
         })
         await interruptAndCheck(cancelToken)
 
-        for (const update of updatesForLmsDocuments.values()) {
-            if (src.Update.isEmpty(update)) continue
-            for (const subscription of this.sourceModelSubscriptions.getSubscriptions(update.id)) {
-                subscription.pushUpdate(update)
-                // FIXME: Here we can omit pushing some updates, if the operation has been interrupted
+        for (const [lmsDocument, update] of this.updatesForLmsDocuments.entries()) {
+            if (src.Update.isEmpty(update)) {
+                this.updatesForLmsDocuments.delete(lmsDocument)
+            } else {
+                this.pushUpdateToSubscriptions(update)
+                this.updatesForLmsDocuments.delete(lmsDocument)
                 await interruptAndCheck(cancelToken)
             }
+        }
+    }
+
+    private pushUpdateToSubscriptions(update: src.Update<SM>): void {
+        for (const subscription of this.sourceModelSubscriptions.getSubscriptions(update.id)) {
+            subscription.pushUpdate(update)
         }
     }
 
