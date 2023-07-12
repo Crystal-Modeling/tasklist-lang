@@ -1,10 +1,10 @@
+import { stream } from 'langium'
+import type * as id from '../../../langium-model-server/semantic/identity'
 import { ArrayUpdate, Update } from '../../../langium-model-server/source/model'
-import type { ElementState } from '../../../langium-model-server/source/model/element-update'
-import { ElementUpdate } from '../../../langium-model-server/source/model/element-update'
+import type { ElementAttributes } from '../../../langium-model-server/source/model/element-update'
+import type { ElementUpdate } from '../../../langium-model-server/source/model/element-update'
 import type { SourceUpdateCombiner } from '../../../langium-model-server/source/source-update-combiner'
 import type { Model, Task, Transition } from './model'
-import type * as id from '../../../langium-model-server/semantic/identity'
-import { stream } from 'langium'
 
 export class TaskListSourceUpdateCombiner implements SourceUpdateCombiner<Model> {
 
@@ -32,8 +32,10 @@ class ModelCumulativeUpdate implements Readonly<Update<Model>> {
 
     public constructor(updates: Array<Update<Model>>) {
         this.updates = updates
-        this.taskUpdates = updates.map(upd => upd.tasks).filter((upd): upd is ArrayUpdate<Task> => !!upd && !ArrayUpdate.isEmpty(upd))
-        this.transitionUpdates = updates.map(upd => upd.transitions).filter((upd): upd is ArrayUpdate<Transition> => !!upd && !ArrayUpdate.isEmpty(upd))
+        this.taskUpdates = updates.map(upd => upd.tasks)
+            .filter((upd): upd is ArrayUpdate<Task> => !!upd && !ArrayUpdate.isEmpty(upd))
+        this.transitionUpdates = updates.map(upd => upd.transitions)
+            .filter((upd): upd is ArrayUpdate<Transition> => !!upd && !ArrayUpdate.isEmpty(upd))
     }
 
     get id(): string {
@@ -41,25 +43,30 @@ class ModelCumulativeUpdate implements Readonly<Update<Model>> {
     }
 
     get tasks(): ArrayUpdate<Task> | undefined {
-        return mergeArrayUpdates(this.taskUpdates, (sourceUpdate, destinationUpdate) => {
-            assignPropIfDefined(destinationUpdate, '__state', sourceUpdate)
-            assignPropIfDefined(destinationUpdate, 'content', sourceUpdate)
-            assignPropIfDefined(destinationUpdate, 'name', sourceUpdate)
-        })
+        return mergeArrayUpdates(this.taskUpdates, 'content', 'name')
     }
 
     get transitions(): ArrayUpdate<Transition> | undefined {
-        return mergeArrayUpdates(this.transitionUpdates, (sourceUpdate, destinationUpdate) => {
-            assignPropIfDefined(destinationUpdate, '__state', sourceUpdate)
-        })
+        return mergeArrayUpdates(this.transitionUpdates)
     }
 
 }
 
 function mergeArrayUpdates<T extends id.SemanticIdentity>(
     arrayUpdates: Array<ArrayUpdate<T>>,
-    propagateElementUpdateData: (source: ElementUpdate<T>, destination: ElementUpdate<T>) => void
+    ...mutableProps: Array<ElementAttributes<T>>
 ): ArrayUpdate<T> | undefined {
+    const propagateElementUpdateData = (source: ElementUpdate<T>, destination: ElementUpdate<T>) => {
+        if (source.__state === 'REAPPEARED' && destination.__state === 'DISAPPEARED') {
+            delete destination.__state
+        } else {
+            assignPropIfDefined(destination, '__state', source)
+        }
+        for (const mutableProp of mutableProps) {
+            assignPropIfDefined(destination, mutableProp, source)
+        }
+    }
+
     if (arrayUpdates.length === 0) {
         return undefined
     }
@@ -71,7 +78,7 @@ function mergeArrayUpdates<T extends id.SemanticIdentity>(
         .forEach(change => {
             const existingChange = changedById.get(change.id)
             if (!existingChange) {
-                changedById.set(change.id, createElementCumulativeUpdate(change))
+                changedById.set(change.id, { ...change })
             } else {
                 propagateElementUpdateData(change, existingChange)
             }
@@ -79,34 +86,10 @@ function mergeArrayUpdates<T extends id.SemanticIdentity>(
     const added: T[] = arrayUpdates.flatMap(elementUpdate => elementUpdate.added ?? [])
     const merged: ArrayUpdate<T> = {
         added,
-        // NOTE: Remapping to plain object to get rid of custom getter and setter -- they will affect JSON conversion
-        changed: Array.from(changedById.values(), cumulativeUpdate => {
-            const update = ElementUpdate.createEmpty<T>(cumulativeUpdate.id)
-            propagateElementUpdateData(cumulativeUpdate, update)
-            return update
-        }),
+        changed: Array.from(changedById.values()),
         removedIds: Array.from(removedIds)
     }
     return merged
-}
-
-function createElementCumulativeUpdate<T extends id.SemanticIdentity>(existingUpdate: ElementUpdate<T>): ElementUpdate<T> {
-    let __state = existingUpdate.__state
-    const update: ElementUpdate<T> = {
-        ...existingUpdate,
-        set __state(newState: ElementState) {
-            if (newState === 'REAPPEARED' && __state === 'DISAPPEARED') {
-                __state = undefined
-                delete update.__state
-            } else {
-                __state = newState
-            }
-        },
-        get __state(): ElementState | undefined {
-            return __state
-        }
-    }
-    return update
 }
 
 function assignPropIfDefined<T>(destination: T, prop: keyof T, source: Readonly<Partial<T>>) {

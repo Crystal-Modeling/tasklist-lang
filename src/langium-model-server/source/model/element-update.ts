@@ -1,4 +1,5 @@
 import type * as id from '../../semantic/identity'
+import type { ExcludeExisting } from '../../utils/types'
 import { Update } from './update'
 
 export type ElementState = 'DISAPPEARED' | 'REAPPEARED'
@@ -15,3 +16,5 @@ export namespace ElementUpdate {
         return Update.createEmpty<T, ElementState>(id)
     }
 }
+
+export type ElementAttributes<T extends id.SemanticIdentity> = ExcludeExisting<keyof ElementUpdate<T>, 'id' | '__state'>
