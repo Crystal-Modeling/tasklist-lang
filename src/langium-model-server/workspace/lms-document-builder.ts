@@ -1,4 +1,5 @@
 import type { LangiumDocument } from 'langium'
+import { MultiMap } from 'langium'
 import { DocumentState, interruptAndCheck } from 'langium'
 import type { CancellationToken } from 'vscode-languageserver'
 import type * as id from '../semantic/identity'
@@ -11,6 +12,7 @@ import * as src from '../source/model'
 import type { SourceModelSubscriptions } from '../source/source-model-subscriptions'
 import type { TypeGuard } from '../utils/types'
 import { LmsDocumentState, type ExtendableLangiumDocument, type LmsDocument } from './documents'
+import type { SourceUpdateCombiner } from '../source/source-update-combiner'
 
 export interface LmsDocumentBuilder {
 
@@ -22,6 +24,10 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
     protected readonly identityReconciler: IdentityReconciler<SM, D>
     protected readonly identityManager: IdentityManager
     protected readonly sourceModelSubscriptions: SourceModelSubscriptions
+    protected readonly sourceUpdateCombiner: SourceUpdateCombiner<SM>
+
+    protected readonly updatesForLmsDocuments: MultiMap<D, src.Update<SM>> = new MultiMap()
+    private updatePushingTimeout: NodeJS.Timeout
 
     constructor(services: LangiumModelServerServices<SM, II, D>) {
         this.createSemanticDomain = services.semantic.SemanticDomainFactory
@@ -29,6 +35,7 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
         this.identityReconciler = services.semantic.IdentityReconciler
         this.identityManager = services.semantic.IdentityManager
         this.sourceModelSubscriptions = services.source.SourceModelSubscriptions
+        this.sourceUpdateCombiner = services.source.SourceUpdateCombiner
 
         const documentBuilder = services.shared.workspace.DocumentBuilder
         documentBuilder.onBuildPhase(DocumentState.IndexedReferences, this.initializeSemanticDomain.bind(this))
@@ -53,34 +60,49 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
 
     protected async reconcileIdentity(documents: LangiumDocument[], cancelToken: CancellationToken) {
         console.debug('====== IDENTITY RECONCILIATION PHASE ======')
-        const updatesForLmsDocuments: Map<D, src.Update<SM>> = new Map()
+        const newUpdatesForLmsDocuments: Map<D, src.Update<SM>> = new Map()
         for (const document of documents) {
             const semanticId = this.identityManager.getIdentityIndex(document)?.id
             const lmsDocument: ExtendableLangiumDocument = document
             if (this.isLmsDocument(lmsDocument) && semanticId) {
-                updatesForLmsDocuments.set(lmsDocument, src.Update.createEmpty<SM>(semanticId))
+                newUpdatesForLmsDocuments.set(lmsDocument, src.Update.createEmpty<SM>(semanticId))
             }
         }
         await interruptAndCheck(cancelToken)
         for (const iteration of this.identityReconciler.identityReconciliationIterations) {
-            updatesForLmsDocuments.forEach((update, lmsDocument) => iteration(lmsDocument, update))
+            newUpdatesForLmsDocuments.forEach((update, lmsDocument) => iteration(lmsDocument, update))
         }
-        updatesForLmsDocuments.forEach((update, lmsDocument) => {
+        newUpdatesForLmsDocuments.forEach((update, lmsDocument) => {
             lmsDocument.state = LmsDocumentState.Identified
-            console.debug('=====> For document ', lmsDocument.textDocument.uri)
-            console.debug(`Calculated update (${update.id}) is`,
-                (src.Update.isEmpty(update) ? 'EMPTY' : JSON.stringify(update, undefined, 2)))
+            if (!src.Update.isEmpty(update)) {
+                this.updatesForLmsDocuments.add(lmsDocument, update)
+            }
         })
         await interruptAndCheck(cancelToken)
 
-        for (const update of updatesForLmsDocuments.values()) {
-            if (src.Update.isEmpty(update)) continue
-            for (const subscription of this.sourceModelSubscriptions.getSubscriptions(update.id)) {
-                subscription.pushUpdate(update)
-                // FIXME: Here we can omit pushing some updates, if the operation has been interrupted
-                await interruptAndCheck(cancelToken)
+        if (!this.updatePushingTimeout) {
+            this.updatePushingTimeout = setTimeout(this.combineAndPushUpdates.bind(this), 300)
+        } else {
+            this.updatePushingTimeout.refresh()
+        }
+    }
+
+    private combineAndPushUpdates(): void {
+        for (const [lmsDocument, updates] of this.updatesForLmsDocuments.entriesGroupedByKey()) {
+            const update = this.sourceUpdateCombiner.combineUpdates(updates)
+            if (update && !src.Update.isEmpty(update)) {
+                console.debug('=====> For document ', lmsDocument.textDocument.uri)
+                this.pushUpdateToSubscriptions(update)
             }
+            this.updatesForLmsDocuments.delete(lmsDocument)
+        }
+    }
+
+    private pushUpdateToSubscriptions(update: src.Update<SM>): void {
+        for (const subscription of this.sourceModelSubscriptions.getSubscriptions(update.id)) {
+            subscription.pushUpdate(update)
         }
     }
 
 }
+

@@ -8,6 +8,7 @@ import { TaskListIdentityStorage } from './semantic/task-list-identity-storage'
 import { TaskListSemanticDomain } from './semantic/task-list-semantic-domain'
 import type * as source from './source/model'
 import { TaskListSourceModelService } from './source/task-list-source-model-service'
+import { TaskListSourceUpdateCombiner } from './source/task-list-source-update-combiner'
 import { TaskListSourceUpdateManager } from './source/task-list-source-update-manager'
 import type { TaskListDocument } from './workspace/documents'
 import { isTaskListDocument } from './workspace/documents'
@@ -56,5 +57,6 @@ export const TaskListModule: Module<TaskListServices, PartialLangiumModelServerS
     source: {
         SourceModelService: (services) => new TaskListSourceModelService(services),
         SourceUpdateManager: () => new TaskListSourceUpdateManager(),
+        SourceUpdateCombiner: () => new TaskListSourceUpdateCombiner(),
     },
 }

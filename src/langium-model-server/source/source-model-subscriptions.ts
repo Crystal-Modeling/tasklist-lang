@@ -1,7 +1,8 @@
 import type { ServerHttp2Stream } from 'http2'
 import { MultiMap } from 'langium'
 import type * as id from '../semantic/identity'
-import type { Rename, Update } from './model'
+import type { Rename} from './model'
+import { Update } from './model'
 
 export interface SourceModelSubscriptions {
     addSubscription(subscriptionStream: ServerHttp2Stream, id: string): void
@@ -17,6 +18,7 @@ export class SourceModelSubscription {
 
     public pushUpdate<SM extends id.SemanticIdentity>(update: Update<SM>): void {
         console.debug('Pushing update for model with id', update.id)
+        console.debug((Update.isEmpty(update) ? 'EMPTY' : JSON.stringify(update, undefined, 2)))
         this.stream.write(JSON.stringify(update))
     }
 

@@ -66,7 +66,7 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
             }
             return ArrayUpdateCommand.modification(reappearance)
         } // Existed in AST before
-        const update: ElementUpdate<Task> = Update.createEmpty(semanticId)
+        const update = ElementUpdate.createEmpty<Task>(semanticId)
         // Not comparing the task.name, since it cannot be changed (existed in previous AST)
         // (it plays a role in task Identity, hence with its change it is a different task)
         Update.assignIfUpdated(update, 'content', previous.content, current.content, '')
