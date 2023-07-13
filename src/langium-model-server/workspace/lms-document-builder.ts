@@ -77,9 +77,6 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
             if (!src.Update.isEmpty(update)) {
                 this.updatesForLmsDocuments.add(lmsDocument, update)
             }
-            console.debug('=====> For document ', lmsDocument.textDocument.uri)
-            console.debug(`Calculated update (${update.id}) is`,
-                (src.Update.isEmpty(update) ? 'EMPTY' : JSON.stringify(update, undefined, 2)))
         })
         await interruptAndCheck(cancelToken)
 
@@ -94,6 +91,7 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
         for (const [lmsDocument, updates] of this.updatesForLmsDocuments.entriesGroupedByKey()) {
             const update = this.sourceUpdateCombiner.combineUpdates(updates)
             if (update && !src.Update.isEmpty(update)) {
+                console.debug('=====> For document ', lmsDocument.textDocument.uri)
                 this.pushUpdateToSubscriptions(update)
             }
             this.updatesForLmsDocuments.delete(lmsDocument)
