@@ -70,7 +70,7 @@ function mergeArrayUpdates<T extends id.SemanticIdentity>(
     if (arrayUpdates.length === 0) {
         return undefined
     }
-    const removedIds: Set<string> = new Set(arrayUpdates.flatMap(elementUpdate => elementUpdate.removedIds ?? []))
+    const removedIds: Set<string> = new Set(arrayUpdates.flatMap(update => update.removedIds ?? []))
     const changedById: Map<string, ElementUpdate<T>> = new Map()
     stream(arrayUpdates)
         .flatMap(update => update.changed ?? [])
@@ -83,7 +83,8 @@ function mergeArrayUpdates<T extends id.SemanticIdentity>(
                 propagateElementUpdateData(change, existingChange)
             }
         })
-    const added: T[] = arrayUpdates.flatMap(elementUpdate => elementUpdate.added ?? [])
+    const added: T[] = arrayUpdates.flatMap(update => update.added ?? [])
+        .filter(elementUpdate => !removedIds.delete(elementUpdate.id))
     const merged: ArrayUpdate<T> = {
         added,
         changed: Array.from(changedById.values()),
