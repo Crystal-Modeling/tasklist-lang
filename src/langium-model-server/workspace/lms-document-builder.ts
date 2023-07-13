@@ -1,4 +1,4 @@
-import type { LangiumDocument} from 'langium'
+import type { LangiumDocument } from 'langium'
 import { MultiMap } from 'langium'
 import { DocumentState, interruptAndCheck } from 'langium'
 import type { CancellationToken } from 'vscode-languageserver'
@@ -27,6 +27,7 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
     protected readonly sourceUpdateCombiner: SourceUpdateCombiner<SM>
 
     protected readonly updatesForLmsDocuments: MultiMap<D, src.Update<SM>> = new MultiMap()
+    private updatePushingTimeout: NodeJS.Timeout
 
     constructor(services: LangiumModelServerServices<SM, II, D>) {
         this.createSemanticDomain = services.semantic.SemanticDomainFactory
@@ -73,22 +74,29 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
         }
         newUpdatesForLmsDocuments.forEach((update, lmsDocument) => {
             lmsDocument.state = LmsDocumentState.Identified
-            this.updatesForLmsDocuments.add(lmsDocument, update)
+            if (!src.Update.isEmpty(update)) {
+                this.updatesForLmsDocuments.add(lmsDocument, update)
+            }
             console.debug('=====> For document ', lmsDocument.textDocument.uri)
             console.debug(`Calculated update (${update.id}) is`,
                 (src.Update.isEmpty(update) ? 'EMPTY' : JSON.stringify(update, undefined, 2)))
         })
         await interruptAndCheck(cancelToken)
 
+        if (!this.updatePushingTimeout) {
+            this.updatePushingTimeout = setTimeout(this.combineAndPushUpdates.bind(this), 300)
+        } else {
+            this.updatePushingTimeout.refresh()
+        }
+    }
+
+    private combineAndPushUpdates(): void {
         for (const [lmsDocument, updates] of this.updatesForLmsDocuments.entriesGroupedByKey()) {
             const update = this.sourceUpdateCombiner.combineUpdates(updates)
-            if (!update || src.Update.isEmpty(update)) {
-                this.updatesForLmsDocuments.delete(lmsDocument)
-            } else {
+            if (update && !src.Update.isEmpty(update)) {
                 this.pushUpdateToSubscriptions(update)
-                this.updatesForLmsDocuments.delete(lmsDocument)
-                await interruptAndCheck(cancelToken)
             }
+            this.updatesForLmsDocuments.delete(lmsDocument)
         }
     }
 
