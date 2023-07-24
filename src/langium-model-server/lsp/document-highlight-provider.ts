@@ -36,11 +36,10 @@ export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, 
         }
 
         if (document.semanticDomain) {
-            if (!this.highlightPushingTimeout) {
-                this.highlightPushingTimeout = setTimeout(() => this.calculateAndPushHighlight(document, selectedCstNode.element), 300)
-            } else {
-                this.highlightPushingTimeout.refresh()
+            if (this.highlightPushingTimeout) {
+                clearInterval(this.highlightPushingTimeout)
             }
+            this.highlightPushingTimeout = setTimeout(() => this.calculateAndPushHighlight(document, selectedCstNode.element), 250)
         }
 
         return super.getDocumentHighlight(document, params)
