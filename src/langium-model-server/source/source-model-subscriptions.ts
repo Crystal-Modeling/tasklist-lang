@@ -61,7 +61,10 @@ export class DefaultSourceModelSubscriptions implements SourceModelSubscriptions
 
     addSubscription(subscriptionStream: ServerHttp2Stream, id: string): void {
         const subscription = new SingleSourceModelSubscription(subscriptionStream)
-        const modelSubscriptions = this.subscriptionsByModelId.get(id) ?? new CompositeSourceModelSubscription()
+        let modelSubscriptions = this.subscriptionsByModelId.get(id) ?? new CompositeSourceModelSubscription()
+        if (!this.subscriptionsByModelId.has(id)) {
+            this.subscriptionsByModelId.set(id, modelSubscriptions)
+        }
         modelSubscriptions.subscriptions.add(subscription)
         subscriptionStream.once('close', () => {
             console.debug('The connection for id', id, 'got closed')
