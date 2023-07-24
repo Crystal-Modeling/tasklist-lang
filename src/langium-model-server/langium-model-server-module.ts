@@ -7,13 +7,15 @@ import { DefaultLangiumSourceModelServer } from './source/source-model-server'
 import type { LmsDocument } from './workspace/documents'
 import { DefaultLmsDocumentBuilder } from './workspace/lms-document-builder'
 import { DefaultSourceModelSubscriptions } from './source/source-model-subscriptions'
+import { LmsDocumentHighlightProvider } from './lsp/document-highlight-provider'
 
 export function createLangiumModelServerDefaultModule
 <SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument>():
 Module<LangiumModelServerServices<SM, II, D>, LangiumModelServerDefaultServices> {
     return {
         lsp: {
-            RenameProvider: (services) => new LmsRenameProvider(services)
+            RenameProvider: (services) => new LmsRenameProvider(services),
+            DocumentHighlightProvider: (services) => new LmsDocumentHighlightProvider(services),
         },
         workspace: {
             LmsDocumentBuilder: (services) => new DefaultLmsDocumentBuilder(services),

@@ -1,7 +1,7 @@
 import type { ServerHttp2Stream } from 'http2'
 import { MultiMap } from 'langium'
 import type * as id from '../semantic/identity'
-import type { Rename} from './model'
+import type { Highlight, Rename } from './model'
 import { Update } from './model'
 
 export interface SourceModelSubscriptions {
@@ -25,6 +25,11 @@ export class SourceModelSubscription {
     public pushRename(rename: Rename): void {
         console.debug('Pushing rename for submodel with id', rename.id)
         this.stream.write(JSON.stringify(rename))
+    }
+
+    public pushHighlight(highlight: Highlight): void {
+        console.debug('Pushing highlight for submodel with id', highlight.id)
+        this.stream.write(JSON.stringify(highlight))
     }
 }
 
