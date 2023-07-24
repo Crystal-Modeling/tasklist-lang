@@ -1,5 +1,5 @@
-import type { Update } from './update'
-import type * as id from '../../semantic/identity'
+import type { Update } from '../update'
+import type * as id from '../../../semantic/identity'
 
 export type Rename = Update<id.NamedSemanticIdentity, 'RENAMED'>
 export namespace Rename {
