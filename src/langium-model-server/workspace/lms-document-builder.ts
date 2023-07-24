@@ -99,9 +99,7 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
     }
 
     private pushUpdateToSubscriptions(update: src.Update<SM>): void {
-        for (const subscription of this.sourceModelSubscriptions.getSubscriptions(update.id)) {
-            subscription.pushUpdate(update)
-        }
+        this.sourceModelSubscriptions.getSubscription(update.id)?.pushUpdate(update)
     }
 
 }

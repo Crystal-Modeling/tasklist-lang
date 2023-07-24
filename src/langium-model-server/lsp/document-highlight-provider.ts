@@ -37,9 +37,7 @@ export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, 
             const modelId = this.identityManager.getIdentityIndex(document)?.id
             if (modelId && highlightedNodeId) {
                 const highlight = source.Highlight.create(highlightedNodeId)
-                for (const sub of this.sourceModelSubscriptions.getSubscriptions(modelId)) {
-                    sub.pushHighlight(highlight)
-                }
+                this.sourceModelSubscriptions.getSubscription(modelId)?.pushHighlight(highlight)
             }
         }
 

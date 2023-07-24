@@ -44,9 +44,7 @@ export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityI
                 console.debug('After updating semantic element, its name has changed')
                 const rename = src.Rename.create(semanticElement.id, semanticElement.name)
                 console.debug('Looking for subscriptions for id', rootIdentityIndex.id)
-                for (const sub of this.sourceModelSubscriptions.getSubscriptions(rootIdentityIndex.id)) {
-                    sub.pushRename(rename)
-                }
+                this.sourceModelSubscriptions.getSubscription(rootIdentityIndex.id)?.pushRename(rename)
             }
         }
         references.forEach(reference => {

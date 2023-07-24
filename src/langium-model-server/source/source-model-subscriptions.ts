@@ -1,15 +1,20 @@
 import type { ServerHttp2Stream } from 'http2'
-import { MultiMap } from 'langium'
 import type * as id from '../semantic/identity'
 import type { Highlight, Rename } from './model'
 import { Update } from './model'
 
 export interface SourceModelSubscriptions {
     addSubscription(subscriptionStream: ServerHttp2Stream, id: string): void
-    getSubscriptions(modelId: string): Iterable<SourceModelSubscription>
+    getSubscription(modelId: string): SourceModelSubscription | undefined
 }
 
-export class SourceModelSubscription {
+export interface SourceModelSubscription {
+    pushUpdate<SM extends id.SemanticIdentity>(update: Update<SM>): void
+    pushRename(rename: Rename): void
+    pushHighlight(highlight: Highlight): void
+}
+
+class SingleSourceModelSubscription implements SourceModelSubscription {
     private readonly stream: ServerHttp2Stream
 
     constructor(stream: ServerHttp2Stream) {
@@ -31,22 +36,44 @@ export class SourceModelSubscription {
         console.debug('Pushing highlight for submodel with id', highlight.id)
         this.stream.write(JSON.stringify(highlight))
     }
+
+}
+
+class CompositeSourceModelSubscription implements SourceModelSubscription {
+    readonly subscriptions: Set<SingleSourceModelSubscription> = new Set()
+
+    public pushUpdate<SM extends id.SemanticIdentity>(update: Update<SM>): void {
+        this.subscriptions.forEach(sub => sub.pushUpdate(update))
+    }
+
+    public pushRename(rename: Rename): void {
+        this.subscriptions.forEach(sub => sub.pushRename(rename))
+    }
+
+    public pushHighlight(highlight: Highlight): void {
+        this.subscriptions.forEach(sub => sub.pushHighlight(highlight))
+    }
 }
 
 export class DefaultSourceModelSubscriptions implements SourceModelSubscriptions {
 
-    private modelSubscriptions = new MultiMap<string, SourceModelSubscription>()
+    private subscriptionsByModelId = new Map<string, CompositeSourceModelSubscription>()
 
     addSubscription(subscriptionStream: ServerHttp2Stream, id: string): void {
-        const subscription = new SourceModelSubscription(subscriptionStream)
-        this.modelSubscriptions.add(id, subscription)
+        const subscription = new SingleSourceModelSubscription(subscriptionStream)
+        const modelSubscriptions = this.subscriptionsByModelId.get(id) ?? new CompositeSourceModelSubscription()
+        modelSubscriptions.subscriptions.add(subscription)
         subscriptionStream.once('close', () => {
             console.debug('The connection for id', id, 'got closed')
-            this.modelSubscriptions.delete(id, subscription)
+            modelSubscriptions.subscriptions.delete(subscription)
+            const modelSubscriptionsNow = this.subscriptionsByModelId.get(id)
+            if (modelSubscriptionsNow && modelSubscriptionsNow.subscriptions.size === 0) {
+                this.subscriptionsByModelId.delete(id)
+            }
         })
     }
 
-    getSubscriptions(modelId: string): Iterable<SourceModelSubscription> {
-        return this.modelSubscriptions.get(modelId)
+    getSubscription(modelId: string): SourceModelSubscription | undefined {
+        return this.subscriptionsByModelId.get(modelId)
     }
 }
