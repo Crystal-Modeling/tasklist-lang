@@ -16,6 +16,8 @@ export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, 
     private sourceModelSubscriptions: SourceModelSubscriptions
     private identityManager: IdentityManager
 
+    private highlightedNodeIdByModelId: Map<string, string> = new Map()
+
     constructor(services: LangiumModelServerServices<SM, II, D>) {
         super(services)
         this.sourceModelSubscriptions = services.source.SourceModelSubscriptions
@@ -35,7 +37,8 @@ export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, 
         if (document.semanticDomain) {
             const highlightedNodeId = getContainerOfType(selectedCstNode.element, semantic.Identified.is)?.id
             const modelId = this.identityManager.getIdentityIndex(document)?.id
-            if (modelId && highlightedNodeId) {
+            if (modelId && highlightedNodeId && highlightedNodeId !== this.highlightedNodeIdByModelId.get(modelId)) {
+                this.highlightedNodeIdByModelId.set(modelId, highlightedNodeId)
                 const highlight = source.Highlight.create(highlightedNodeId)
                 this.sourceModelSubscriptions.getSubscription(modelId)?.pushHighlight(highlight)
             }
