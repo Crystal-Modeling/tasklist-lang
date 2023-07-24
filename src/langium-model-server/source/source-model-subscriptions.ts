@@ -28,7 +28,7 @@ export class SourceModelSubscription {
     }
 }
 
-export class LmsSourceModelSubscriptions implements SourceModelSubscriptions {
+export class DefaultSourceModelSubscriptions implements SourceModelSubscriptions {
 
     private modelSubscriptions = new MultiMap<string, SourceModelSubscription>()
 
