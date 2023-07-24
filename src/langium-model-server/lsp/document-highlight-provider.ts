@@ -20,7 +20,6 @@ export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, 
         super(services)
         this.sourceModelSubscriptions = services.source.SourceModelSubscriptions
         this.identityManager = services.semantic.IdentityManager
-        services.lsp.DocumentHighlightProvider
     }
 
     override getDocumentHighlight(document: LangiumDocument & SemanticAwareDocument, params: DocumentHighlightParams): MaybePromise<DocumentHighlight[] | undefined> {
