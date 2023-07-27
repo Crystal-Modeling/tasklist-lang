@@ -1,4 +1,4 @@
-import type { DeepPartial, LangiumServices, PartialLangiumServices, RenameProvider } from 'langium'
+import type { DeepPartial, DocumentHighlightProvider, LangiumServices, PartialLangiumServices, RenameProvider } from 'langium'
 import type { SemanticIdentity } from './semantic/identity'
 import type { IdentityIndex } from './semantic/identity-index'
 import type { IdentityManager } from './semantic/identity-manager'
@@ -20,8 +20,10 @@ import type { LmsDocumentBuilder } from './workspace/lms-document-builder'
 export type LangiumModelServerDefaultServices = {
     lsp: {
         RenameProvider: RenameProvider,
+        DocumentHighlightProvider: DocumentHighlightProvider,
     },
     workspace: {
+        // NOTE: Lms prefix added here because DocumentBuilder service exists in Langium
         LmsDocumentBuilder: LmsDocumentBuilder
     },
     source: {
