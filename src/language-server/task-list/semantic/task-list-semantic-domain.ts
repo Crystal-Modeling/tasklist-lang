@@ -1,17 +1,16 @@
-import type { AstNode, Reference, Stream } from 'langium'
+import type { AstNode, Stream } from 'langium'
 import { stream } from 'langium'
 import type { Valid } from '../../../langium-model-server/semantic/model'
 import { Identified } from '../../../langium-model-server/semantic/model'
 import type { SemanticDomain } from '../../../langium-model-server/semantic/semantic-domain'
 import type * as ast from '../../generated/ast'
-import type { TransitionDerivativeIdentity } from './model'
-import { IdentifiedTransition } from './model'
+import { Transition } from './model'
 
 export interface QueriableTaskListSemanticDomain {
     getIdentifiedTasks(): Iterable<Identified<ast.Task>>
-    getIdentifiedTransitions(): Iterable<IdentifiedTransition>
+    getIdentifiedTransitions(): Iterable<Identified<Transition>>
     getPreviousIdentifiedTask(id: string): Identified<ast.Task> | undefined
-    getPreviousIdentifiedTransition(id: string): IdentifiedTransition | undefined
+    getPreviousIdentifiedTransition(id: string): Identified<Transition> | undefined
 }
 export interface TaskListSemanticDomain extends QueriableTaskListSemanticDomain, SemanticDomain {
     clear(): void
@@ -21,7 +20,7 @@ export interface TaskListSemanticDomain extends QueriableTaskListSemanticDomain,
     // NOTE: 👇 This is considered as part of manipulation with AST Nodes
     getValidTasks(model: ast.Model): Stream<Valid<ast.Task>>
     // "Mixed" operation: is called after tasks are already identified, but serve for Transition identification
-    getTransitionDerivativeIdentities(): Stream<TransitionDerivativeIdentity>
+    getValidTransitions(): Stream<Transition>
     // NOTE: 👇 This is considered as part of manipulation with Semantic Model (Identified<ast.Task> and IdentifiedTransition)
     /**
      * Maps Valid Task node with semantic identity.
@@ -35,7 +34,7 @@ export interface TaskListSemanticDomain extends QueriableTaskListSemanticDomain,
      * @param transition A derivative identity for Transition to map
      * @param semanticId Semantic ID, which {@link transition} is identified with
      */
-    identifyTransition(transition: TransitionDerivativeIdentity, semanticId: string): IdentifiedTransition
+    identifyTransition(transition: Transition, semanticId: string): Identified<Transition>
 }
 
 export namespace TaskListSemanticDomain {
@@ -52,13 +51,15 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
 
     private _identifiedTasksById: Map<string, Identified<ast.Task>>
     private _previousIdentifiedTaskById: Map<string, Identified<ast.Task>> | undefined
-    private _identifiedTransitionsById: Map<string, IdentifiedTransition>
-    private _previousIdentifiedTransitionsById: Map<string, IdentifiedTransition> | undefined
+    private _validTransitionsByIdentifiedTask: Map<Identified<ast.Task>, Transition[]>
+    private _identifiedTransitionsById: Map<string, Identified<Transition>>
+    private _previousIdentifiedTransitionsById: Map<string, Identified<Transition>> | undefined
 
     constructor() {
         this.invalidTasks = new Set()
         this.invalidReferences = new Map()
         this._identifiedTasksById = new Map()
+        this._validTransitionsByIdentifiedTask = new Map()
         this._identifiedTransitionsById = new Map()
     }
 
@@ -76,10 +77,19 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
 
     protected isTaskReferenceValid(
         task: Valid<ast.Task>,
-        taskReference: Reference<ast.Task>,
-        refIndex: number
-    ): taskReference is ResolvedReference<Valid<ast.Task>> {
-        return ResolvedReference.is(taskReference) && !this.invalidReferences.get(task)?.has(refIndex)
+        referenceIndex: number
+    ): boolean {
+        return !this.invalidReferences.get(task)?.has(referenceIndex)
+    }
+
+    // NOTE: Rather defensive function, to ensure synthetic Transition domain objects uniqueness (per AST Task.reference)
+    protected getValidTransitionsForSourceTask(sourceTask: Identified<ast.Task>): Transition[] {
+        let validTransitions = this._validTransitionsByIdentifiedTask.get(sourceTask)
+        if (!validTransitions) {
+            validTransitions = Transition.create(sourceTask, this.isTaskReferenceValid.bind(this))
+            this._validTransitionsByIdentifiedTask.set(sourceTask, validTransitions)
+        }
+        return validTransitions
     }
 
     public getValidTasks(model: ast.Model): Stream<Valid<ast.Task>> {
@@ -87,16 +97,9 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
             .filter(this.isTaskValid.bind(this))
     }
 
-    // Preparing data for the iteration (Transition Derivative Identity (source task id + target task id) => Transition).
-    public getTransitionDerivativeIdentities(): Stream<TransitionDerivativeIdentity> {
+    public getValidTransitions(): Stream<Transition> {
         return stream(this.getIdentifiedTasks())
-            .flatMap(sourceTask => sourceTask.references
-                .filter((reference, referenceIndex): reference is ResolvedReference<Identified<ast.Task>> =>
-                    this.isTaskReferenceValid(sourceTask, reference, referenceIndex) && Identified.is(reference.ref))
-                .map((targetTask): TransitionDerivativeIdentity => [
-                    sourceTask.id,
-                    targetTask.ref.id
-                ]))
+            .flatMap(this.getValidTransitionsForSourceTask.bind(this))
     }
 
     public identifyTask(task: Valid<ast.Task>, semanticId: string): Identified<ast.Task> {
@@ -105,8 +108,8 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         return identifiedTask
     }
 
-    public identifyTransition(transition: TransitionDerivativeIdentity, semanticId: string): IdentifiedTransition {
-        const identifiedTransition = IdentifiedTransition.identify(transition, semanticId)
+    public identifyTransition(transition: Transition, semanticId: string): Identified<Transition> {
+        const identifiedTransition = Identified.identify(transition, semanticId)
         this._identifiedTransitionsById.set(semanticId, identifiedTransition)
         return identifiedTransition
     }
@@ -115,7 +118,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         return this._identifiedTasksById.values()
     }
 
-    public getIdentifiedTransitions(): Iterable<IdentifiedTransition> {
+    public getIdentifiedTransitions(): Iterable<Identified<Transition>> {
         return this._identifiedTransitionsById.values()
     }
 
@@ -123,13 +126,14 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         return this._previousIdentifiedTaskById?.get(id)
     }
 
-    public getPreviousIdentifiedTransition(id: string): IdentifiedTransition | undefined {
+    public getPreviousIdentifiedTransition(id: string): Identified<Transition> | undefined {
         return this._previousIdentifiedTransitionsById?.get(id)
     }
 
     public clear() {
         this.invalidTasks.clear()
         this.invalidReferences.clear()
+        this._validTransitionsByIdentifiedTask.clear()
         this._previousIdentifiedTaskById = this._identifiedTasksById
         this._identifiedTasksById = new Map()
         this._previousIdentifiedTransitionsById = this._identifiedTransitionsById
@@ -148,13 +152,4 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         this.invalidReferences.set(task, invalidReferences)
     }
 
-}
-
-type ResolvedReference<T extends AstNode> = Reference<T> & {
-    ref: T
-}
-namespace ResolvedReference {
-    export function is<T extends AstNode>(node: Reference<T>): node is ResolvedReference<T> {
-        return !!node.ref
-    }
 }

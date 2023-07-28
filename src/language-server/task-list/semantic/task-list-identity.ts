@@ -63,11 +63,11 @@ export namespace Model {
         }
     }
 
-    export function newTransition(transition: semantic.TransitionDerivativeIdentity): Transition {
+    export function newTransition(transition: semantic.Transition): Transition {
         return {
             id: uuid.v4(),
-            sourceTaskId: transition[0],
-            targetTaskId: transition[1]
+            sourceTaskId: transition.name[0],
+            targetTaskId: transition.name[1]
         }
     }
 }

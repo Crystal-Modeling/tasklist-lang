@@ -22,7 +22,7 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
     }
 
     private readonly _tasksMarkedForDeletion: Map<string, sem.Identified<ast.Task> | identity.Task> = new Map()
-    private readonly _transitionsMarkedForDeletion: Map<string, semantic.IdentifiedTransition | identity.Transition> = new Map()
+    private readonly _transitionsMarkedForDeletion: Map<string, sem.Identified<semantic.Transition> | identity.Transition> = new Map()
 
     public calculateTasksUpdate(identitiesToDelete: Iterable<identity.Task>): ReadonlyArrayUpdate<Task> {
         const existingTasks = this.semanticDomain.getIdentifiedTasks()
@@ -77,7 +77,7 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
         return ArrayUpdateCommand.modification(update)
     }
 
-    private compareTransitionWithExistingBefore(current: semantic.IdentifiedTransition): ReadonlyArrayUpdate<Transition> {
+    private compareTransitionWithExistingBefore(current: sem.Identified<semantic.Transition>): ReadonlyArrayUpdate<Transition> {
         const semanticId = current.id
         const previous = this.semanticDomain.getPreviousIdentifiedTransition(semanticId)
         const previousDeletedFromAst = this._transitionsMarkedForDeletion.get(semanticId)

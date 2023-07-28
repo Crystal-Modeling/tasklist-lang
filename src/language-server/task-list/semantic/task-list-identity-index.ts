@@ -9,7 +9,7 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
     private readonly _tasksById: Map<string, Task> = new Map()
     private readonly _tasksByName: Map<string, Task> = new Map()
     private readonly _transitionsById: Map<string, Transition> = new Map()
-    private readonly _transitionsByDerivativeIdentity: ValueBasedMap<semantic.TransitionDerivativeIdentity, Transition>
+    private readonly _transitionsByName: ValueBasedMap<semantic.TransitionDerivativeName, Transition>
         = new ValueBasedMap()
 
     public constructor(identityModel: Model) {
@@ -22,8 +22,8 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         return new Map(this._tasksByName)
     }
 
-    public get transitionsByDerivativeIdentity(): ValueBasedMap<semantic.TransitionDerivativeIdentity, Readonly<Transition>> {
-        return this._transitionsByDerivativeIdentity.copy()
+    public get transitionsByName(): ValueBasedMap<semantic.TransitionDerivativeName, Readonly<Transition>> {
+        return this._transitionsByName.copy()
     }
 
     protected get model(): Model {
@@ -82,7 +82,7 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
 
     public addTransition(transition: Transition) {
         this._transitionsById.set(transition.id, transition)
-        this._transitionsByDerivativeIdentity.set([transition.sourceTaskId, transition.targetTaskId], transition)
+        this._transitionsByName.set([transition.sourceTaskId, transition.targetTaskId], transition)
     }
 
     public deleteTransitions(transitionIds: Iterable<string>) {
@@ -95,7 +95,7 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         const transition = this._transitionsById.get(transitionId)
         if (transition) {
             this._transitionsById.delete(transition.id)
-            this._transitionsByDerivativeIdentity.delete([transition.sourceTaskId, transition.targetTaskId])
+            this._transitionsByName.delete([transition.sourceTaskId, transition.targetTaskId])
         }
     }
 }

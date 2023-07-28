@@ -70,12 +70,12 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         const updateCalculator = this.sourceUpdateManager.getUpdateCalculator(document)
         const semanticDomain = document.semanticDomain!
 
-        const existingUnmappedTransitions = identityIndex.transitionsByDerivativeIdentity
-        semanticDomain.getTransitionDerivativeIdentities()
+        const existingUnmappedTransitions = identityIndex.transitionsByName
+        semanticDomain.getValidTransitions()
             .forEach(transition => {
-                let identityTransition = existingUnmappedTransitions.get(transition)
+                let identityTransition = existingUnmappedTransitions.get(transition.name)
                 if (identityTransition) {
-                    existingUnmappedTransitions.delete(transition)
+                    existingUnmappedTransitions.delete(transition.name)
                 } else {
                     identityTransition = Model.newTransition(transition)
                     identityIndex.addTransition(identityTransition)
