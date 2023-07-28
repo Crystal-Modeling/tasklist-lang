@@ -1,3 +1,4 @@
+import { findNodeForProperty } from 'langium'
 import * as sem from '../../../../langium-model-server/semantic/model'
 import { isDefined } from '../../../../langium-model-server/utils/predicates'
 import type * as ast from '../../../generated/ast'
@@ -15,10 +16,10 @@ namespace TransitionData {
     }
 }
 
-export type Transition = sem.Valid<{
+export type Transition = sem.ArtificialAstNode & sem.Valid<{
     name: TransitionDerivativeName
     sourceTask: sem.Identified<ast.Task>,
-    targetTask: sem.ArrayAware<sem.Identified<ast.Task>>
+    targetTask: sem.Identified<ast.Task>
 }>
 
 export namespace Transition {
@@ -44,7 +45,10 @@ export namespace Transition {
                 __semantic: 'valid',
                 name,
                 sourceTask,
-                targetTask: { el: reference.ref, index: referenceIndex }
+                targetTask: reference.ref,
+                get $cstNode() {
+                    return findNodeForProperty(sourceTask.$cstNode, 'references', referenceIndex)
+                }
             }
         }
         return undefined
