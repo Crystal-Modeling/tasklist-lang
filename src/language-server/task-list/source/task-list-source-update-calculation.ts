@@ -11,7 +11,7 @@ import type * as identity from '../semantic/task-list-identity'
 import type { QueriableTaskListSemanticDomain } from '../semantic/task-list-semantic-domain'
 import type { Model } from './model'
 import { Task, Transition } from './model'
-import { ElementUpdate } from '../../../langium-model-server/source/model/element-update'
+import { ElementUpdate } from '../../../langium-model-server/source/model'
 
 export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculator<Model> {
 

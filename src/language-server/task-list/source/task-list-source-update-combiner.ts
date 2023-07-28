@@ -1,8 +1,7 @@
 import { stream } from 'langium'
 import type * as id from '../../../langium-model-server/semantic/identity'
 import { ArrayUpdate, Update } from '../../../langium-model-server/source/model'
-import type { ElementAttributes } from '../../../langium-model-server/source/model/element-update'
-import type { ElementUpdate } from '../../../langium-model-server/source/model/element-update'
+import type { ElementAttributes, ElementUpdate } from '../../../langium-model-server/source/model'
 import type { SourceUpdateCombiner } from '../../../langium-model-server/source/source-update-combiner'
 import type { Model, Task, Transition } from './model'
 
