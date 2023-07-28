@@ -136,6 +136,10 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         this._identifiedTransitionsById = new Map()
     }
 
+    public getIdentifiedNode(id: string): Identified<AstNode> | undefined {
+        return this._identifiedTasksById.get(id) || this._identifiedTasksById.get(this._identifiedTransitionsById.get(id)?.name?.[0] ?? '')
+    }
+
     public setInvalidTasksForModel(model: ast.Model, invalidTasks: Set<ast.Task>): void {
         this.invalidTasks = invalidTasks
     }
