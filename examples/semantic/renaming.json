@@ -26,11 +26,6 @@
       "targetTaskId": "f5422ea9-b694-45d0-a19c-68aaf8370d2d"
     },
     {
-      "id": "d60043fd-917a-4c18-9cdb-08911edd3a5b",
-      "sourceTaskId": "318208f7-2162-48e4-9e0d-23feb9b19e2b",
-      "targetTaskId": "6b260a3b-0183-4fda-87ed-cb8f6d843555"
-    },
-    {
       "id": "a89774e3-ed97-4825-a77a-bd406a3f41fb",
       "sourceTaskId": "318208f7-2162-48e4-9e0d-23feb9b19e2b",
       "targetTaskId": "f5422ea9-b694-45d0-a19c-68aaf8370d2d"

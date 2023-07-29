@@ -1,4 +1,4 @@
-import type { LangiumDocument, LangiumDocuments, LanguageMetaData } from 'langium'
+import type { LangiumDocument, LangiumDocuments, LanguageMetaData, MaybePromise } from 'langium'
 import type { Connection } from 'vscode-languageserver'
 import { ShowDocumentRequest } from 'vscode-languageserver'
 import { URI } from 'vscode-uri'
@@ -8,11 +8,11 @@ import type { IdentityManager } from '../semantic/identity-manager'
 import type { LangiumModelServerServices } from '../services'
 import { UriConverter } from '../utils/uri-converter'
 import { LmsDocumentState, type LmsDocument } from '../workspace/documents'
-import { ApiResponse } from './model'
+import { HighlightResponse } from './model'
 
 export interface SourceModelService<SM> {
     getById(id: string): SM | undefined
-    highlight(rootModelId: string, id: string): ApiResponse
+    highlight(rootModelId: string, id: string): MaybePromise<HighlightResponse> | undefined
     //HACK: I rely on LMS consumers having the file URI almost identical to Langium Document URI
     /**
      * @param sourceUri URI of some **other** file which is 'linked' to the source model file.
@@ -58,22 +58,28 @@ export abstract class AbstractSourceModelService<SM extends SemanticIdentity, Se
         return this.combineSemanticModelWithAst(semanticModelIndex, langiumDocument)
     }
 
-    public highlight(rootModelId: string, id: string): ApiResponse {
+    /**
+     * Returns undefined if unexpected error happened during showing code (opening document and highligting some range)
+     */
+    public highlight(rootModelId: string, id: string): MaybePromise<HighlightResponse> | undefined {
         const lmsDocument = this.getDocumentById<LmsDocument>(rootModelId)
         if (!lmsDocument) {
-            return ApiResponse.create('Document for id ' + rootModelId + ' was not found', 404)
+            return HighlightResponse.documentHighlighted(rootModelId, false)
         }
+
         if (id === rootModelId) {
-            this.connection?.sendRequest(ShowDocumentRequest.type, { uri: lmsDocument.textDocument.uri, takeFocus: true })
-            return ApiResponse.create('Document was highlighted', 200)
-        } else {
-            const identifiedNode = lmsDocument.semanticDomain?.getIdentifiedNode(id)
-            if (!identifiedNode) {
-                return ApiResponse.create('Node for id ' + id + ' was not found', 404)
-            }
-            this.connection?.sendRequest(ShowDocumentRequest.type, { uri: lmsDocument.textDocument.uri, selection: identifiedNode.$cstNode?.range, takeFocus: true })
-            return ApiResponse.create('Model with id ' + identifiedNode.id + ' was highlighted', 200)
+            return this.connection?.sendRequest(ShowDocumentRequest.type, { uri: lmsDocument.textDocument.uri, takeFocus: true })
+                .then(({ success }) => HighlightResponse.documentHighlighted(rootModelId, success))
         }
+
+        const identifiedNode = lmsDocument.semanticDomain?.getIdentifiedNode(id)
+        if (!identifiedNode) {
+            return HighlightResponse.modelHighlighted(rootModelId, id, false)
+        }
+
+        return this.connection?.sendRequest(ShowDocumentRequest.type,
+            { uri: lmsDocument.textDocument.uri, selection: identifiedNode.$cstNode?.range, takeFocus: true }
+        ).then(({ success }) => HighlightResponse.modelHighlighted(rootModelId, identifiedNode.id, success))
     }
 
     protected getSourceModelFileExtension(): string {

@@ -4,6 +4,7 @@ import type { IdentityIndex } from '../semantic/identity-index'
 import type { LangiumModelServerAddedServices, LmsSourceServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
 import { ApiResponse, SemanticIdResponse } from './model'
+import { isPromise } from 'util/types'
 
 type Http2RequestHandler = (stream: http2.ServerHttp2Stream, unmatchedPath: PathContainer,
     headers: http2.IncomingHttpHeaders, flags: number) => Http2RequestHandler | void
@@ -77,7 +78,16 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsSourceServices<object>
             if (!modelId) {
                 return notFoundHandler
             }
-            respondWithJson(stream, sourceServices.SourceModelService.highlight(id, modelId))
+            const highlightResponse = sourceServices.SourceModelService.highlight(id, modelId)
+            if (!highlightResponse) {
+                return serverErrorHandler
+            }
+
+            if (!isPromise(highlightResponse) && !highlightResponse.highlighted) {
+                respondWithJson(stream, highlightResponse, 404)
+            } else {
+                Promise.resolve(highlightResponse).then(highlight => respondWithJson(stream, highlight, 200))
+            }
             return
         }
 
@@ -126,6 +136,11 @@ const notFoundHandler: Http2RequestHandler = (stream, unmatchedPath, header) => 
 const notImplementedMethodHandler: Http2RequestHandler = (stream, unmatchedPath, header) => {
     respondWithJson(stream,
         ApiResponse.create(`Path '${header[':path']}' is not implemented for method '${header[':method']}' (unmatched suffix '${unmatchedPath.suffix}')`, 501))
+}
+
+const serverErrorHandler: Http2RequestHandler = (stream) => {
+    respondWithJson(stream,
+        ApiResponse.create('Unexpected server error', 500))
 }
 
 function respondWithJson(stream: http2.ServerHttp2Stream, response: ApiResponse): void
