@@ -73,7 +73,6 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsSourceServices<object>
             setUpStreamForSSE(stream, ApiResponse.create(`Created subscription to model with id ${id}`, 201))
         }
         const updateHighlightHandler: Http2RequestHandler = (stream, unmatchedPath) => {
-            // TODO: Decide the point of responsibility and send LSP action to LSP client
             const modelId = unmatchedPath.matchPrefix(/^[^\/]+/)
             if (!modelId) {
                 return notFoundHandler

@@ -12,6 +12,9 @@ import { HighlightResponse } from './model'
 
 export interface SourceModelService<SM> {
     getById(id: string): SM | undefined
+    /**
+     * @returns `undefined` if unexpected error happened during showing code (opening document and highligting some range)
+     */
     highlight(rootModelId: string, id: string): MaybePromise<HighlightResponse> | undefined
     //HACK: I rely on LMS consumers having the file URI almost identical to Langium Document URI
     /**
@@ -58,9 +61,6 @@ export abstract class AbstractSourceModelService<SM extends SemanticIdentity, Se
         return this.combineSemanticModelWithAst(semanticModelIndex, langiumDocument)
     }
 
-    /**
-     * Returns undefined if unexpected error happened during showing code (opening document and highligting some range)
-     */
     public highlight(rootModelId: string, id: string): MaybePromise<HighlightResponse> | undefined {
         const lmsDocument = this.getDocumentById<LmsDocument>(rootModelId)
         if (!lmsDocument) {
