@@ -5,7 +5,6 @@ import type * as source from '../source/model'
 import type { TaskListSourceUpdateManager } from '../source/task-list-source-update-manager'
 import type { TaskListServices } from '../task-list-module'
 import { type TaskListDocument } from '../workspace/documents'
-import type { Task } from './task-list-identity'
 import { Model } from './task-list-identity'
 import type { TaskListIdentityManager } from './task-list-identity-manager'
 
@@ -41,20 +40,23 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         const identityIndex = this.identityManager.getIdentityIndex(document)
         const updateCalculator = this.sourceUpdateManager.getUpdateCalculator(document)
         const semanticDomain = document.semanticDomain!
+        // NOTE: Here I am expressing an idea, that perhaps I will have to have some sort of nested model indices,
+        // which would make it generally necessary to pass the parent model into the semantic domain when requesting some (valid/identified) models
         const astModel: ast.Model = document.parseResult.value
 
-        const existingUnmappedTasks: Map<string, Task> = identityIndex.tasksByName
+        const existingUnmappedTasks = identityIndex.tasksByName
         // Actual mapping: marking semantic elements for deletion, and AST nodes to be added
-        semanticDomain.getValidTasks(astModel).forEach(task => {
-            let identityTask = existingUnmappedTasks.get(task.name)
-            if (identityTask) {
-                existingUnmappedTasks.delete(task.name)
-            } else {
-                identityTask = Model.newTask(task)
-                identityIndex.addTask(identityTask)
-            }
-            semanticDomain.identifyTask(task, identityTask.id)
-        })
+        semanticDomain.getValidTasks(astModel)
+            .forEach(task => {
+                let taskIdentity = existingUnmappedTasks.get(task.name)
+                if (taskIdentity) {
+                    existingUnmappedTasks.delete(task.name)
+                } else {
+                    taskIdentity = Model.newTask(task)
+                    identityIndex.addTask(taskIdentity)
+                }
+                semanticDomain.identifyTask(task, taskIdentity.id)
+            })
         // Deletion of not mapped tasks. Even though transitions (on the AST level) are composite children of source Task,
         // they still have to be deleted separately (**to simplify Updates creation**)
         const tasksUpdate = updateCalculator.calculateTasksUpdate(existingUnmappedTasks.values())
@@ -73,14 +75,14 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         const existingUnmappedTransitions = identityIndex.transitionsByName
         semanticDomain.getValidTransitions()
             .forEach(transition => {
-                let identityTransition = existingUnmappedTransitions.get(transition.name)
-                if (identityTransition) {
+                let transitionIdentity = existingUnmappedTransitions.get(transition.name)
+                if (transitionIdentity) {
                     existingUnmappedTransitions.delete(transition.name)
                 } else {
-                    identityTransition = Model.newTransition(transition)
-                    identityIndex.addTransition(identityTransition)
+                    transitionIdentity = Model.newTransition(transition)
+                    identityIndex.addTransition(transitionIdentity)
                 }
-                semanticDomain.identifyTransition(transition, identityTransition.id)
+                semanticDomain.identifyTransition(transition, transitionIdentity.id)
             })
         const transitionsUpdate = updateCalculator.calculateTransitionsUpdate(existingUnmappedTransitions.values())
         identityIndex.deleteTransitions(transitionsUpdate.removedIds ?? [])
