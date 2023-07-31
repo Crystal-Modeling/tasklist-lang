@@ -1,6 +1,5 @@
 import type { LangiumDocument } from 'langium'
-import { MultiMap } from 'langium'
-import { DocumentState, interruptAndCheck } from 'langium'
+import { DocumentState, MultiMap, interruptAndCheck } from 'langium'
 import type { CancellationToken } from 'vscode-languageserver'
 import type * as id from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
@@ -10,9 +9,9 @@ import type { SemanticDomainFactory } from '../semantic/semantic-domain'
 import type { LangiumModelServerServices } from '../services'
 import * as src from '../source/model'
 import type { SourceModelSubscriptions } from '../source/source-model-subscriptions'
+import type { SourceUpdateCombiner } from '../source/source-update-combiner'
 import type { TypeGuard } from '../utils/types'
 import { LmsDocumentState, type ExtendableLangiumDocument, type LmsDocument } from './documents'
-import type { SourceUpdateCombiner } from '../source/source-update-combiner'
 
 export interface LmsDocumentBuilder {
 
@@ -103,4 +102,3 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
     }
 
 }
-

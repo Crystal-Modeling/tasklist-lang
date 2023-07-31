@@ -1,4 +1,4 @@
-import type { AstNode, LangiumDocument, NameProvider } from 'langium'
+import type { AstNode, LangiumDocuments, NameProvider } from 'langium'
 import { getDocument } from 'langium'
 import { URI } from 'vscode-uri'
 import type { LangiumModelServerServices } from '../services'
@@ -14,23 +14,27 @@ export interface IdentityManager<II extends IdentityIndex = IdentityIndex> {
      * @returns a view over the identity element, if found.
      * @param astNode An {@link AstNode}, which name is used to find a corresponding semantic identity
      */
+    // TODO: It seems that this method does not belong here: consider moving to RenameProvider (it is only convenieng method used in 1 place)
     findIdentityByAstName(astNode: AstNode): RenameableSemanticIdentity | undefined
-    getIdentityIndex(langiumDocument: LangiumDocument): II | undefined
+    getIdentityIndex(langiumDocument: LmsDocument): II | undefined
     saveSemanticIdentity(languageDocumentUri: string): void
     loadSemanticIdentity(languageDocumentUri: string): void
     deleteSemanticIdentity(languageDocumentUri: string): void
+    renameSemanticIdentity(oldLanguageUri: string, newLanguageUri: string): void
 }
 
 export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements IdentityManager<II> {
 
     protected identityStorage: IdentityStorage
     protected nameProvider: NameProvider
+    private langiumDocuments: LangiumDocuments
     private indexRegistryByLanguageDocumentUri: Map<string, ModelExposedIdentityIndex<II>>
     private languageDocumentUriById: Map<string, URI>
 
     public constructor(services: LangiumModelServerServices<SM, II, D>) {
         this.identityStorage = services.semantic.IdentityStorage
         this.nameProvider = services.references.NameProvider
+        this.langiumDocuments = services.shared.workspace.LangiumDocuments
         this.indexRegistryByLanguageDocumentUri = new Map()
         this.languageDocumentUriById = new Map()
     }
@@ -52,9 +56,9 @@ export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II ex
     }
 
     public loadSemanticIdentity(languageDocumentUri: string): void {
-        const semanticModelIndex = this.loadIdentityToIndex(languageDocumentUri)
-        this.languageDocumentUriById.set(semanticModelIndex.id, URI.parse(languageDocumentUri))
-        this.indexRegistryByLanguageDocumentUri.set(languageDocumentUri, semanticModelIndex)
+        const identityIndex = this.loadIdentityToIndex(languageDocumentUri)
+        this.languageDocumentUriById.set(identityIndex.id, URI.parse(languageDocumentUri))
+        this.indexRegistryByLanguageDocumentUri.set(languageDocumentUri, identityIndex)
     }
 
     public saveSemanticIdentity(languageDocumentUri: string): void {
@@ -62,11 +66,25 @@ export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II ex
         this.identityStorage.saveIdentityToFile(languageDocumentUri, semanticModel)
     }
 
+    public renameSemanticIdentity(oldLanguageUri: string, newLanguageUri: string): void {
+        if (this.langiumDocuments.hasDocument(URI.parse(oldLanguageUri))) {
+            const identityIndex = this.indexRegistryByLanguageDocumentUri.get(oldLanguageUri)
+            if (identityIndex) {
+                const rootId = identityIndex.id
+                this.indexRegistryByLanguageDocumentUri.delete(oldLanguageUri)
+                this.indexRegistryByLanguageDocumentUri.set(newLanguageUri, identityIndex)
+                this.languageDocumentUriById.set(rootId, URI.parse(newLanguageUri))
+                // TODO: To optimize performance, do file rename instead of saving entirely new file
+                this.identityStorage.saveIdentityToFile(newLanguageUri, identityIndex.model)
+            }
+        }
+    }
+
     public deleteSemanticIdentity(languageDocumentUri: string): void {
-        const existingModelIndex = this.indexRegistryByLanguageDocumentUri.get(languageDocumentUri)
-        if (existingModelIndex) {
+        const existingIdentityIndex = this.indexRegistryByLanguageDocumentUri.get(languageDocumentUri)
+        if (existingIdentityIndex) {
             this.indexRegistryByLanguageDocumentUri.delete(languageDocumentUri)
-            this.languageDocumentUriById.delete(existingModelIndex.id)
+            this.languageDocumentUriById.delete(existingIdentityIndex.id)
         }
         this.identityStorage.deleteIdentityFile(languageDocumentUri)
     }

@@ -1,4 +1,4 @@
-import type { AstNode, CstNode, Reference } from 'langium'
+import type { AstNode, CstNode, LangiumDocument, Reference } from 'langium'
 import type { SemanticIdentity } from './identity'
 
 export type Valid<T> = T & { __semantic: 'valid' }
@@ -17,6 +17,19 @@ export namespace Identified {
 
 export interface ArtificialAstNode {
     readonly $cstNode?: CstNode
+}
+
+export type AstRootNode = Valid<AstNode> & {
+    readonly $document: LangiumDocument
+}
+
+export namespace AstRootNode {
+    export function create(astNode: AstNode): AstRootNode | undefined {
+        if (!astNode.$document) {
+            return undefined
+        }
+        return astNode as AstRootNode
+    }
 }
 
 export type ResolvedReference<T extends AstNode> = Reference<T> & {

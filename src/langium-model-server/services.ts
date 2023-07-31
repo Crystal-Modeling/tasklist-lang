@@ -1,4 +1,4 @@
-import type { DeepPartial, DocumentHighlightProvider, LangiumServices, PartialLangiumServices, RenameProvider } from 'langium'
+import type { DeepPartial, DocumentHighlightProvider, LangiumServices, LanguageServer, PartialLangiumServices, RenameProvider } from 'langium'
 import type { SemanticIdentity } from './semantic/identity'
 import type { IdentityIndex } from './semantic/identity-index'
 import type { IdentityManager } from './semantic/identity-manager'
@@ -29,6 +29,12 @@ export type LangiumModelServerDefaultServices = {
     source: {
         LangiumSourceModelServer: LangiumSourceModelServer,
         SourceModelSubscriptions: SourceModelSubscriptions
+    }
+}
+
+export type LangiumModelServerDefaultSharedServices = {
+    lsp: {
+        LanguageServer: LanguageServer
     }
 }
 

@@ -1,4 +1,5 @@
 import type { IdentityReconciler } from '../../../langium-model-server/semantic/identity-reconciler'
+import { AstRootNode } from '../../../langium-model-server/semantic/model'
 import * as src from '../../../langium-model-server/source/model'
 import type * as ast from '../../generated/ast'
 import type * as source from '../source/model'
@@ -43,6 +44,13 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         // NOTE: Here I am expressing an idea, that perhaps I will have to have some sort of nested model indices,
         // which would make it generally necessary to pass the parent model into the semantic domain when requesting some (valid/identified) models
         const astModel: ast.Model = document.parseResult.value
+
+        // TODO: Suggest AstRootNode as a specific interface for Langium
+        const rootNode = AstRootNode.create(astModel)
+        if (!rootNode) {
+            throw new Error('Expected Model to be a root node, but somehow it was not!. Model: ' + astModel)
+        }
+        semanticDomain.identifyRootNode(rootNode, identityIndex.id)
 
         const existingUnmappedTasks = identityIndex.tasksByName
         // Actual mapping: marking semantic elements for deletion, and AST nodes to be added

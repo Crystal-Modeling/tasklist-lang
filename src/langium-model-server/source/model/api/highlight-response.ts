@@ -14,4 +14,8 @@ export namespace HighlightResponse {
     export function modelHighlighted(documentId: string, modelId: string, highlighted: boolean): HighlightResponse {
         return { documentId, modelId, highlighted }
     }
+
+    export function notHighlighted(documentId: string, modelId?: string): HighlightResponse {
+        return { documentId, modelId, highlighted: false }
+    }
 }

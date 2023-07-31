@@ -1,4 +1,4 @@
-import type { LangiumDocument, LangiumDocuments, LanguageMetaData, MaybePromise } from 'langium'
+import type { LangiumDocuments, LanguageMetaData, MaybePromise } from 'langium'
 import type { Connection } from 'vscode-languageserver'
 import { ShowDocumentRequest } from 'vscode-languageserver'
 import { URI } from 'vscode-uri'
@@ -50,21 +50,17 @@ export abstract class AbstractSourceModelService<SM extends SemanticIdentity, Se
     }
 
     public getById(id: string): SM | undefined {
-        const langiumDocument = this.getDocumentById<LangiumDocument>(id)
-        if (!langiumDocument) {
+        const lmsDocument = this.getDocumentById(id)
+        if (!lmsDocument) {
             return undefined
         }
-        const semanticModelIndex = this.semanticIndexManager.getIdentityIndex(langiumDocument)
-        if (!semanticModelIndex) {
-            return undefined
-        }
-        return this.combineSemanticModelWithAst(semanticModelIndex, langiumDocument)
+        return this.convertSemanticModelToSourceModel(lmsDocument)
     }
 
     public highlight(rootModelId: string, id: string): MaybePromise<HighlightResponse> | undefined {
-        const lmsDocument = this.getDocumentById<LmsDocument>(rootModelId)
+        const lmsDocument = this.getDocumentById(rootModelId)
         if (!lmsDocument) {
-            return HighlightResponse.documentHighlighted(rootModelId, false)
+            return HighlightResponse.notHighlighted(rootModelId)
         }
 
         if (id === rootModelId) {
@@ -74,7 +70,7 @@ export abstract class AbstractSourceModelService<SM extends SemanticIdentity, Se
 
         const identifiedNode = lmsDocument.semanticDomain?.getIdentifiedNode(id)
         if (!identifiedNode) {
-            return HighlightResponse.modelHighlighted(rootModelId, id, false)
+            return HighlightResponse.notHighlighted(rootModelId, id)
         }
 
         return this.connection?.sendRequest(ShowDocumentRequest.type,
@@ -86,16 +82,16 @@ export abstract class AbstractSourceModelService<SM extends SemanticIdentity, Se
         return this.languageMetadata.fileExtensions[0]
     }
 
-    protected abstract combineSemanticModelWithAst(semanticModelIndex: SemI, langiumDocument: LangiumDocument): SM
+    protected abstract convertSemanticModelToSourceModel(lmsDocument: LmsDocument): SM | undefined
 
-    private getDocumentById<T extends LangiumDocument | LmsDocument>(id: string): T | undefined {
+    private getDocumentById(id: string): LmsDocument | undefined {
         const documentUri = this.semanticIndexManager.getLanguageDocumentUri(id)
         // Not sure shouldn't I *create* LangiumDocument if it is not built yet (i.e., if the file has not been loaded)
         if (!documentUri || !this.langiumDocuments.hasDocument(documentUri)) {
             return undefined
         }
         // NOTE: Since document URI is known to SemanticIndexManager, this LangiumDocument is LmsDocument
-        const document = this.langiumDocuments.getOrCreateDocument(documentUri) as T
+        const document: LmsDocument = this.langiumDocuments.getOrCreateDocument(documentUri)
         // TODO: Change this to return Promise, if the document didn't reach the desired state.
         if (document.state < LmsDocumentState.Identified) {
             return undefined

@@ -1,6 +1,6 @@
 import type { AstNode, Stream } from 'langium'
 import { stream } from 'langium'
-import type { ArtificialAstNode, Valid } from '../../../langium-model-server/semantic/model'
+import type { ArtificialAstNode, AstRootNode, Valid } from '../../../langium-model-server/semantic/model'
 import { Identified } from '../../../langium-model-server/semantic/model'
 import type { SemanticDomain } from '../../../langium-model-server/semantic/semantic-domain'
 import type * as ast from '../../generated/ast'
@@ -23,15 +23,14 @@ export interface TaskListSemanticDomain extends QueriableTaskListSemanticDomain,
     getValidTransitions(): Stream<Transition>
     // NOTE: 👇 This is considered as part of manipulation with Semantic Model (Identified<ast.Task> and IdentifiedTransition)
     /**
-     * Maps Valid Task node with semantic identity.
+     * Maps Valid Task node with semantic ID.
      * @param task Valid AST Task node
      * @param semanticId Id, which {@link task} is identified with
     */
     identifyTask(task: Valid<ast.Task>, semanticId: string): Identified<ast.Task>
     /**
-     * Maps Transition derivative identity (there is no AST node corresponded to Transition model,
-     * but only a cross reference)
-     * @param transition A derivative identity for Transition to map
+     * Maps Transition *artificial* node with semantic ID
+     * @param transition Artificial Transition node (they are created being already validated)
      * @param semanticId Semantic ID, which {@link transition} is identified with
      */
     identifyTransition(transition: Transition, semanticId: string): Identified<Transition>
@@ -49,6 +48,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
     protected invalidTasks: Set<ast.Task>
     protected invalidReferences: Map<ast.Task, Set<number>>
 
+    private _identifiedRootNode: Identified<AstRootNode> | undefined
     private _identifiedTasksById: Map<string, Identified<ast.Task>>
     private _previousIdentifiedTaskById: Map<string, Identified<ast.Task>> | undefined
     private _validTransitionsByIdentifiedTask: Map<Identified<ast.Task>, Transition[]>
@@ -102,6 +102,11 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
             .flatMap(this.getValidTransitionsForSourceTask.bind(this))
     }
 
+    public identifyRootNode(rootNode: AstRootNode, semanticId: string): Identified<AstRootNode> {
+        this._identifiedRootNode = Identified.identify(rootNode, semanticId)
+        return this._identifiedRootNode
+    }
+
     public identifyTask(task: Valid<ast.Task>, semanticId: string): Identified<ast.Task> {
         const identifiedTask = Identified.identify(task, semanticId)
         this._identifiedTasksById.set(semanticId, identifiedTask)
@@ -112,6 +117,10 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         const identifiedTransition = Identified.identify(transition, semanticId)
         this._identifiedTransitionsById.set(semanticId, identifiedTransition)
         return identifiedTransition
+    }
+
+    get identifiedRootNode(): Identified<AstRootNode> | undefined {
+        return this._identifiedRootNode
     }
 
     public getIdentifiedTasks(): Iterable<Identified<ast.Task>> {
@@ -138,6 +147,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         this._identifiedTasksById = new Map()
         this._previousIdentifiedTransitionsById = this._identifiedTransitionsById
         this._identifiedTransitionsById = new Map()
+        this._identifiedRootNode = undefined
     }
 
     public getIdentifiedNode(id: string): Identified<AstNode | ArtificialAstNode> | undefined {
