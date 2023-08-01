@@ -1,4 +1,3 @@
-import type { LangiumDocuments } from 'langium'
 import { URI } from 'vscode-uri'
 import type { LangiumModelServerServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
@@ -18,13 +17,11 @@ export interface IdentityManager<II extends IdentityIndex = IdentityIndex> {
 export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements IdentityManager<II> {
 
     protected identityStorage: IdentityStorage
-    private langiumDocuments: LangiumDocuments
     private indexRegistryByLanguageDocumentUri: Map<string, ModelExposedIdentityIndex<II>>
     private languageDocumentUriById: Map<string, URI>
 
     public constructor(services: LangiumModelServerServices<SM, II, D>) {
         this.identityStorage = services.semantic.IdentityStorage
-        this.langiumDocuments = services.shared.workspace.LangiumDocuments
         this.indexRegistryByLanguageDocumentUri = new Map()
         this.languageDocumentUriById = new Map()
     }
@@ -49,16 +46,14 @@ export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II ex
     }
 
     public renameSemanticIdentity(oldLanguageUri: string, newLanguageUri: string): void {
-        if (this.langiumDocuments.hasDocument(URI.parse(oldLanguageUri))) {
-            const identityIndex = this.indexRegistryByLanguageDocumentUri.get(oldLanguageUri)
-            if (identityIndex) {
-                const rootId = identityIndex.id
-                this.indexRegistryByLanguageDocumentUri.delete(oldLanguageUri)
-                this.indexRegistryByLanguageDocumentUri.set(newLanguageUri, identityIndex)
-                this.languageDocumentUriById.set(rootId, URI.parse(newLanguageUri))
-                // TODO: To optimize performance, do file rename instead of saving entirely new file
-                this.identityStorage.saveIdentityToFile(newLanguageUri, identityIndex.model)
-            }
+        const identityIndex = this.indexRegistryByLanguageDocumentUri.get(oldLanguageUri)
+        if (identityIndex) {
+            const rootId = identityIndex.id
+            this.indexRegistryByLanguageDocumentUri.delete(oldLanguageUri)
+            this.indexRegistryByLanguageDocumentUri.set(newLanguageUri, identityIndex)
+            this.languageDocumentUriById.set(rootId, URI.parse(newLanguageUri))
+            // TODO: To optimize performance, do file rename instead of saving entirely new file
+            this.identityStorage.saveIdentityToFile(newLanguageUri, identityIndex.model)
         }
     }
 
