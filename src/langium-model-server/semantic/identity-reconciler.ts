@@ -1,4 +1,4 @@
-import type * as src from '../source/model'
+import type * as src from '../lms/model'
 import type { LmsDocument } from '../workspace/documents'
 import type { SemanticIdentity } from './identity'
 

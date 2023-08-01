@@ -1,9 +1,9 @@
 import type { IdentityReconciler } from '../../../langium-model-server/semantic/identity-reconciler'
 import { AstRootNode } from '../../../langium-model-server/semantic/model'
-import * as src from '../../../langium-model-server/source/model'
+import * as src from '../../../langium-model-server/lms/model'
 import type * as ast from '../../generated/ast'
-import type * as source from '../source/model'
-import type { TaskListSourceUpdateManager } from '../source/task-list-source-update-manager'
+import type * as source from '../lms/model'
+import type { TaskListSourceUpdateManager } from '../lms/task-list-source-update-manager'
 import type { TaskListServices } from '../task-list-module'
 import { type TaskListDocument } from '../workspace/documents'
 import { Model } from './task-list-identity'
@@ -15,7 +15,7 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
 
     public constructor(services: TaskListServices) {
         this.identityManager = services.semantic.IdentityManager
-        this.sourceUpdateManager = services.source.SourceUpdateManager
+        this.sourceUpdateManager = services.lms.SourceUpdateManager
     }
 
     /* NOTE: So, the problem can be characterized as following:

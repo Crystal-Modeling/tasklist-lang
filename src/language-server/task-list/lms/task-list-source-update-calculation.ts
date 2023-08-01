@@ -1,17 +1,17 @@
 import { stream } from 'langium'
 import type * as id from '../../../langium-model-server/semantic/identity'
 import type * as sem from '../../../langium-model-server/semantic/model'
-import { Update } from '../../../langium-model-server/source/model'
-import type { ReadonlyArrayUpdate } from '../../../langium-model-server/source/model'
-import { ArrayUpdateCommand } from '../../../langium-model-server/source/model'
-import type { SourceUpdateCalculator } from '../../../langium-model-server/source/source-update-calculation'
+import { Update } from '../../../langium-model-server/lms/model'
+import type { ReadonlyArrayUpdate } from '../../../langium-model-server/lms/model'
+import { ArrayUpdateCommand } from '../../../langium-model-server/lms/model'
+import type { SourceUpdateCalculator } from '../../../langium-model-server/lms/source-update-calculation'
 import * as ast from '../../generated/ast'
 import type * as semantic from '../semantic/model'
 import type * as identity from '../semantic/task-list-identity'
 import type { QueriableTaskListSemanticDomain } from '../semantic/task-list-semantic-domain'
 import type { Model } from './model'
 import { Task, Transition } from './model'
-import { ElementUpdate } from '../../../langium-model-server/source/model'
+import { ElementUpdate } from '../../../langium-model-server/lms/model'
 
 export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculator<Model> {
 

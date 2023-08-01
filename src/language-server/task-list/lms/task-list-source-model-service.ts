@@ -1,4 +1,4 @@
-import { AbstractSourceModelService } from '../../../langium-model-server/source/source-model-service'
+import { AbstractSourceModelService } from '../../../langium-model-server/lms/source-model-service'
 import type { LmsDocument } from '../../../langium-model-server/workspace/documents'
 import type { TaskListIdentityIndex } from '../semantic/task-list-identity-index'
 import type { TaskListDocument } from '../workspace/documents'

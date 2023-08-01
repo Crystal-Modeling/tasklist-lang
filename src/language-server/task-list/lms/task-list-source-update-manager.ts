@@ -1,4 +1,4 @@
-import { AbstractSourceUpdateManager } from '../../../langium-model-server/source/source-update-manager'
+import { AbstractSourceUpdateManager } from '../../../langium-model-server/lms/source-update-manager'
 import type { TaskListDocument } from '../workspace/documents'
 import type { Model } from './model'
 import { TaskListSourceModelUpdateCalculator } from './task-list-source-update-calculation'

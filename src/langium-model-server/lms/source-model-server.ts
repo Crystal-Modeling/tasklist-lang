@@ -12,7 +12,7 @@ export function startLangiumModelServer<
     II extends IdentityIndex,
     D extends LmsDocument
 >(lmsServices: LangiumModelServerServices<SM, II, D>): LangiumSourceModelServer {
-    const server = lmsServices.source.LangiumSourceModelServer
+    const server = lmsServices.lms.LangiumSourceModelServer
     server.start(8443)
     return server
 }

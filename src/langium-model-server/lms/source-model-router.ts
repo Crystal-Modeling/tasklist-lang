@@ -1,7 +1,7 @@
 import * as http2 from 'http2'
 import type { SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
-import type { LangiumModelServerAddedServices, LmsSourceServices } from '../services'
+import type { LangiumModelServerAddedServices, LmsServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
 import { ApiResponse, SemanticIdResponse } from './model'
 import { isPromise } from 'util/types'
@@ -23,7 +23,7 @@ export function LangiumModelServerRouter<SM extends SemanticIdentity, II extends
             if (unmatchedPath.suffix === '') {
                 handler = helloWorldHandler
             } else if (unmatchedPath.matchPrefix('models/')) {
-                handler = provideModelHandler(services.source)
+                handler = provideModelHandler(services.lms)
             } else {
                 handler = notFoundHandler
             }
@@ -46,7 +46,7 @@ const helloWorldHandler: Http2RequestHandler = (stream) => {
     stream.end('Hello World')
 }
 
-const provideModelHandler: Http2RequestHandlerProvider<LmsSourceServices<object>> = (sourceServices) => {
+const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (sourceServices) => {
 
     const sourceModelService = sourceServices.SourceModelService
     const sourceModelSubscriptions = sourceServices.SourceModelSubscriptions

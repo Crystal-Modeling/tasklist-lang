@@ -7,8 +7,8 @@ import type { IdentityIndex } from '../semantic/identity-index'
 import type { IdentityManager } from '../semantic/identity-manager'
 import * as semantic from '../semantic/model'
 import type { LangiumModelServerServices } from '../services'
-import * as source from '../source/model'
-import type { SourceModelSubscriptions } from '../source/source-model-subscriptions'
+import * as source from '../lms/model'
+import type { SourceModelSubscriptions } from '../lms/source-model-subscriptions'
 import type { LmsDocument, SemanticAwareDocument } from '../workspace/documents'
 
 export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> extends DefaultDocumentHighlightProvider {
@@ -21,7 +21,7 @@ export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, 
 
     constructor(services: LangiumModelServerServices<SM, II, D>) {
         super(services)
-        this.sourceModelSubscriptions = services.source.SourceModelSubscriptions
+        this.sourceModelSubscriptions = services.lms.SourceModelSubscriptions
         this.identityManager = services.semantic.IdentityManager
     }
 

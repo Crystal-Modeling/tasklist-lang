@@ -6,8 +6,8 @@ import type { SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { IdentityManager } from '../semantic/identity-manager'
 import type { LangiumModelServerServices } from '../services'
-import * as src from '../source/model'
-import type { SourceModelSubscriptions } from '../source/source-model-subscriptions'
+import * as src from '../lms/model'
+import type { SourceModelSubscriptions } from '../lms/source-model-subscriptions'
 import type { LmsDocument } from '../workspace/documents'
 
 export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> extends DefaultRenameProvider {
@@ -18,7 +18,7 @@ export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityI
     constructor(services: LangiumModelServerServices<SM, II, D>) {
         super(services)
         this.identityManager = services.semantic.IdentityManager
-        this.sourceModelSubscriptions = services.source.SourceModelSubscriptions
+        this.sourceModelSubscriptions = services.lms.SourceModelSubscriptions
     }
 
     override async rename(document: LangiumDocument, params: RenameParams): Promise<WorkspaceEdit | undefined> {

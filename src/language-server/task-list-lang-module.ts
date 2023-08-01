@@ -13,7 +13,7 @@ import { TaskListModule } from './task-list/task-list-module'
 import { registerValidationChecks } from './task-list/validation/task-list-validation'
 
 import type { TaskListIdentityIndex } from './task-list/semantic/task-list-identity-index'
-import type * as source from './task-list/source/model'
+import type * as source from './task-list/lms/model'
 import type { TaskListDocument } from './task-list/workspace/documents'
 
 /**

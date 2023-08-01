@@ -5,11 +5,11 @@ import type { IdentityManager } from './semantic/identity-manager'
 import type { IdentityReconciler } from './semantic/identity-reconciler'
 import type { IdentityStorage } from './semantic/identity-storage'
 import type { SemanticDomainFactory } from './semantic/semantic-domain'
-import type { LangiumSourceModelServer } from './source/source-model-server'
-import type { SourceModelService } from './source/source-model-service'
-import type { SourceModelSubscriptions } from './source/source-model-subscriptions'
-import type { SourceUpdateCombiner } from './source/source-update-combiner'
-import type { SourceUpdateManager } from './source/source-update-manager'
+import type { LangiumSourceModelServer } from './lms/source-model-server'
+import type { SourceModelService } from './lms/source-model-service'
+import type { SourceModelSubscriptions } from './lms/source-model-subscriptions'
+import type { SourceUpdateCombiner } from './lms/source-update-combiner'
+import type { SourceUpdateManager } from './lms/source-update-manager'
 import type { TypeGuard } from './utils/types'
 import type { ExtendableLangiumDocument, LmsDocument } from './workspace/documents'
 import type { LmsDocumentBuilder } from './workspace/lms-document-builder'
@@ -26,7 +26,7 @@ export type LangiumModelServerDefaultServices = {
         // NOTE: Lms prefix added here because DocumentBuilder service exists in Langium
         LmsDocumentBuilder: LmsDocumentBuilder
     },
-    source: {
+    lms: {
         LangiumSourceModelServer: LangiumSourceModelServer,
         SourceModelSubscriptions: SourceModelSubscriptions
     }
@@ -48,15 +48,15 @@ export type LangiumModelServerAbstractServices<SM extends SemanticIdentity, II e
         IdentityReconciler: IdentityReconciler<SM, D>,
         SemanticDomainFactory: SemanticDomainFactory,
     },
-    source: {
+    lms: {
         SourceModelService: SourceModelService<SM>,
         SourceUpdateManager: SourceUpdateManager<SM>,
         SourceUpdateCombiner: SourceUpdateCombiner<SM>
     }
 }
 
-export type LmsSourceServices<SM extends object>
-    = Pick<LangiumModelServerAddedServices<SM & SemanticIdentity, IdentityIndex, LmsDocument>, 'source'>['source']
+export type LmsServices<SM extends object>
+    = Pick<LangiumModelServerAddedServices<SM & SemanticIdentity, IdentityIndex, LmsDocument>, 'lms'>['lms']
 
 export type LangiumModelServerAddedServices<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument>
     = LangiumModelServerDefaultServices & LangiumModelServerAbstractServices<SM, II, D>

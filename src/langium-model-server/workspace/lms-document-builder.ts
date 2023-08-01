@@ -7,9 +7,9 @@ import type { IdentityManager } from '../semantic/identity-manager'
 import type { IdentityReconciler } from '../semantic/identity-reconciler'
 import type { SemanticDomainFactory } from '../semantic/semantic-domain'
 import type { LangiumModelServerServices } from '../services'
-import * as src from '../source/model'
-import type { SourceModelSubscriptions } from '../source/source-model-subscriptions'
-import type { SourceUpdateCombiner } from '../source/source-update-combiner'
+import * as src from '../lms/model'
+import type { SourceModelSubscriptions } from '../lms/source-model-subscriptions'
+import type { SourceUpdateCombiner } from '../lms/source-update-combiner'
 import type { TypeGuard } from '../utils/types'
 import { LmsDocumentState, type ExtendableLangiumDocument, type LmsDocument } from './documents'
 
@@ -33,8 +33,8 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
         this.isLmsDocument = services.workspace.LmsDocumentGuard
         this.identityReconciler = services.semantic.IdentityReconciler
         this.identityManager = services.semantic.IdentityManager
-        this.sourceModelSubscriptions = services.source.SourceModelSubscriptions
-        this.sourceUpdateCombiner = services.source.SourceUpdateCombiner
+        this.sourceModelSubscriptions = services.lms.SourceModelSubscriptions
+        this.sourceUpdateCombiner = services.lms.SourceUpdateCombiner
 
         const documentBuilder = services.shared.workspace.DocumentBuilder
         documentBuilder.onBuildPhase(DocumentState.IndexedReferences, this.initializeSemanticDomain.bind(this))
