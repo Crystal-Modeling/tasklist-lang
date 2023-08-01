@@ -35,16 +35,17 @@ export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityI
         const references = this.references.findReferences(targetNode, options)
         const newNameDefinder = this.getNewNameDefiner(targetNode, params)
 
-        const rootIdentityIndex = this.identityManager.getIdentityIndex(getDocument(targetNode))
-        console.debug('Found identity index for the document:', rootIdentityIndex)
-        if (rootIdentityIndex) {
-            const semanticElement = this.identityManager.findIdentityByAstName(targetNode)
-            console.debug('Found semanticElement for the targetNode:', semanticElement)
-            if (semanticElement && semanticElement.updateName(newNameDefinder.targetName)) {
+        const targetIdentityIndex = this.identityManager.getIdentityIndex(getDocument(targetNode))
+        console.debug('Found identity index for the document:', targetIdentityIndex)
+        const targetNodeName = this.nameProvider.getName(targetNode)
+        if (targetIdentityIndex && targetNodeName) {
+            const renameableIdentity = targetIdentityIndex.findElementByName(targetNodeName)
+            console.debug('Found identity for the targetNode:', renameableIdentity)
+            if (renameableIdentity && renameableIdentity.updateName(newNameDefinder.targetName)) {
                 console.debug('After updating semantic element, its name has changed')
-                const rename = src.Rename.create(semanticElement.id, semanticElement.name)
-                console.debug('Looking for subscriptions for id', rootIdentityIndex.id)
-                this.sourceModelSubscriptions.getSubscription(rootIdentityIndex.id)?.pushRename(rename)
+                const rename = src.Rename.create(renameableIdentity.id, renameableIdentity.name)
+                console.debug('Looking for subscriptions for id', targetIdentityIndex.id)
+                this.sourceModelSubscriptions.getSubscription(targetIdentityIndex.id)?.pushRename(rename)
             }
         }
         references.forEach(reference => {

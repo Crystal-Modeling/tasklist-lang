@@ -1,21 +1,13 @@
-import type { AstNode, LangiumDocuments, NameProvider } from 'langium'
-import { getDocument } from 'langium'
+import type { LangiumDocuments } from 'langium'
 import { URI } from 'vscode-uri'
 import type { LangiumModelServerServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
-import type { RenameableSemanticIdentity, SemanticIdentity } from './identity'
+import type { SemanticIdentity } from './identity'
 import type { IdentityIndex, ModelExposedIdentityIndex } from './identity-index'
 import type { IdentityStorage } from './identity-storage'
 
 export interface IdentityManager<II extends IdentityIndex = IdentityIndex> {
     getLanguageDocumentUri(id: string): URI | undefined
-    /**
-     * Searches for a Semantic Identity element, which corresponds to specified {@link astNode} by its name.
-     * @returns a view over the identity element, if found.
-     * @param astNode An {@link AstNode}, which name is used to find a corresponding semantic identity
-     */
-    // TODO: It seems that this method does not belong here: consider moving to RenameProvider (it is only convenieng method used in 1 place)
-    findIdentityByAstName(astNode: AstNode): RenameableSemanticIdentity | undefined
     getIdentityIndex(langiumDocument: LmsDocument): II | undefined
     saveSemanticIdentity(languageDocumentUri: string): void
     loadSemanticIdentity(languageDocumentUri: string): void
@@ -26,14 +18,12 @@ export interface IdentityManager<II extends IdentityIndex = IdentityIndex> {
 export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements IdentityManager<II> {
 
     protected identityStorage: IdentityStorage
-    protected nameProvider: NameProvider
     private langiumDocuments: LangiumDocuments
     private indexRegistryByLanguageDocumentUri: Map<string, ModelExposedIdentityIndex<II>>
     private languageDocumentUriById: Map<string, URI>
 
     public constructor(services: LangiumModelServerServices<SM, II, D>) {
         this.identityStorage = services.semantic.IdentityStorage
-        this.nameProvider = services.references.NameProvider
         this.langiumDocuments = services.shared.workspace.LangiumDocuments
         this.indexRegistryByLanguageDocumentUri = new Map()
         this.languageDocumentUriById = new Map()
@@ -41,14 +31,6 @@ export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II ex
 
     public getLanguageDocumentUri(id: string): URI | undefined {
         return this.languageDocumentUriById.get(id)
-    }
-
-    public findIdentityByAstName(astNode: AstNode): RenameableSemanticIdentity | undefined {
-        const name = this.nameProvider.getName(astNode)
-        if (!name) {
-            return undefined
-        }
-        return this.getIdentityIndex(getDocument(astNode)).findElementByName(name)
     }
 
     public getIdentityIndex(languageDocument: LmsDocument): II {
