@@ -1,17 +1,30 @@
-import { stream } from 'langium'
-import type * as id from '../../../langium-model-server/semantic/identity'
-import type * as sem from '../../../langium-model-server/semantic/model'
-import { Update } from '../../../langium-model-server/lms/model'
 import type { ReadonlyArrayUpdate } from '../../../langium-model-server/lms/model'
-import { ArrayUpdateCommand } from '../../../langium-model-server/lms/model'
-import type { ModelUpdateCalculator } from '../../../langium-model-server/lms/model-update-calculation'
+import { ArrayUpdateCommand, ElementUpdate, Update } from '../../../langium-model-server/lms/model'
+import { AbstractModelUpdateCalculators, deleteModels, type ModelUpdateCalculator } from '../../../langium-model-server/lms/model-update-calculation'
+import type * as sem from '../../../langium-model-server/semantic/model'
 import * as ast from '../../generated/ast'
 import type * as semantic from '../semantic/model'
 import type * as identity from '../semantic/task-list-identity'
 import type { QueriableTaskListSemanticDomain } from '../semantic/task-list-semantic-domain'
+import type { TaskListDocument } from '../workspace/documents'
 import type { Model } from './model'
 import { Task, Transition } from './model'
-import { ElementUpdate } from '../../../langium-model-server/lms/model'
+
+export class TaskListModelUpdateCalculators extends AbstractModelUpdateCalculators<Model> {
+
+    public override getOrCreateCalculator(langiumDocument: TaskListDocument): TaskListModelUpdateCalculator {
+        return super.getOrCreateCalculator(langiumDocument) as TaskListModelUpdateCalculator
+    }
+
+    protected override createCalculator(langiumDocument: TaskListDocument): TaskListModelUpdateCalculator {
+        if (!langiumDocument.semanticDomain) {
+            //FIXME: Quick and dirty solution. Introduce stable API here
+            throw new Error('Creating Calculator before Semantic Domain got initialized!')
+        }
+        return new TaskListModelUpdateCalculator(langiumDocument.semanticDomain)
+    }
+
+}
 
 export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Model> {
 
@@ -92,42 +105,4 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
         return ArrayUpdateCommand.noUpdate()
     }
 
-}
-
-// TODO: Move to parent abstract class
-/**
- * Computes {@link ReadonlyArrayUpdate} for {@link identitiesToDelete} by comparing them with {@link modelsMarkedForDeletion}.
- *
- * ❗This function should be invoked only after all other updates are prepared, so that **reappeared nodes are unmarked for deletion**
- * @param modelsMarkedForDeletion Current registry of Semantic Models (or Semantic Identity in rare cases
- * when semantic models are unavailable), that were deleted from the AST, but not yet deleted from Semantic Identity model.
- * @param identitiesToDelete Semantic Identities to be deleted (or soft deleted); they are absent already in AST
- * (and thus in current Semantic Model), but are expected to be present in previous Semantic Model
- * fetched by {@link getPreviousSemanticModel}.
- * @param getPreviousSemanticModel Fetches corresponding previous Semantic Model from SemanticDomain
- * @returns Semantic Model Update for this deletion request
- */
-function deleteModels<ID extends id.SemanticIdentity, SEM extends id.SemanticIdentity, SRC extends id.SemanticIdentity>(
-    modelsMarkedForDeletion: Map<string, ID | SEM>,
-    identitiesToDelete: Iterable<ID>,
-    getPreviousSemanticModel: (id: string) => SEM | undefined
-): ReadonlyArrayUpdate<SRC> {
-    let deletion: ReadonlyArrayUpdate<SRC> | undefined = undefined
-    let identitiesToBeMarkedForDeletion = stream(identitiesToDelete)
-    if (modelsMarkedForDeletion.size !== 0) {
-        deletion = ArrayUpdateCommand.deletion<SRC>(modelsMarkedForDeletion.values())
-        const deletedModelIds = new Set(modelsMarkedForDeletion.keys())
-        modelsMarkedForDeletion.clear()
-        identitiesToBeMarkedForDeletion = identitiesToBeMarkedForDeletion.filter(({ id }) => !deletedModelIds.has(id))
-    }
-    identitiesToBeMarkedForDeletion.forEach(identity => {
-        // When we receive Semantic Identity of the model to be deleted, we first try to use
-        // _Semantic Model_ with such semantic ID (which could exist in _previous_ AST state),
-        // since Semantic Model stores all attributes and we will be able to do more precise comparison
-        // if it reappears later
-        modelsMarkedForDeletion.set(identity.id, getPreviousSemanticModel(identity.id) ?? identity)
-    })
-    const dissappearances = ArrayUpdateCommand.modification(
-        Array.from(modelsMarkedForDeletion.keys(), id => ElementUpdate.createStateUpdate<SRC>(id, 'DISAPPEARED')))
-    return deletion ? ArrayUpdateCommand.all(deletion, dissappearances) : dissappearances
 }

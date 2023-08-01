@@ -9,7 +9,7 @@ import type { LangiumModelServer } from './lms/langium-model-server'
 import type { LangiumModelServerFacade } from './lms/facade'
 import type { LmsSubscriptions } from './lms/subscriptions'
 import type { ModelUpdateCombiner } from './lms/model-update-combiner'
-import type { ModelUpdateManager } from './lms/model-update-manager'
+import type { ModelUpdateCalculators } from './lms/model-update-calculation'
 import type { TypeGuard } from './utils/types'
 import type { ExtendableLangiumDocument, LmsDocument } from './workspace/documents'
 import type { LmsDocumentBuilder } from './workspace/lms-document-builder'
@@ -50,7 +50,7 @@ export type LangiumModelServerAbstractServices<SM extends SemanticIdentity, II e
     },
     lms: {
         LangiumModelServerFacade: LangiumModelServerFacade<SM>,
-        ModelUpdateManager: ModelUpdateManager<SM>,
+        ModelUpdateCalculators: ModelUpdateCalculators<SM>,
         ModelUpdateCombiner: ModelUpdateCombiner<SM>
     }
 }

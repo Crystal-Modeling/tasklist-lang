@@ -7,9 +7,9 @@ import { TaskListIdentityReconciler } from './semantic/task-list-identity-reconc
 import { TaskListIdentityStorage } from './semantic/task-list-identity-storage'
 import { TaskListSemanticDomain } from './semantic/task-list-semantic-domain'
 import type * as source from './lms/model'
-import { TaskListLangiumModelServerFacade } from './lms/task-list-source-model-service'
+import { TaskListLangiumModelServerFacade } from './lms/task-list-facade'
 import { TaskListModelUpdateCombiner } from './lms/task-list-source-update-combiner'
-import { TaskListModelUpdateManager } from './lms/task-list-source-update-manager'
+import { TaskListModelUpdateCalculators } from './lms/task-list-source-update-calculation'
 import type { TaskListDocument } from './workspace/documents'
 import { isTaskListDocument } from './workspace/documents'
 
@@ -26,7 +26,7 @@ export type TaskListAddedServices = {
     },
     lms: {
         // Redefining the type
-        ModelUpdateManager: TaskListModelUpdateManager
+        ModelUpdateCalculators: TaskListModelUpdateCalculators
     }
 }
 
@@ -56,7 +56,7 @@ export const TaskListModule: Module<TaskListServices, PartialLangiumModelServerS
     },
     lms: {
         LangiumModelServerFacade: (services) => new TaskListLangiumModelServerFacade(services),
-        ModelUpdateManager: () => new TaskListModelUpdateManager(),
+        ModelUpdateCalculators: () => new TaskListModelUpdateCalculators(),
         ModelUpdateCombiner: () => new TaskListModelUpdateCombiner(),
     },
 }
