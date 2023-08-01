@@ -10,7 +10,7 @@ import { UriConverter } from '../utils/uri-converter'
 import { LmsDocumentState, type LmsDocument } from '../workspace/documents'
 import { HighlightResponse } from './model'
 
-export interface SourceModelService<SM> {
+export interface LangiumModelServerFacade<SM> {
     getById(id: string): SM | undefined
     /**
      * @returns `undefined` if unexpected error happened during showing code (opening document and highligting some range)
@@ -24,7 +24,8 @@ export interface SourceModelService<SM> {
     getSemanticId(sourceUri: string): string | undefined
 }
 
-export abstract class AbstractSourceModelService<SM extends SemanticIdentity, SemI extends IdentityIndex, D extends LmsDocument> implements SourceModelService<SM> {
+export abstract class AbstractLangiumModelServerFacade<SM extends SemanticIdentity, SemI extends IdentityIndex, D extends LmsDocument>
+implements LangiumModelServerFacade<SM> {
 
     protected semanticIndexManager: IdentityManager<SemI>
     protected langiumDocuments: LangiumDocuments

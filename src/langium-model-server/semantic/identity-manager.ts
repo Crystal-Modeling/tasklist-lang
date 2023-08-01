@@ -8,10 +8,10 @@ import type { IdentityStorage } from './identity-storage'
 export interface IdentityManager<II extends IdentityIndex = IdentityIndex> {
     getLanguageDocumentUri(id: string): URI | undefined
     getIdentityIndex(lmsDocument: LmsDocument): II | undefined
-    saveSemanticIdentity(languageDocumentUri: string): void
-    loadSemanticIdentity(languageDocumentUri: string): void
-    deleteSemanticIdentity(languageDocumentUri: string): void
-    renameSemanticIdentity(oldLanguageDocumentUri: string, languageDocumentUri: string): void
+    saveIdentity(languageDocumentUri: string): void
+    loadIdentity(languageDocumentUri: string): void
+    deleteIdentity(languageDocumentUri: string): void
+    renameIdentity(oldLanguageDocumentUri: string, languageDocumentUri: string): void
 }
 
 export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements IdentityManager<II> {
@@ -34,18 +34,18 @@ export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II ex
         return this.getOrLoadIdentity(lmsDocument.textDocument.uri)
     }
 
-    public loadSemanticIdentity(languageDocumentUri: string): void {
+    public loadIdentity(languageDocumentUri: string): void {
         const identityIndex = this.loadIdentityToIndex(languageDocumentUri)
         this.languageDocumentUriById.set(identityIndex.id, URI.parse(languageDocumentUri))
         this.indexRegistryByLanguageDocumentUri.set(languageDocumentUri, identityIndex)
     }
 
-    public saveSemanticIdentity(languageDocumentUri: string): void {
+    public saveIdentity(languageDocumentUri: string): void {
         const semanticModel = this.getOrLoadIdentity(languageDocumentUri).model
         this.identityStorage.saveIdentityToFile(languageDocumentUri, semanticModel)
     }
 
-    public renameSemanticIdentity(oldLanguageDocumentUri: string, languageDocumentUri: string): void {
+    public renameIdentity(oldLanguageDocumentUri: string, languageDocumentUri: string): void {
         const identityIndex = this.indexRegistryByLanguageDocumentUri.get(oldLanguageDocumentUri)
         if (identityIndex) {
             const rootId = identityIndex.id
@@ -57,7 +57,7 @@ export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II ex
         }
     }
 
-    public deleteSemanticIdentity(languageDocumentUri: string): void {
+    public deleteIdentity(languageDocumentUri: string): void {
         const existingIdentityIndex = this.indexRegistryByLanguageDocumentUri.get(languageDocumentUri)
         if (existingIdentityIndex) {
             this.indexRegistryByLanguageDocumentUri.delete(languageDocumentUri)
@@ -73,7 +73,7 @@ export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II ex
         if (loadedIdentity) {
             return loadedIdentity
         }
-        this.loadSemanticIdentity(languageDocumentUri)
+        this.loadIdentity(languageDocumentUri)
         return this.indexRegistryByLanguageDocumentUri.get(languageDocumentUri)!
     }
 }

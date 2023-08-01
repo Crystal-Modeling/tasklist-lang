@@ -7,18 +7,18 @@ import type { IdentityIndex } from '../semantic/identity-index'
 import type { IdentityManager } from '../semantic/identity-manager'
 import type { LangiumModelServerServices } from '../services'
 import * as src from '../lms/model'
-import type { SourceModelSubscriptions } from '../lms/source-model-subscriptions'
+import type { LmsSubscriptions } from '../lms/subscriptions'
 import type { LmsDocument } from '../workspace/documents'
 
 export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> extends DefaultRenameProvider {
 
     protected identityManager: IdentityManager
-    protected sourceModelSubscriptions: SourceModelSubscriptions
+    protected lmsSubscriptions: LmsSubscriptions
 
     constructor(services: LangiumModelServerServices<SM, II, D>) {
         super(services)
         this.identityManager = services.semantic.IdentityManager
-        this.sourceModelSubscriptions = services.lms.SourceModelSubscriptions
+        this.lmsSubscriptions = services.lms.LmsSubscriptions
     }
 
     override async rename(document: LangiumDocument, params: RenameParams): Promise<WorkspaceEdit | undefined> {
@@ -45,7 +45,7 @@ export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityI
                 console.debug('After updating semantic element, its name has changed')
                 const rename = src.Rename.create(renameableIdentity.id, renameableIdentity.name)
                 console.debug('Looking for subscriptions for id', targetIdentityIndex.id)
-                this.sourceModelSubscriptions.getSubscription(targetIdentityIndex.id)?.pushRename(rename)
+                this.lmsSubscriptions.getSubscription(targetIdentityIndex.id)?.pushRename(rename)
             }
         }
         references.forEach(reference => {

@@ -1,11 +1,11 @@
-import { AbstractSourceModelService } from '../../../langium-model-server/lms/source-model-service'
+import { AbstractLangiumModelServerFacade } from '../../../langium-model-server/lms/facade'
 import type { LmsDocument } from '../../../langium-model-server/workspace/documents'
 import type { TaskListIdentityIndex } from '../semantic/task-list-identity-index'
 import type { TaskListDocument } from '../workspace/documents'
 import { isTaskListDocument } from '../workspace/documents'
 import { Model, Task, Transition } from './model'
 
-export class TaskListSourceModelService extends AbstractSourceModelService<Model, TaskListIdentityIndex, TaskListDocument> {
+export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServerFacade<Model, TaskListIdentityIndex, TaskListDocument> {
 
     protected override convertSemanticModelToSourceModel(lmsDocument: LmsDocument): Model | undefined {
 

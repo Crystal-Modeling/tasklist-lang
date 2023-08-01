@@ -4,7 +4,7 @@ import type * as sem from '../../../langium-model-server/semantic/model'
 import { Update } from '../../../langium-model-server/lms/model'
 import type { ReadonlyArrayUpdate } from '../../../langium-model-server/lms/model'
 import { ArrayUpdateCommand } from '../../../langium-model-server/lms/model'
-import type { SourceUpdateCalculator } from '../../../langium-model-server/lms/source-update-calculation'
+import type { ModelUpdateCalculator } from '../../../langium-model-server/lms/model-update-calculation'
 import * as ast from '../../generated/ast'
 import type * as semantic from '../semantic/model'
 import type * as identity from '../semantic/task-list-identity'
@@ -13,7 +13,7 @@ import type { Model } from './model'
 import { Task, Transition } from './model'
 import { ElementUpdate } from '../../../langium-model-server/lms/model'
 
-export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculator<Model> {
+export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Model> {
 
     protected semanticDomain: QueriableTaskListSemanticDomain
 

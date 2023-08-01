@@ -2,7 +2,7 @@ import { NodeFileSystem } from 'langium/node'
 import { createConnection, ProposedFeatures } from 'vscode-languageserver/node'
 import { startLMSLanguageServer } from '../langium-model-server/lsp/lms-language-server'
 import { createTaskListLangServices } from './task-list-lang-module'
-import { startLangiumModelServer } from '../langium-model-server/lms/source-model-server'
+import { startLangiumModelServer } from '../langium-model-server/lms/langium-model-server'
 import { promisify } from 'util'
 
 // Create a connection to the client

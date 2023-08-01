@@ -46,14 +46,14 @@ function addIdentityProcessingHandlers<SM extends SemanticIdentity, II extends I
     const semanticIndexManager = lmsServices.semantic.IdentityManager
 
     connection.onDidSaveTextDocument(params => {
-        semanticIndexManager.saveSemanticIdentity(params.textDocument.uri)
+        semanticIndexManager.saveIdentity(params.textDocument.uri)
     })
 
     connection.onDidChangeWatchedFiles(params => {
         for (const event of params.changes) {
             switch (event.type) {
                 case FileChangeType.Deleted:
-                    semanticIndexManager.deleteSemanticIdentity(event.uri)
+                    semanticIndexManager.deleteIdentity(event.uri)
                     break
                 default:
                     break
@@ -64,7 +64,7 @@ function addIdentityProcessingHandlers<SM extends SemanticIdentity, II extends I
     connection.workspace.onDidRenameFiles(params => {
         console.debug('============= > RENAMED FILES!!!', params.files)
         params.files.forEach(fileRename => {
-            semanticIndexManager.renameSemanticIdentity(fileRename.oldUri, fileRename.newUri)
+            semanticIndexManager.renameIdentity(fileRename.oldUri, fileRename.newUri)
         })
     })
 }

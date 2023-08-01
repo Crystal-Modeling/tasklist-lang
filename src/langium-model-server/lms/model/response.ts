@@ -1,13 +1,13 @@
 
-export interface ApiResponse {
+export interface Response {
     code: number
     type: string
     message: string
 }
 
-export namespace ApiResponse {
+export namespace Response {
 
-    export function create(message: string, code: 404 | 501 | 201 | 200 | 500): ApiResponse {
+    export function create(message: string, code: 404 | 501 | 201 | 200 | 500): Response {
         let type: string
         switch (code) {
             case 404: type = 'NOT_FOUND'

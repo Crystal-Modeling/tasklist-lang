@@ -3,7 +3,7 @@ import { AstRootNode } from '../../../langium-model-server/semantic/model'
 import * as src from '../../../langium-model-server/lms/model'
 import type * as ast from '../../generated/ast'
 import type * as source from '../lms/model'
-import type { TaskListSourceUpdateManager } from '../lms/task-list-source-update-manager'
+import type { TaskListModelUpdateManager } from '../lms/task-list-source-update-manager'
 import type { TaskListServices } from '../task-list-module'
 import { type TaskListDocument } from '../workspace/documents'
 import { Model } from './task-list-identity'
@@ -11,11 +11,11 @@ import type { TaskListIdentityManager } from './task-list-identity-manager'
 
 export class TaskListIdentityReconciler implements IdentityReconciler<source.Model, TaskListDocument>{
     private identityManager: TaskListIdentityManager
-    private sourceUpdateManager: TaskListSourceUpdateManager
+    private modelUpdateManager: TaskListModelUpdateManager
 
     public constructor(services: TaskListServices) {
         this.identityManager = services.semantic.IdentityManager
-        this.sourceUpdateManager = services.lms.SourceUpdateManager
+        this.modelUpdateManager = services.lms.ModelUpdateManager
     }
 
     /* NOTE: So, the problem can be characterized as following:
@@ -39,7 +39,7 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
     private reconcileTasks(document: TaskListDocument, update: src.Update<source.Model>) {
 
         const identityIndex = this.identityManager.getIdentityIndex(document)
-        const updateCalculator = this.sourceUpdateManager.getUpdateCalculator(document)
+        const updateCalculator = this.modelUpdateManager.getUpdateCalculator(document)
         const semanticDomain = document.semanticDomain!
         // NOTE: Here I am expressing an idea, that perhaps I will have to have some sort of nested model indices,
         // which would make it generally necessary to pass the parent model into the semantic domain when requesting some (valid/identified) models
@@ -77,7 +77,7 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
     private reconcileTransitions(document: TaskListDocument, update: src.Update<source.Model>) {
 
         const identityIndex = this.identityManager.getIdentityIndex(document)
-        const updateCalculator = this.sourceUpdateManager.getUpdateCalculator(document)
+        const updateCalculator = this.modelUpdateManager.getUpdateCalculator(document)
         const semanticDomain = document.semanticDomain!
 
         const existingUnmappedTransitions = identityIndex.transitionsByName

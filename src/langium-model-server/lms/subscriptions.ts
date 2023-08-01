@@ -3,18 +3,18 @@ import type * as id from '../semantic/identity'
 import type { Highlight, Rename } from './model'
 import { Update } from './model'
 
-export interface SourceModelSubscriptions {
+export interface LmsSubscriptions {
     addSubscription(subscriptionStream: ServerHttp2Stream, id: string): void
-    getSubscription(modelId: string): SourceModelSubscription | undefined
+    getSubscription(modelId: string): LmsSubscription | undefined
 }
 
-export interface SourceModelSubscription {
+export interface LmsSubscription {
     pushUpdate<SM extends id.SemanticIdentity>(update: Update<SM>): void
     pushRename(rename: Rename): void
     pushHighlight(highlight: Highlight): void
 }
 
-class SingleSourceModelSubscription implements SourceModelSubscription {
+class SingleLmsSubscription implements LmsSubscription {
     private readonly stream: ServerHttp2Stream
 
     constructor(stream: ServerHttp2Stream) {
@@ -39,8 +39,8 @@ class SingleSourceModelSubscription implements SourceModelSubscription {
 
 }
 
-class CompositeSourceModelSubscription implements SourceModelSubscription {
-    readonly subscriptions: Set<SingleSourceModelSubscription> = new Set()
+class CompositeLmsSubscription implements LmsSubscription {
+    readonly subscriptions: Set<SingleLmsSubscription> = new Set()
 
     public pushUpdate<SM extends id.SemanticIdentity>(update: Update<SM>): void {
         this.subscriptions.forEach(sub => sub.pushUpdate(update))
@@ -55,13 +55,13 @@ class CompositeSourceModelSubscription implements SourceModelSubscription {
     }
 }
 
-export class DefaultSourceModelSubscriptions implements SourceModelSubscriptions {
+export class DefaultLmsSubscriptions implements LmsSubscriptions {
 
-    private subscriptionsByModelId = new Map<string, CompositeSourceModelSubscription>()
+    private subscriptionsByModelId = new Map<string, CompositeLmsSubscription>()
 
     addSubscription(subscriptionStream: ServerHttp2Stream, id: string): void {
-        const subscription = new SingleSourceModelSubscription(subscriptionStream)
-        let modelSubscriptions = this.subscriptionsByModelId.get(id) ?? new CompositeSourceModelSubscription()
+        const subscription = new SingleLmsSubscription(subscriptionStream)
+        let modelSubscriptions = this.subscriptionsByModelId.get(id) ?? new CompositeLmsSubscription()
         if (!this.subscriptionsByModelId.has(id)) {
             this.subscriptionsByModelId.set(id, modelSubscriptions)
         }
@@ -76,7 +76,7 @@ export class DefaultSourceModelSubscriptions implements SourceModelSubscriptions
         })
     }
 
-    getSubscription(modelId: string): SourceModelSubscription | undefined {
+    getSubscription(modelId: string): LmsSubscription | undefined {
         return this.subscriptionsByModelId.get(modelId)
     }
 }

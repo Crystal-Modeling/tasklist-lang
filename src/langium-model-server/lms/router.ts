@@ -3,7 +3,7 @@ import type { SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { LangiumModelServerAddedServices, LmsServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
-import { ApiResponse, SemanticIdResponse } from './model'
+import { Response, SemanticIdResponse } from './model'
 import { isPromise } from 'util/types'
 
 type Http2RequestHandler = (stream: http2.ServerHttp2Stream, unmatchedPath: PathContainer,
@@ -48,8 +48,8 @@ const helloWorldHandler: Http2RequestHandler = (stream) => {
 
 const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (sourceServices) => {
 
-    const sourceModelService = sourceServices.SourceModelService
-    const sourceModelSubscriptions = sourceServices.SourceModelSubscriptions
+    const langiumModelServerFacade = sourceServices.LangiumModelServerFacade
+    const lmsSubscriptions = sourceServices.LmsSubscriptions
 
     const modelHandler: Http2RequestHandler = (_, unmatchedPath, headers) => {
         const id = unmatchedPath.matchPrefix(/^[^\/]+/)
@@ -59,25 +59,25 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
 
         const getModelHandler: Http2RequestHandler = (stream) => {
             console.debug(`Getting the model by id '${id}'`)
-            const sourceModel = sourceModelService.getById(id)
+            const sourceModel = langiumModelServerFacade.getById(id)
 
             if (!sourceModel) {
-                respondWithJson(stream, ApiResponse.create(`Source model with id '${id}' not found`, 404))
+                respondWithJson(stream, Response.create(`Source model with id '${id}' not found`, 404))
             } else {
                 respondWithJson(stream, sourceModel, 200)
             }
         }
         const subscribeToModelChangesHandler: Http2RequestHandler = (stream) => {
             console.debug(`Subscribing to the model by id '${id}'`)
-            sourceModelSubscriptions.addSubscription(stream, id)
-            setUpStreamForSSE(stream, ApiResponse.create(`Created subscription to model with id ${id}`, 201))
+            lmsSubscriptions.addSubscription(stream, id)
+            setUpStreamForSSE(stream, Response.create(`Created subscription to model with id ${id}`, 201))
         }
         const updateHighlightHandler: Http2RequestHandler = (stream, unmatchedPath) => {
             const modelId = unmatchedPath.matchPrefix(/^[^\/]+/)
             if (!modelId) {
                 return notFoundHandler
             }
-            const highlightResponse = sourceServices.SourceModelService.highlight(id, modelId)
+            const highlightResponse = langiumModelServerFacade.highlight(id, modelId)
             if (!highlightResponse) {
                 return serverErrorHandler
             }
@@ -108,10 +108,10 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
     const getModelIdHandler: Http2RequestHandler = (stream, unmatchedPath) => {
         //HACK: LMS should be unaware of the requester. By adding dependency on GLSP Notation URI I break this (temporarily)
         const notationUri = unmatchedPath.suffix
-        const semanticId = sourceModelService.getSemanticId(notationUri)
+        const semanticId = langiumModelServerFacade.getSemanticId(notationUri)
 
         if (!semanticId) {
-            respondWithJson(stream, ApiResponse.create(`Source model sitting next to URI '${notationUri}' not found`, 404))
+            respondWithJson(stream, Response.create(`Source model sitting next to URI '${notationUri}' not found`, 404))
         } else {
             respondWithJson(stream, SemanticIdResponse.create(semanticId), 200)
         }
@@ -129,24 +129,24 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
 
 const notFoundHandler: Http2RequestHandler = (stream, unmatchedPath, header) => {
     respondWithJson(stream,
-        ApiResponse.create(`Path '${header[':path']}' not found (unmatched suffix '${unmatchedPath.suffix}')`, 404))
+        Response.create(`Path '${header[':path']}' not found (unmatched suffix '${unmatchedPath.suffix}')`, 404))
 }
 
 const notImplementedMethodHandler: Http2RequestHandler = (stream, unmatchedPath, header) => {
     respondWithJson(stream,
-        ApiResponse.create(`Path '${header[':path']}' is not implemented for method '${header[':method']}' (unmatched suffix '${unmatchedPath.suffix}')`, 501))
+        Response.create(`Path '${header[':path']}' is not implemented for method '${header[':method']}' (unmatched suffix '${unmatchedPath.suffix}')`, 501))
 }
 
 const serverErrorHandler: Http2RequestHandler = (stream) => {
     respondWithJson(stream,
-        ApiResponse.create('Unexpected server error', 500))
+        Response.create('Unexpected server error', 500))
 }
 
-function respondWithJson(stream: http2.ServerHttp2Stream, response: ApiResponse): void
+function respondWithJson(stream: http2.ServerHttp2Stream, response: Response): void
 function respondWithJson(stream: http2.ServerHttp2Stream, response: object, status: number): void
-function respondWithJson(stream: http2.ServerHttp2Stream, response: ApiResponse | object, status?: number): void {
+function respondWithJson(stream: http2.ServerHttp2Stream, response: Response | object, status?: number): void {
     if (!status) {
-        status = (response as ApiResponse).code
+        status = (response as Response).code
     }
     stream.respond({
         [http2.constants.HTTP2_HEADER_CONTENT_TYPE]: 'application/json; charset=utf-8',
@@ -155,11 +155,11 @@ function respondWithJson(stream: http2.ServerHttp2Stream, response: ApiResponse 
     stream.end(JSON.stringify(response))
 }
 
-function setUpStreamForSSE(stream: http2.ServerHttp2Stream, response: ApiResponse): void
+function setUpStreamForSSE(stream: http2.ServerHttp2Stream, response: Response): void
 function setUpStreamForSSE(stream: http2.ServerHttp2Stream, response: object, status: number): void
-function setUpStreamForSSE(stream: http2.ServerHttp2Stream, response: ApiResponse | object, status?: number): void {
+function setUpStreamForSSE(stream: http2.ServerHttp2Stream, response: Response | object, status?: number): void {
     if (!status) {
-        status = (response as ApiResponse).code
+        status = (response as Response).code
     }
     stream.respond({
         [http2.constants.HTTP2_HEADER_STATUS]: status,

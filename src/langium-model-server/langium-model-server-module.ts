@@ -5,8 +5,8 @@ import { LmsRenameProvider } from './lsp/rename-provider'
 import type { SemanticIdentity } from './semantic/identity'
 import type { IdentityIndex } from './semantic/identity-index'
 import type { LangiumModelServerDefaultServices, LangiumModelServerDefaultSharedServices, LangiumModelServerServices } from './services'
-import { DefaultLangiumSourceModelServer } from './lms/source-model-server'
-import { DefaultSourceModelSubscriptions } from './lms/source-model-subscriptions'
+import { DefaultLangiumSourceModelServer } from './lms/langium-model-server'
+import { DefaultLmsSubscriptions } from './lms/subscriptions'
 import type { LmsDocument } from './workspace/documents'
 import { DefaultLmsDocumentBuilder } from './workspace/lms-document-builder'
 
@@ -22,8 +22,8 @@ Module<LangiumModelServerServices<SM, II, D>, LangiumModelServerDefaultServices>
             LmsDocumentBuilder: (services) => new DefaultLmsDocumentBuilder(services),
         },
         lms: {
-            LangiumSourceModelServer: (services) => new DefaultLangiumSourceModelServer(services),
-            SourceModelSubscriptions: () => new DefaultSourceModelSubscriptions()
+            LangiumModelServer: (services) => new DefaultLangiumSourceModelServer(services),
+            LmsSubscriptions: () => new DefaultLmsSubscriptions()
         }
     }
 }

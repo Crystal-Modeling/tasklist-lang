@@ -1,7 +1,7 @@
 import type * as id from '../semantic/identity'
 import type { Update } from './model'
 
-export interface SourceUpdateCombiner<SM extends id.SemanticIdentity> {
+export interface ModelUpdateCombiner<SM extends id.SemanticIdentity> {
 
     /**
      * Combines updates made during several reconciliation phases (updates accumulate if during the last phase an update was not sent).

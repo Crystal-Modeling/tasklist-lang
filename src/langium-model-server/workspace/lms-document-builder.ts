@@ -8,8 +8,8 @@ import type { IdentityReconciler } from '../semantic/identity-reconciler'
 import type { SemanticDomainFactory } from '../semantic/semantic-domain'
 import type { LangiumModelServerServices } from '../services'
 import * as src from '../lms/model'
-import type { SourceModelSubscriptions } from '../lms/source-model-subscriptions'
-import type { SourceUpdateCombiner } from '../lms/source-update-combiner'
+import type { LmsSubscriptions } from '../lms/subscriptions'
+import type { ModelUpdateCombiner } from '../lms/model-update-combiner'
 import type { TypeGuard } from '../utils/types'
 import { LmsDocumentState, type ExtendableLangiumDocument, type LmsDocument } from './documents'
 
@@ -22,8 +22,8 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
     protected readonly isLmsDocument: TypeGuard<D, ExtendableLangiumDocument>
     protected readonly identityReconciler: IdentityReconciler<SM, D>
     protected readonly identityManager: IdentityManager
-    protected readonly sourceModelSubscriptions: SourceModelSubscriptions
-    protected readonly sourceUpdateCombiner: SourceUpdateCombiner<SM>
+    protected readonly lmsSubscriptions: LmsSubscriptions
+    protected readonly modelUpdateCombiner: ModelUpdateCombiner<SM>
 
     protected readonly updatesForLmsDocuments: MultiMap<D, src.Update<SM>> = new MultiMap()
     private updatePushingTimeout: NodeJS.Timeout
@@ -33,8 +33,8 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
         this.isLmsDocument = services.workspace.LmsDocumentGuard
         this.identityReconciler = services.semantic.IdentityReconciler
         this.identityManager = services.semantic.IdentityManager
-        this.sourceModelSubscriptions = services.lms.SourceModelSubscriptions
-        this.sourceUpdateCombiner = services.lms.SourceUpdateCombiner
+        this.lmsSubscriptions = services.lms.LmsSubscriptions
+        this.modelUpdateCombiner = services.lms.ModelUpdateCombiner
 
         const documentBuilder = services.shared.workspace.DocumentBuilder
         documentBuilder.onBuildPhase(DocumentState.IndexedReferences, this.initializeSemanticDomain.bind(this))
@@ -88,7 +88,7 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
 
     private combineAndPushUpdates(): void {
         for (const [lmsDocument, updates] of this.updatesForLmsDocuments.entriesGroupedByKey()) {
-            const update = this.sourceUpdateCombiner.combineUpdates(updates)
+            const update = this.modelUpdateCombiner.combineUpdates(updates)
             if (update && !src.Update.isEmpty(update)) {
                 console.debug('=====> For document ', lmsDocument.textDocument.uri)
                 this.pushUpdateToSubscriptions(update)
@@ -98,7 +98,7 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
     }
 
     private pushUpdateToSubscriptions(update: src.Update<SM>): void {
-        this.sourceModelSubscriptions.getSubscription(update.id)?.pushUpdate(update)
+        this.lmsSubscriptions.getSubscription(update.id)?.pushUpdate(update)
     }
 
 }

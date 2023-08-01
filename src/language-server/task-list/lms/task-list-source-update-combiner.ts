@@ -2,10 +2,10 @@ import { stream } from 'langium'
 import type * as id from '../../../langium-model-server/semantic/identity'
 import { ArrayUpdate, Update } from '../../../langium-model-server/lms/model'
 import type { ElementAttributes, ElementUpdate } from '../../../langium-model-server/lms/model'
-import type { SourceUpdateCombiner } from '../../../langium-model-server/lms/source-update-combiner'
+import type { ModelUpdateCombiner } from '../../../langium-model-server/lms/model-update-combiner'
 import type { Model, Task, Transition } from './model'
 
-export class TaskListSourceUpdateCombiner implements SourceUpdateCombiner<Model> {
+export class TaskListModelUpdateCombiner implements ModelUpdateCombiner<Model> {
 
     combineUpdates(updates: Array<Update<Model>>): Update<Model> | undefined {
         if (updates.length < 1) {
