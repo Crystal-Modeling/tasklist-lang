@@ -2,6 +2,7 @@ import type * as id from '../semantic/identity'
 import type { LmsDocument } from '../workspace/documents'
 import type { SourceUpdateCalculator } from './source-update-calculation'
 
+// TODO: Rename it to ModelUpdateCalculators and put into source-update-calculation.ts
 export interface SourceUpdateManager<SM extends id.SemanticIdentity> {
     getUpdateCalculator(lmsDocument: LmsDocument): SourceUpdateCalculator<SM>
 }

@@ -1,5 +1,5 @@
-import type * as id from '../../semantic/identity'
-import type { ExcludeExisting } from '../../utils/types'
+import type * as id from '../../../semantic/identity'
+import type { ExcludeExisting } from '../../../utils/types'
 import { Update } from './update'
 
 export type ElementState = 'DISAPPEARED' | 'REAPPEARED'

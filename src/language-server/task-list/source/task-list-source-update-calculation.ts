@@ -94,6 +94,7 @@ export class TaskListSourceModelUpdateCalculator implements SourceUpdateCalculat
 
 }
 
+// TODO: Move to parent abstract class
 /**
  * Computes {@link ReadonlyArrayUpdate} for {@link identitiesToDelete} by comparing them with {@link modelsMarkedForDeletion}.
  *

@@ -1,5 +1,5 @@
-import type * as id from '../../semantic/identity'
-import type { KeysOfType, ModelAttribute, OptionalKeys, PrimitiveModelAttribute } from '../../utils/types'
+import type * as id from '../../../semantic/identity'
+import type { KeysOfType, ModelAttribute, OptionalKeys, PrimitiveModelAttribute } from '../../../utils/types'
 import type { ArrayUpdate } from './array-update'
 
 /**

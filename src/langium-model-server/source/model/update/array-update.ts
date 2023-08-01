@@ -1,6 +1,6 @@
 import type { Stream } from 'langium'
 import { stream } from 'langium'
-import type * as id from '../../semantic/identity'
+import type * as id from '../../../semantic/identity'
 import type { ElementUpdate } from './element-update'
 import { Update } from './update'
 
