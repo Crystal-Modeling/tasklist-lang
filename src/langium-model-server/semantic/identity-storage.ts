@@ -16,6 +16,7 @@ export interface IdentityStorage {
     saveIdentityToFile(languageDocumentUri: string, identity: unknown): void
     loadIdentityFromFile<T>(languageDocumentUri: string, guard: TypeGuard<T>): T
     deleteIdentityFile(languageDocumentUri: string): void
+    renameIdentityFile(oldLanguageDocumentUri: string, newLanguageDocumentUri: URI): void
 }
 
 /**
@@ -45,6 +46,13 @@ export abstract class AbstractIdentityStorage<SM extends SemanticIdentity, II ex
         console.debug('Deleting semantic model for URI', languageDocumentUri)
         const uri = this.convertLangiumDocumentUriIntoIdentityUri(URI.parse(languageDocumentUri)).toString()
         this.deleteFile(uri)
+    }
+
+    public renameIdentityFile(oldLanguageDocumentUri: string, newLanguageDocumentUri: URI): void {
+        console.debug('Renaming semantic model from URI', oldLanguageDocumentUri, '\nto URI', newLanguageDocumentUri)
+        const uri = this.convertLangiumDocumentUriIntoIdentityUri(URI.parse(oldLanguageDocumentUri)).toString()
+        const newUri = this.convertLangiumDocumentUriIntoIdentityUri(newLanguageDocumentUri).toString()
+        fs.renameSync(this.uriToPath(uri), this.uriToPath(newUri))
     }
 
     protected convertLangiumDocumentUriIntoIdentityUri(langiumDocumentUri: URI): URI {

@@ -7,11 +7,11 @@ import type { IdentityStorage } from './identity-storage'
 
 export interface IdentityManager<II extends IdentityIndex = IdentityIndex> {
     getLanguageDocumentUri(id: string): URI | undefined
-    getIdentityIndex(langiumDocument: LmsDocument): II | undefined
+    getIdentityIndex(lmsDocument: LmsDocument): II | undefined
     saveSemanticIdentity(languageDocumentUri: string): void
     loadSemanticIdentity(languageDocumentUri: string): void
     deleteSemanticIdentity(languageDocumentUri: string): void
-    renameSemanticIdentity(oldLanguageUri: string, newLanguageUri: string): void
+    renameSemanticIdentity(oldLanguageDocumentUri: string, languageDocumentUri: string): void
 }
 
 export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements IdentityManager<II> {
@@ -30,8 +30,8 @@ export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II ex
         return this.languageDocumentUriById.get(id)
     }
 
-    public getIdentityIndex(languageDocument: LmsDocument): II {
-        return this.getOrLoadIdentity(languageDocument.textDocument.uri)
+    public getIdentityIndex(lmsDocument: LmsDocument): II {
+        return this.getOrLoadIdentity(lmsDocument.textDocument.uri)
     }
 
     public loadSemanticIdentity(languageDocumentUri: string): void {
@@ -45,15 +45,15 @@ export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II ex
         this.identityStorage.saveIdentityToFile(languageDocumentUri, semanticModel)
     }
 
-    public renameSemanticIdentity(oldLanguageUri: string, newLanguageUri: string): void {
-        const identityIndex = this.indexRegistryByLanguageDocumentUri.get(oldLanguageUri)
+    public renameSemanticIdentity(oldLanguageDocumentUri: string, languageDocumentUri: string): void {
+        const identityIndex = this.indexRegistryByLanguageDocumentUri.get(oldLanguageDocumentUri)
         if (identityIndex) {
             const rootId = identityIndex.id
-            this.indexRegistryByLanguageDocumentUri.delete(oldLanguageUri)
-            this.indexRegistryByLanguageDocumentUri.set(newLanguageUri, identityIndex)
-            this.languageDocumentUriById.set(rootId, URI.parse(newLanguageUri))
-            // TODO: To optimize performance, do file rename instead of saving entirely new file
-            this.identityStorage.saveIdentityToFile(newLanguageUri, identityIndex.model)
+            const newLanguageDocumentUri = URI.parse(languageDocumentUri)
+            this.indexRegistryByLanguageDocumentUri.delete(oldLanguageDocumentUri)
+            this.indexRegistryByLanguageDocumentUri.set(languageDocumentUri, identityIndex)
+            this.languageDocumentUriById.set(rootId, newLanguageDocumentUri)
+            this.identityStorage.renameIdentityFile(oldLanguageDocumentUri, newLanguageDocumentUri)
         }
     }
 
