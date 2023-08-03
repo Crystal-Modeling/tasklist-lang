@@ -5,6 +5,12 @@ import type * as ast from '../../../generated/ast'
 
 export type TransitionDerivativeName = [sourceTaskId: string, targetTaskId: string]
 
+export namespace TransitionDerivativeName {
+    export function of(sourceTaskId: string, targetTaskId: string): TransitionDerivativeName {
+        return [sourceTaskId, targetTaskId]
+    }
+}
+
 export type Transition = sem.ArtificialAstNode & sem.Valid<{
     name: TransitionDerivativeName
     sourceTask: sem.Identified<ast.Task>,
@@ -29,7 +35,7 @@ export namespace Transition {
         if (sem.ResolvedReference.is(reference)
             && isTaskReferenceValid(sourceTask, referenceIndex)
             && sem.Identified.is(reference.ref)) {
-            const name: TransitionDerivativeName = [sourceTask.id, reference.ref.id]
+            const name = TransitionDerivativeName.of(sourceTask.id, reference.ref.id)
             return {
                 __semantic: 'valid',
                 name,

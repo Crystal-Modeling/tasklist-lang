@@ -8,6 +8,7 @@ import type { TaskListIdentityIndex } from '../semantic/task-list-identity-index
 import type { TaskListDocument } from '../workspace/documents'
 import { isTaskListDocument } from '../workspace/documents'
 import { Model, Task, Transition } from './model'
+import { TransitionDerivativeName } from '../semantic/model'
 
 export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServerFacade<Model, TaskListIdentityIndex, TaskListDocument> {
 
@@ -17,16 +18,20 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             isApplicable: Task.isNew,
             addModel: this.addTask.bind(this)
         })
+        this.addModelHandlersByUriSegment.set('/transitions', {
+            isApplicable: Transition.isNew,
+            addModel: this.addTransition.bind(this)
+        })
     }
 
-    public addTask(rootModelId: string, anchorTaskId: string, newTask: NewModel<Task>): Task | undefined {
+    public addTask(rootModelId: string, newTask: NewModel<Task>, anchorTaskId: string): Task | undefined {
 
         const lmsDocument = this.getDocumentById(rootModelId)
         if (!lmsDocument) {
             return undefined
         }
 
-        const identityIndex = this.semanticIndexManager.getIdentityIndex(lmsDocument)
+        const identityIndex = this.identityManager.getIdentityIndex(lmsDocument)
         const taskIdentity = identity.Model.newTask(newTask.name)
         identityIndex.addTask(taskIdentity)
 
@@ -39,6 +44,48 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             { label: 'Create new task ' + newTask.name, edit: { changes: { [lmsDocument.textDocument.uri]: [textEdit] } } })
 
         return NewModel.assignId(newTask, taskIdentity.id)
+    }
+
+    public addTransition(rootModelId: string, newModel: NewModel<Transition>): Transition | undefined {
+
+        const lmsDocument = this.getDocumentById(rootModelId)
+        if (!lmsDocument) {
+            return undefined
+        }
+
+        const identityIndex = this.identityManager.getIdentityIndex(lmsDocument)
+        const transitionIdentity = identity.Model.newTransition(TransitionDerivativeName.of(newModel.sourceTaskId, newModel.targetTaskId))
+        identityIndex.addTransition(transitionIdentity)
+
+        const sourceTask = lmsDocument.semanticDomain.identifiedTasks.get(newModel.sourceTaskId)
+        // HACK: You can only add transition for the target node, which is present in the *same* document
+        const targetTask = lmsDocument.semanticDomain.identifiedTasks.get(newModel.targetTaskId)
+        // TODO: actually, it is different `undefined`, not because of the document is not found
+        if (!sourceTask || !targetTask) {
+            return undefined
+        }
+
+        const anchorPosition = sourceTask.$cstNode?.range?.end
+        if (!anchorPosition) {
+            throw new Error('Cannot locate source task ' + sourceTask.name + '(' + sourceTask.id + ') in text')
+        }
+
+        const prefix = (!sourceTask.references || sourceTask.references.length === 0)
+            ? ' -> '
+            : ', '
+        const serializedModel = prefix + targetTask.name
+
+        const textEdit = TextEdit.insert(anchorPosition, serializedModel)
+        this.connection.sendRequest(ApplyWorkspaceEditRequest.type,
+            {
+                label: 'Create new transition: ' + sourceTask.name + '->' + targetTask.name,
+                edit: { changes: { [lmsDocument.textDocument.uri]: [textEdit] } }
+            }
+        ).then(workspaceEditResult => {
+            console.debug('Applied workspace edit', workspaceEditResult)
+        })
+
+        return NewModel.assignId(newModel, transitionIdentity.id)
     }
 
     protected override convertSemanticModelToSourceModel(lmsDocument: LmsDocument): Model | undefined {

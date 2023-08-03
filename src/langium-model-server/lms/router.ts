@@ -95,7 +95,7 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
                     badRequestHandler(stream, unmatchedPath, headers, flags)
                     return
                 }
-                const addedModel = facadeHandler.addModel(id, anchorModelId, requestBody)
+                const addedModel = facadeHandler.addModel(id, requestBody, anchorModelId)
                 if (!addedModel) {
                     respondWithJson(stream, Response.create(`Root model (document) for id '${id}' not found`, 404))
                     return

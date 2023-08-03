@@ -32,13 +32,13 @@ export interface LangiumModelServerFacade<SM> {
 
 export interface AddModelHandler<T extends SemanticIdentity = SemanticIdentity> {
     isApplicable(newModel: unknown): boolean
-    addModel(rootModelId: string, anchorModelId: string, newModel: NewModel<T>): object | undefined
+    addModel(rootModelId: string, newModel: NewModel<T>, anchorModelId?: string): object | undefined
 }
 
 export abstract class AbstractLangiumModelServerFacade<SM extends SemanticIdentity, SemI extends IdentityIndex, D extends LmsDocument>
 implements LangiumModelServerFacade<SM> {
 
-    protected semanticIndexManager: IdentityManager<SemI>
+    protected identityManager: IdentityManager<SemI>
     protected langiumDocuments: LangiumDocuments
     protected languageMetadata: LanguageMetaData
     protected isLmsDocument: TypeGuard<D, ExtendableLangiumDocument>
@@ -47,7 +47,7 @@ implements LangiumModelServerFacade<SM> {
     readonly addModelHandlersByUriSegment: Map<string, AddModelHandler> = new Map()
 
     constructor(services: LangiumModelServerServices<SM, SemI, D>) {
-        this.semanticIndexManager = services.semantic.IdentityManager
+        this.identityManager = services.semantic.IdentityManager
         this.langiumDocuments = services.shared.workspace.LangiumDocuments
         this.languageMetadata = services.LanguageMetaData
         this.isLmsDocument = services.workspace.LmsDocumentGuard
@@ -62,7 +62,7 @@ implements LangiumModelServerFacade<SM> {
             return undefined
         }
         const langiumDocument = this.langiumDocuments.getOrCreateDocument(documentUri)
-        return this.semanticIndexManager.getIdentityIndex(langiumDocument).id
+        return this.identityManager.getIdentityIndex(langiumDocument).id
     }
 
     public getById(id: string): SM | undefined {
@@ -101,7 +101,7 @@ implements LangiumModelServerFacade<SM> {
     protected abstract convertSemanticModelToSourceModel(lmsDocument: LmsDocument): SM | undefined
 
     protected getDocumentById(id: string): Initialized<D> | undefined {
-        const documentUri = this.semanticIndexManager.getLanguageDocumentUri(id)
+        const documentUri = this.identityManager.getLanguageDocumentUri(id)
         // Not sure shouldn't I *create* LangiumDocument if it is not built yet (i.e., if the file has not been loaded)
         if (!documentUri || !this.langiumDocuments.hasDocument(documentUri)) {
             return undefined
