@@ -6,7 +6,7 @@ import type { IdentityIndex } from '../semantic/identity-index'
 import type { LangiumModelServerAddedServices, LmsServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
 import type { CreationParams} from './model'
-import { CreationFailureReason, Response, SemanticIdResponse } from './model'
+import { EditingFailureReason, Response, SemanticIdResponse } from './model'
 
 type Http2RequestHandler = (stream: http2.ServerHttp2Stream, unmatchedPath: PathContainer,
     headers: http2.IncomingHttpHeaders, flags: number) => Http2RequestHandler | void
@@ -93,21 +93,21 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
                         Response.create(`${headers[':method']} ('${headers[':path']}') cannot be processed: incorrect request body`, 400))
                     return
                 }
-                const creationResponse = facadeHandler.addModel(id, requestBody, queryParams)
-                if (!creationResponse) {
+                const result = facadeHandler.addModel(id, requestBody, queryParams)
+                if (!result) {
                     respondWithJson(stream, Response.create(`Root model (document) for id '${id}' not found`, 404))
                     return
                 }
-                if (isPromise(creationResponse)) {
-                    creationResponse.then(creation => {
-                        if (creation.created) {
-                            respondWithJson(stream, creation, 201)
-                        } else switch (creation.failureReason) {
-                            case CreationFailureReason.VALIDATION:
-                                respondWithJson(stream, creation, 400)
+                if (isPromise(result)) {
+                    result.then(res => {
+                        if (res.successful) {
+                            respondWithJson(stream, res, 201)
+                        } else switch (res.failureReason) {
+                            case EditingFailureReason.VALIDATION:
+                                respondWithJson(stream, res, 400)
                                 break
-                            case CreationFailureReason.TEXT_EDIT:
-                                respondWithJson(stream, creation, 500)
+                            case EditingFailureReason.TEXT_EDIT:
+                                respondWithJson(stream, res, 500)
                                 break
                         }
                     })

@@ -1,5 +1,5 @@
 export * from './action'
-export * from './creation'
+export * from './text-edit'
 export * from './highlight-response'
 export * from './response'
 export * from './semantic-id-response'
