@@ -7,7 +7,8 @@ import type { IdentityIndex } from '../semantic/identity-index'
 import type { IdentityManager } from '../semantic/identity-manager'
 import type { LangiumModelServerServices } from '../services'
 import { UriConverter } from '../utils/uri-converter'
-import { LmsDocumentState, type LmsDocument } from '../workspace/documents'
+import type { InitializedLmsDocument} from '../workspace/documents'
+import { LmsDocument, LmsDocumentState } from '../workspace/documents'
 import type { NewModel } from './model'
 import { HighlightResponse } from './model'
 
@@ -80,7 +81,7 @@ implements LangiumModelServerFacade<SM> {
                 .then(({ success }) => HighlightResponse.documentHighlighted(rootModelId, success))
         }
 
-        const identifiedNode = lmsDocument.semanticDomain?.getIdentifiedNode(id)
+        const identifiedNode = lmsDocument.semanticDomain.getIdentifiedNode(id)
         if (!identifiedNode) {
             return HighlightResponse.notHighlighted(rootModelId, id)
         }
@@ -96,7 +97,7 @@ implements LangiumModelServerFacade<SM> {
 
     protected abstract convertSemanticModelToSourceModel(lmsDocument: LmsDocument): SM | undefined
 
-    protected getDocumentById(id: string): LmsDocument | undefined {
+    protected getDocumentById(id: string): InitializedLmsDocument | undefined {
         const documentUri = this.semanticIndexManager.getLanguageDocumentUri(id)
         // Not sure shouldn't I *create* LangiumDocument if it is not built yet (i.e., if the file has not been loaded)
         if (!documentUri || !this.langiumDocuments.hasDocument(documentUri)) {
@@ -105,7 +106,7 @@ implements LangiumModelServerFacade<SM> {
         // NOTE: Since document URI is known to SemanticIndexManager, this LangiumDocument is LmsDocument
         const document: LmsDocument = this.langiumDocuments.getOrCreateDocument(documentUri)
         // TODO: Change this to return Promise, if the document didn't reach the desired state.
-        if (document.state < LmsDocumentState.Identified) {
+        if (!LmsDocument.isInitialized(document) || document.state < LmsDocumentState.Identified) {
             return undefined
         }
 

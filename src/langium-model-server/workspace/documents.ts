@@ -13,6 +13,14 @@ export type LmsDocument<T extends AstNode = AstNode> = ExtendableLangiumDocument
     state: LmsDocumentState
 }
 
+export namespace LmsDocument {
+    export function isInitialized<T extends AstNode>(lmsDocument: LmsDocument<T>): lmsDocument is InitializedLmsDocument<T> {
+        return lmsDocument.semanticDomain !== undefined
+    }
+}
+
+export type InitializedLmsDocument<T extends AstNode = AstNode> = LmsDocument<T> & Required<SemanticAwareDocument>
+
 export type SemanticAwareDocument = {
     /**
      * This property is initialized during Validation phase to be considered during Identity Reconciliation phase

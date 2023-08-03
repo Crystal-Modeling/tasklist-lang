@@ -2,7 +2,6 @@ import { ApplyWorkspaceEditRequest, TextEdit } from 'vscode-languageserver'
 import { AbstractLangiumModelServerFacade } from '../../../langium-model-server/lms/facade'
 import { NewModel } from '../../../langium-model-server/lms/model'
 import type { LangiumModelServerServices } from '../../../langium-model-server/services'
-import { isDefinedObject } from '../../../langium-model-server/utils/types'
 import type { LmsDocument } from '../../../langium-model-server/workspace/documents'
 import * as identity from '../semantic/task-list-identity'
 import type { TaskListIdentityIndex } from '../semantic/task-list-identity-index'
@@ -15,11 +14,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
     constructor(services: LangiumModelServerServices<Model, TaskListIdentityIndex, TaskListDocument>) {
         super(services)
         this.addModelHandlersByUriSegment.set('/tasks', {
-            isApplicable: (newModel: unknown) => {
-                return isDefinedObject(newModel)
-                    && typeof newModel.name === 'string'
-                    && typeof newModel.content === 'string'
-            },
+            isApplicable: Task.isNew,
             addModel: this.addTask.bind(this)
         })
     }
@@ -27,8 +22,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
     public addTask(rootModelId: string, anchorTaskId: string, newTask: NewModel<Task>): Task | undefined {
 
         const lmsDocument = this.getDocumentById(rootModelId)
-        // FIXME: Actually, `getDocumentById` above ensures semanticDomain is initialized. Introduce corresponding type?
-        if (!lmsDocument || !isTaskListDocument(lmsDocument) || !lmsDocument.semanticDomain) {
+        if (!lmsDocument || !isTaskListDocument(lmsDocument)) {
             return undefined
         }
         const identityIndex = this.semanticIndexManager.getIdentityIndex(lmsDocument)
@@ -55,7 +49,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         if (!isTaskListDocument(lmsDocument) || !lmsDocument.semanticDomain?.identifiedRootNode) {
             return undefined
         }
-        const sourceModel = Model.create(lmsDocument.semanticDomain?.identifiedRootNode)
+        const sourceModel = Model.create(lmsDocument.semanticDomain.identifiedRootNode)
         for (const task of lmsDocument.semanticDomain.identifiedTasks.values()) {
             sourceModel.tasks.push(Task.create(task))
         }
