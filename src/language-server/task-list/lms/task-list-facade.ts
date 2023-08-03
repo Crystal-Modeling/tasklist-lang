@@ -25,7 +25,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         })
     }
 
-    public addTask(rootModelId: string, newTask: Creation<Task>, anchorTaskId?: string): MaybePromise<CreationResponse> | undefined {
+    public addTask(rootModelId: string, newTask: Creation<Task>, anchorModelId?: string): MaybePromise<CreationResponse> | undefined {
 
         const lmsDocument = this.getDocumentById(rootModelId)
         if (!lmsDocument) {
@@ -33,9 +33,9 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         }
 
         let position: Position | undefined
-        if (anchorTaskId) {
-            const anchorModel = lmsDocument.semanticDomain.identifiedTasks.get(anchorTaskId)
-            if (anchorModel && anchorModel?.$cstNode) {
+        if (anchorModelId) {
+            const anchorModel = lmsDocument.semanticDomain.identifiedTasks.get(anchorModelId)
+            if (anchorModel?.$cstNode) {
                 position = { line: anchorModel.$cstNode.range.end.line + 1, character: 0 }
             }
         }
@@ -44,17 +44,13 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         }
 
         const serializedModel = `task ${newTask.name} "${newTask.content}"\n`
+
         const textEdit = TextEdit.insert(position, serializedModel)
 
-        return this.connection.sendRequest(ApplyWorkspaceEditRequest.type,
-            { label: 'Create new task ' + newTask.name, edit: { changes: { [lmsDocument.textDocument.uri]: [textEdit] } } })
-            .then(editResult => editResult.applied
-                ? CreationResponse.created()
-                : CreationResponse.failedTextEdit(editResult.failureReason)
-            )
+        return this.applyCreationTextEdit(lmsDocument, textEdit, 'Create new task ' + newTask.name)
     }
 
-    public addTransition(rootModelId: string, newModel: Creation<Transition>): MaybePromise<CreationResponse> | undefined {
+    public addTransition(rootModelId: string, newModel: Creation<Transition>, anchorModelId?: string): MaybePromise<CreationResponse> | undefined {
 
         const lmsDocument = this.getDocumentById(rootModelId)
         if (!lmsDocument) {
@@ -73,9 +69,22 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             return CreationResponse.failedValidation('Unable to resolve: ' + unresolvedTasks.join(', '))
         }
 
-        const anchorPosition = sourceTask.$cstNode?.range?.end
-        if (!anchorPosition) {
-            throw new Error('Cannot locate source task ' + sourceTask.name + '(' + sourceTask.id + ') in text')
+        let position: Position | undefined
+        if (anchorModelId) {
+            const anchorModel = lmsDocument.semanticDomain.identifiedTransitions.get(anchorModelId)
+            if (anchorModel && anchorModel.sourceTask.id !== sourceTask.id) {
+                return CreationResponse.failedValidation('Anchor model for Transition must be another Transition within the same sourceTask')
+            }
+            if (anchorModel?.$cstNode) {
+                position = anchorModel.$cstNode.range.end
+            }
+        }
+        if (!position) {
+            const defaultPosition = sourceTask.$cstNode?.range?.end
+            if (!defaultPosition) {
+                throw new Error('Cannot locate source task ' + sourceTask.name + '(' + sourceTask.id + ') in text')
+            }
+            position = defaultPosition
         }
 
         const prefix = (!sourceTask.references || sourceTask.references.length === 0)
@@ -83,13 +92,14 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             : ', '
         const serializedModel = prefix + targetTask.name
 
-        const textEdit = TextEdit.insert(anchorPosition, serializedModel)
+        const textEdit = TextEdit.insert(position, serializedModel)
 
+        return this.applyCreationTextEdit(lmsDocument, textEdit, 'Create new transition: ' + sourceTask.name + '->' + targetTask.name)
+    }
+
+    private applyCreationTextEdit(lmsDocument: LmsDocument, textEdit: TextEdit, label?: string): Promise<CreationResponse> {
         return this.connection.sendRequest(ApplyWorkspaceEditRequest.type,
-            {
-                label: 'Create new transition: ' + sourceTask.name + '->' + targetTask.name,
-                edit: { changes: { [lmsDocument.textDocument.uri]: [textEdit] } }
-            }
+            { label, edit: { changes: { [lmsDocument.textDocument.uri]: [textEdit] } } }
         ).then(editResult => editResult.applied
             ? CreationResponse.created()
             : CreationResponse.failedTextEdit(editResult.failureReason)
