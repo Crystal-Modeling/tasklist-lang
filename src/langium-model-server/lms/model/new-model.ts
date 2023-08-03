@@ -9,3 +9,7 @@ export namespace NewModel {
         return Object.assign(newModel, { id: semanticId }) as T
     }
 }
+
+export interface NewModelError {
+
+}

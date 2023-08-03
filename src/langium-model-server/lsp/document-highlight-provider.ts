@@ -47,8 +47,8 @@ export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, 
 
     private calculateAndPushHighlight(document: LangiumDocument, selectedAstNode: AstNode) {
         const highlightedNodeId = getContainerOfType(selectedAstNode, semantic.Identified.is)?.id
-        const modelId = this.identityManager.getIdentityIndex(document)?.id
-        if (modelId && highlightedNodeId && highlightedNodeId !== this.highlightedNodeIdByModelId.get(modelId)) {
+        const modelId = this.identityManager.getIdentityIndex(document).id
+        if (highlightedNodeId && highlightedNodeId !== this.highlightedNodeIdByModelId.get(modelId)) {
             this.highlightedNodeIdByModelId.set(modelId, highlightedNodeId)
             const highlight = source.Highlight.create(highlightedNodeId)
             this.lmsSubscriptions.getSubscription(modelId)?.pushHighlight(highlight)

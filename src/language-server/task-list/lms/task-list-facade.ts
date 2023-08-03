@@ -25,11 +25,8 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         if (!lmsDocument || !isTaskListDocument(lmsDocument)) {
             return undefined
         }
-        const identityIndex = this.semanticIndexManager.getIdentityIndex(lmsDocument)
-        if (!identityIndex) {
-            return undefined
-        }
 
+        const identityIndex = this.semanticIndexManager.getIdentityIndex(lmsDocument)
         const taskIdentity = identity.Model.newTask(newTask.name)
         identityIndex.addTask(taskIdentity)
 

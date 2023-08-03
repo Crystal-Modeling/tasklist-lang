@@ -5,16 +5,16 @@ import type { SemanticIdentity } from './identity'
 import type { IdentityIndex, ModelExposedIdentityIndex } from './identity-index'
 import type { IdentityStorage } from './identity-storage'
 
-export interface IdentityManager<II extends IdentityIndex = IdentityIndex> {
+export interface IdentityManager<II extends IdentityIndex = IdentityIndex, D extends LmsDocument = LmsDocument> {
     getLanguageDocumentUri(id: string): URI | undefined
-    getIdentityIndex(lmsDocument: LmsDocument): II | undefined
+    getIdentityIndex(lmsDocument: D): II
     saveIdentity(languageDocumentUri: string): void
     loadIdentity(languageDocumentUri: string): void
     deleteIdentity(languageDocumentUri: string): void
     renameIdentity(oldLanguageDocumentUri: string, languageDocumentUri: string): void
 }
 
-export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements IdentityManager<II> {
+export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements IdentityManager<II, D> {
 
     protected identityStorage: IdentityStorage
     private indexRegistryByLanguageDocumentUri: Map<string, ModelExposedIdentityIndex<II>>

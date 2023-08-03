@@ -7,7 +7,7 @@ import type { IdentityIndex } from '../semantic/identity-index'
 import type { IdentityManager } from '../semantic/identity-manager'
 import type { LangiumModelServerServices } from '../services'
 import { UriConverter } from '../utils/uri-converter'
-import type { InitializedLmsDocument} from '../workspace/documents'
+import type { InitializedLmsDocument } from '../workspace/documents'
 import { LmsDocument, LmsDocumentState } from '../workspace/documents'
 import type { NewModel } from './model'
 import { HighlightResponse } from './model'
@@ -40,6 +40,7 @@ implements LangiumModelServerFacade<SM> {
     protected semanticIndexManager: IdentityManager<SemI>
     protected langiumDocuments: LangiumDocuments
     protected languageMetadata: LanguageMetaData
+    // protected isLmsDocument: TypeGuard<D, ExtendableLangiumDocument>
     protected readonly connection: Connection | undefined
 
     readonly addModelHandlersByUriSegment: Map<string, AddModelHandler> = new Map()
@@ -48,6 +49,7 @@ implements LangiumModelServerFacade<SM> {
         this.semanticIndexManager = services.semantic.IdentityManager
         this.langiumDocuments = services.shared.workspace.LangiumDocuments
         this.languageMetadata = services.LanguageMetaData
+        // this.isLmsDocument = services.workspace.LmsDocumentGuard
         this.connection = services.shared.lsp.Connection
     }
 
@@ -59,7 +61,7 @@ implements LangiumModelServerFacade<SM> {
             return undefined
         }
         const langiumDocument = this.langiumDocuments.getOrCreateDocument(documentUri)
-        return this.semanticIndexManager.getIdentityIndex(langiumDocument)?.id
+        return this.semanticIndexManager.getIdentityIndex(langiumDocument).id
     }
 
     public getById(id: string): SM | undefined {

@@ -38,7 +38,7 @@ export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityI
         const targetIdentityIndex = this.identityManager.getIdentityIndex(getDocument(targetNode))
         console.debug('Found identity index for the document:', targetIdentityIndex)
         const targetNodeName = this.nameProvider.getName(targetNode)
-        if (targetIdentityIndex && targetNodeName) {
+        if (targetNodeName) {
             const renameableIdentity = targetIdentityIndex.findElementByName(targetNodeName)
             console.debug('Found identity for the targetNode:', renameableIdentity)
             if (renameableIdentity && renameableIdentity.updateName(newNameDefinder.targetName)) {

@@ -61,9 +61,9 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
         console.debug('====== IDENTITY RECONCILIATION PHASE ======')
         const newUpdatesForLmsDocuments: Map<D, src.Update<SM>> = new Map()
         for (const document of documents) {
-            const semanticId = this.identityManager.getIdentityIndex(document)?.id
+            const semanticId = this.identityManager.getIdentityIndex(document).id
             const lmsDocument: ExtendableLangiumDocument = document
-            if (this.isLmsDocument(lmsDocument) && semanticId) {
+            if (this.isLmsDocument(lmsDocument)) {
                 newUpdatesForLmsDocuments.set(lmsDocument, src.Update.createEmpty<SM>(semanticId))
             }
         }
