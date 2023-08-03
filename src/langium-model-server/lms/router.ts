@@ -32,9 +32,17 @@ export function LangiumModelServerRouter<SM extends SemanticIdentity, II extends
             handler = notFoundHandler
         }
 
-        let nextHandlerChain: Http2RequestHandler | void = handler
-        while (typeof nextHandlerChain !== 'undefined') {
-            nextHandlerChain = nextHandlerChain(stream, unmatchedPath, headers, flags)
+        try {
+            let nextHandlerChain: Http2RequestHandler | void = handler
+            while (typeof nextHandlerChain !== 'undefined') {
+                nextHandlerChain = nextHandlerChain(stream, unmatchedPath, headers, flags)
+            }
+        } catch (error) {
+            if (error instanceof Error) {
+                respondWithJson(stream, Response.create(error.message, 500))
+            } else {
+                respondWithJson(stream, Response.create('Unexpected server error', 500))
+            }
         }
     }
 }
@@ -87,10 +95,9 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
                     badRequestHandler(stream, unmatchedPath, headers, flags)
                     return
                 }
-                // TODO: Elaborate more here on different cases. Return something meaningful instead of `undefined`
                 const addedModel = facadeHandler.addModel(id, anchorModelId, requestBody)
                 if (!addedModel) {
-                    serverErrorHandler(stream, unmatchedPath, headers, flags)
+                    respondWithJson(stream, Response.create(`Root model (document) for id '${id}' not found`, 404))
                     return
                 }
                 respondWithJson(stream, addedModel, 201)
@@ -110,9 +117,6 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
                 return notFoundHandler
             }
             const highlightResponse = langiumModelServerFacade.highlight(id, modelId)
-            if (!highlightResponse) {
-                return serverErrorHandler
-            }
 
             if (!isPromise(highlightResponse) && !highlightResponse.highlighted) {
                 respondWithJson(stream, highlightResponse, 404)
@@ -178,11 +182,6 @@ const notImplementedMethodHandler: Http2RequestHandler = (stream, unmatchedPath,
 const badRequestHandler: Http2RequestHandler = (stream, _, header) => {
     respondWithJson(stream,
         Response.create(`${header[':method']} ('${header[':path']}') cannot be processed: probably due to incorrect request parameters`, 400))
-}
-
-const serverErrorHandler: Http2RequestHandler = (stream) => {
-    respondWithJson(stream,
-        Response.create('Unexpected server error', 500))
 }
 
 function readRequestBody(stream: http2.ServerHttp2Stream): Promise<object> {

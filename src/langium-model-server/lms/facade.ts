@@ -6,8 +6,9 @@ import type { SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { IdentityManager } from '../semantic/identity-manager'
 import type { LangiumModelServerServices } from '../services'
+import type { TypeGuard } from '../utils/types'
 import { UriConverter } from '../utils/uri-converter'
-import type { Initialized } from '../workspace/documents'
+import type { ExtendableLangiumDocument, Initialized } from '../workspace/documents'
 import { LmsDocument, LmsDocumentState } from '../workspace/documents'
 import type { NewModel } from './model'
 import { HighlightResponse } from './model'
@@ -20,7 +21,7 @@ export interface LangiumModelServerFacade<SM> {
     /**
      * @returns `undefined` if unexpected error happened during showing code (opening document and highligting some range)
      */
-    highlight(rootModelId: string, id: string): MaybePromise<HighlightResponse> | undefined
+    highlight(rootModelId: string, id: string): MaybePromise<HighlightResponse>
     //HACK: I rely on LMS consumers having the file URI almost identical to Langium Document URI
     /**
      * @param sourceUri URI of some **other** file which is 'linked' to the source model file.
@@ -40,8 +41,8 @@ implements LangiumModelServerFacade<SM> {
     protected semanticIndexManager: IdentityManager<SemI>
     protected langiumDocuments: LangiumDocuments
     protected languageMetadata: LanguageMetaData
-    // protected isLmsDocument: TypeGuard<D, ExtendableLangiumDocument>
-    protected readonly connection: Connection | undefined
+    protected isLmsDocument: TypeGuard<D, ExtendableLangiumDocument>
+    protected readonly connection: Connection
 
     readonly addModelHandlersByUriSegment: Map<string, AddModelHandler> = new Map()
 
@@ -49,8 +50,8 @@ implements LangiumModelServerFacade<SM> {
         this.semanticIndexManager = services.semantic.IdentityManager
         this.langiumDocuments = services.shared.workspace.LangiumDocuments
         this.languageMetadata = services.LanguageMetaData
-        // this.isLmsDocument = services.workspace.LmsDocumentGuard
-        this.connection = services.shared.lsp.Connection
+        this.isLmsDocument = services.workspace.LmsDocumentGuard
+        this.connection = services.shared.lsp.Connection!
     }
 
     public getSemanticId(sourceUri: string): string | undefined {
@@ -72,14 +73,14 @@ implements LangiumModelServerFacade<SM> {
         return this.convertSemanticModelToSourceModel(lmsDocument)
     }
 
-    public highlight(rootModelId: string, id: string): MaybePromise<HighlightResponse> | undefined {
+    public highlight(rootModelId: string, id: string): MaybePromise<HighlightResponse> {
         const lmsDocument = this.getDocumentById(rootModelId)
         if (!lmsDocument) {
             return HighlightResponse.notHighlighted(rootModelId)
         }
 
         if (id === rootModelId) {
-            return this.connection?.sendRequest(ShowDocumentRequest.type, { uri: lmsDocument.textDocument.uri, takeFocus: true })
+            return this.connection.sendRequest(ShowDocumentRequest.type, { uri: lmsDocument.textDocument.uri, takeFocus: true })
                 .then(({ success }) => HighlightResponse.documentHighlighted(rootModelId, success))
         }
 
@@ -88,7 +89,7 @@ implements LangiumModelServerFacade<SM> {
             return HighlightResponse.notHighlighted(rootModelId, id)
         }
 
-        return this.connection?.sendRequest(ShowDocumentRequest.type,
+        return this.connection.sendRequest(ShowDocumentRequest.type,
             { uri: lmsDocument.textDocument.uri, selection: identifiedNode.$cstNode?.range, takeFocus: true }
         ).then(({ success }) => HighlightResponse.modelHighlighted(rootModelId, identifiedNode.id, success))
     }
@@ -99,7 +100,7 @@ implements LangiumModelServerFacade<SM> {
 
     protected abstract convertSemanticModelToSourceModel(lmsDocument: LmsDocument): SM | undefined
 
-    protected getDocumentById(id: string): Initialized<LmsDocument> | undefined {
+    protected getDocumentById(id: string): Initialized<D> | undefined {
         const documentUri = this.semanticIndexManager.getLanguageDocumentUri(id)
         // Not sure shouldn't I *create* LangiumDocument if it is not built yet (i.e., if the file has not been loaded)
         if (!documentUri || !this.langiumDocuments.hasDocument(documentUri)) {
@@ -107,6 +108,9 @@ implements LangiumModelServerFacade<SM> {
         }
         // NOTE: Since document URI is known to SemanticIndexManager, this LangiumDocument is LmsDocument
         const document: LmsDocument = this.langiumDocuments.getOrCreateDocument(documentUri)
+        if (!this.isLmsDocument(document)) {
+            throw new Error('Supplied ID is not compatible with LMSDocument type served')
+        }
         // TODO: Change this to return Promise, if the document didn't reach the desired state.
         if (!LmsDocument.isInitialized(document) || document.state < LmsDocumentState.Identified) {
             return undefined

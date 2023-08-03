@@ -22,7 +22,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
     public addTask(rootModelId: string, anchorTaskId: string, newTask: NewModel<Task>): Task | undefined {
 
         const lmsDocument = this.getDocumentById(rootModelId)
-        if (!lmsDocument || !isTaskListDocument(lmsDocument)) {
+        if (!lmsDocument) {
             return undefined
         }
 
@@ -35,7 +35,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
 
         const textEdit = anchorPosition ? TextEdit.insert(anchorPosition, '\n' + serializedModel)
             : TextEdit.insert({ line: lmsDocument.textDocument.lineCount, character: 0 }, serializedModel)
-        this.connection?.sendRequest(ApplyWorkspaceEditRequest.type,
+        this.connection.sendRequest(ApplyWorkspaceEditRequest.type,
             { label: 'Create new task ' + newTask.name, edit: { changes: { [lmsDocument.textDocument.uri]: [textEdit] } } })
 
         return NewModel.assignId(newTask, taskIdentity.id)
