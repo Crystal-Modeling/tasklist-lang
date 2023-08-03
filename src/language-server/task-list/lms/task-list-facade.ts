@@ -2,7 +2,7 @@ import type { MaybePromise } from 'langium'
 import type { Position } from 'vscode-languageserver'
 import { ApplyWorkspaceEditRequest, TextEdit } from 'vscode-languageserver'
 import { AbstractLangiumModelServerFacade } from '../../../langium-model-server/lms/facade'
-import type { Creation } from '../../../langium-model-server/lms/model'
+import type { Creation, CreationParams } from '../../../langium-model-server/lms/model'
 import { CreationResponse } from '../../../langium-model-server/lms/model'
 import type { LangiumModelServerServices } from '../../../langium-model-server/services'
 import type { LmsDocument } from '../../../langium-model-server/workspace/documents'
@@ -25,7 +25,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         })
     }
 
-    public addTask(rootModelId: string, newTask: Creation<Task>, anchorModelId?: string): MaybePromise<CreationResponse> | undefined {
+    public addTask(rootModelId: string, newTask: Creation<Task>, creationParams: CreationParams): MaybePromise<CreationResponse> | undefined {
 
         const lmsDocument = this.getDocumentById(rootModelId)
         if (!lmsDocument) {
@@ -33,8 +33,8 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         }
 
         let position: Position | undefined
-        if (anchorModelId) {
-            const anchorModel = lmsDocument.semanticDomain.identifiedTasks.get(anchorModelId)
+        if (creationParams.anchorModelId) {
+            const anchorModel = lmsDocument.semanticDomain.identifiedTasks.get(creationParams.anchorModelId)
             if (anchorModel?.$cstNode) {
                 position = { line: anchorModel.$cstNode.range.end.line + 1, character: 0 }
             }
@@ -50,7 +50,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return this.applyCreationTextEdit(lmsDocument, textEdit, 'Create new task ' + newTask.name)
     }
 
-    public addTransition(rootModelId: string, newModel: Creation<Transition>, anchorModelId?: string): MaybePromise<CreationResponse> | undefined {
+    public addTransition(rootModelId: string, newModel: Creation<Transition>, creationParams: CreationParams): MaybePromise<CreationResponse> | undefined {
 
         const lmsDocument = this.getDocumentById(rootModelId)
         if (!lmsDocument) {
@@ -70,8 +70,8 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         }
 
         let position: Position | undefined
-        if (anchorModelId) {
-            const anchorModel = lmsDocument.semanticDomain.identifiedTransitions.get(anchorModelId)
+        if (creationParams.anchorModelId) {
+            const anchorModel = lmsDocument.semanticDomain.identifiedTransitions.get(creationParams.anchorModelId)
             if (anchorModel && anchorModel.sourceTask.id !== sourceTask.id) {
                 return CreationResponse.failedValidation('Anchor model for Transition must be another Transition within the same sourceTask')
             }

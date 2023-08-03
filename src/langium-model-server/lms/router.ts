@@ -5,6 +5,7 @@ import type { SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { LangiumModelServerAddedServices, LmsServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
+import type { CreationParams} from './model'
 import { CreationFailureReason, Response, SemanticIdResponse } from './model'
 
 type Http2RequestHandler = (stream: http2.ServerHttp2Stream, unmatchedPath: PathContainer,
@@ -77,14 +78,11 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
             }
         }
         const addModelHandler: Http2RequestHandler = (stream, unmatchedPath, headers) => {
-            const anchorModelId = unmatchedPath.matchPrefix(/^[^\/]+/)
-            if (!anchorModelId) {
-                return notFoundHandler
-            }
-            const uriSegment = unmatchedPath.matchPrefix(/^\/[^\/]+/)
+            const uriSegment = unmatchedPath.matchPrefix(/^\/[^?]+/)
             if (!uriSegment) {
                 return notFoundHandler
             }
+            const queryParams: CreationParams = unmatchedPath.parseQueryParams() ?? {}
             const facadeHandler = langiumModelServerFacade.addModelHandlersByUriSegment.get(uriSegment)
             if (!facadeHandler) {
                 return notImplementedMethodHandler
@@ -95,7 +93,7 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
                         Response.create(`${headers[':method']} ('${headers[':path']}') cannot be processed: incorrect request body`, 400))
                     return
                 }
-                const creationResponse = facadeHandler.addModel(id, requestBody, anchorModelId)
+                const creationResponse = facadeHandler.addModel(id, requestBody, queryParams)
                 if (!creationResponse) {
                     respondWithJson(stream, Response.create(`Root model (document) for id '${id}' not found`, 404))
                     return
@@ -152,7 +150,7 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
         }
         if (method === 'GET')
             return getModelHandler
-        if (unmatchedPath.matchPrefix('/') && method === 'POST') {
+        if (method === 'POST') {
             // NOTE: Since in the future models (and their APIs) will be generated, they cannot be named as:
             //   1. Subscription
             //   2. Highlight (?)
@@ -272,5 +270,16 @@ class PathContainer {
             return prefixString
         }
         return undefined
+    }
+
+    public parseQueryParams(): Record<string, string | undefined> | undefined {
+        const queryParamsText = this.matchPrefix(/^[?].+/)
+        if (!queryParamsText) return undefined
+        const queryParams: Record<string, string | undefined> = {}
+        queryParamsText.slice(1).split('&').forEach(queryParam => {
+            const assignment = queryParam.split('=', 2)
+            queryParams[assignment[0]] = assignment[1]
+        })
+        return queryParams
     }
 }
