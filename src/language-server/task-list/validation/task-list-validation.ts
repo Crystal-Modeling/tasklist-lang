@@ -29,20 +29,27 @@ export class TaskListValidator {
 
     checkModelHasUniqueTasks(model: Model, accept: ValidationAcceptor): void {
         const tasksByName = new MultiMap<string, Task>()
+        const tasksWithEmptyName: Task[] = []
         const tasksByContent = new MultiMap<string, Task>()
         model.tasks.forEach(task => {
             tasksByName.add(task.name, task)
             tasksByContent.add(task.content, task)
+            if (!task.name) {
+                tasksWithEmptyName.push(task)
+            }
         })
 
         const incorrectlyNamedTasks = tasksByName.entriesGroupedByKey().filter(([, tasks]) => tasks.length > 1)
             .flatMap(([, tasks]) => tasks.splice(1))
-            .toSet()
+
         incorrectlyNamedTasks.forEach(task => {
             accept('error', `Task must have unique name, but found another task with name [${task.name}]`,
                 { node: task, property: 'name' })
         })
-        getTaskListDocument(model).semanticDomain?.setInvalidTasksForModel(model, incorrectlyNamedTasks)
+
+        getTaskListDocument(model).semanticDomain?.setInvalidTasksForModel(model, incorrectlyNamedTasks
+            .concat(tasksWithEmptyName)
+            .toSet())
 
         tasksByContent.entriesGroupedByKey().filter(([, tasks]) => tasks.length > 1)
             .flatMap(([, tasks]) => tasks)
