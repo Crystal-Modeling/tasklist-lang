@@ -1,6 +1,6 @@
 import type * as ast from '../../../generated/ast'
 import type * as sem from '../../../../langium-model-server/semantic/model'
-import type { NewModel } from '../../../../langium-model-server/lms/model'
+import type { Creation } from '../../../../langium-model-server/lms/model'
 import { isDefinedObject } from '../../../../langium-model-server/utils/types'
 
 export interface Task {
@@ -19,14 +19,10 @@ export namespace Task {
         }
     }
 
-    export function isNew(obj: unknown): obj is NewModel<Task> {
+    export function isNew(obj: unknown): obj is Creation<Task> {
         return isDefinedObject(obj)
             && typeof obj.name === 'string'
             && typeof obj.content === 'string'
-    }
-
-    export function serialize(task: NewModel<Task>): string {
-        return `task ${task.name} "${task.content}"`
     }
 }
 

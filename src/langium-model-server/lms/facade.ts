@@ -10,7 +10,7 @@ import type { TypeGuard } from '../utils/types'
 import { UriConverter } from '../utils/uri-converter'
 import type { ExtendableLangiumDocument, Initialized } from '../workspace/documents'
 import { LmsDocument, LmsDocumentState } from '../workspace/documents'
-import type { NewModel } from './model'
+import type { Creation, CreationResponse } from './model'
 import { HighlightResponse } from './model'
 
 export interface LangiumModelServerFacade<SM> {
@@ -32,7 +32,7 @@ export interface LangiumModelServerFacade<SM> {
 
 export interface AddModelHandler<T extends SemanticIdentity = SemanticIdentity> {
     isApplicable(newModel: unknown): boolean
-    addModel(rootModelId: string, newModel: NewModel<T>, anchorModelId?: string): object | undefined
+    addModel(rootModelId: string, newModel: Creation<T>, anchorModelId?: string): MaybePromise<CreationResponse> | undefined
 }
 
 export abstract class AbstractLangiumModelServerFacade<SM extends SemanticIdentity, SemI extends IdentityIndex, D extends LmsDocument>

@@ -5,7 +5,7 @@ import type { SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { LangiumModelServerAddedServices, LmsServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
-import { Response, SemanticIdResponse } from './model'
+import { CreationFailureReason, Response, SemanticIdResponse } from './model'
 
 type Http2RequestHandler = (stream: http2.ServerHttp2Stream, unmatchedPath: PathContainer,
     headers: http2.IncomingHttpHeaders, flags: number) => Http2RequestHandler | void
@@ -76,8 +76,7 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
                 respondWithJson(stream, sourceModel, 200)
             }
         }
-        // FIXME: All the arguments are only here to work around Promise issue (invoking leaf handlers manually 😩)
-        const addModelHandler: Http2RequestHandler = (stream, unmatchedPath, headers, flags) => {
+        const addModelHandler: Http2RequestHandler = (stream, unmatchedPath, headers) => {
             const anchorModelId = unmatchedPath.matchPrefix(/^[^\/]+/)
             if (!anchorModelId) {
                 return notFoundHandler
@@ -92,16 +91,30 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
             }
             readRequestBody(stream).then(requestBody => {
                 if (!facadeHandler.isApplicable(requestBody)) {
-                    badRequestHandler(stream, unmatchedPath, headers, flags)
+                    respondWithJson(stream,
+                        Response.create(`${headers[':method']} ('${headers[':path']}') cannot be processed: incorrect request body`, 400))
                     return
                 }
-                const addedModel = facadeHandler.addModel(id, requestBody, anchorModelId)
-                if (!addedModel) {
+                const creationResponse = facadeHandler.addModel(id, requestBody, anchorModelId)
+                if (!creationResponse) {
                     respondWithJson(stream, Response.create(`Root model (document) for id '${id}' not found`, 404))
                     return
                 }
-                respondWithJson(stream, addedModel, 201)
-                return
+                if (isPromise(creationResponse)) {
+                    creationResponse.then(creation => {
+                        if (creation.created) {
+                            respondWithJson(stream, creation, 201)
+                        } else switch (creation.failureReason) {
+                            case CreationFailureReason.VALIDATION:
+                                respondWithJson(stream, creation, 400)
+                                break
+                            case CreationFailureReason.TEXT_EDIT:
+                                respondWithJson(stream, creation, 500)
+                                break
+                        }
+                    })
+                    return
+                }
             })
             return
         }
@@ -177,11 +190,6 @@ const notFoundHandler: Http2RequestHandler = (stream, unmatchedPath, header) => 
 const notImplementedMethodHandler: Http2RequestHandler = (stream, unmatchedPath, header) => {
     respondWithJson(stream,
         Response.create(`Path '${header[':path']}' is not implemented for method '${header[':method']}' (unmatched suffix '${unmatchedPath.suffix}')`, 501))
-}
-
-const badRequestHandler: Http2RequestHandler = (stream, _, header) => {
-    respondWithJson(stream,
-        Response.create(`${header[':method']} ('${header[':path']}') cannot be processed: probably due to incorrect request parameters`, 400))
 }
 
 function readRequestBody(stream: http2.ServerHttp2Stream): Promise<object> {

@@ -1,14 +1,14 @@
+import type { MaybePromise } from 'langium'
 import { ApplyWorkspaceEditRequest, TextEdit } from 'vscode-languageserver'
 import { AbstractLangiumModelServerFacade } from '../../../langium-model-server/lms/facade'
-import { NewModel } from '../../../langium-model-server/lms/model'
+import type { Creation } from '../../../langium-model-server/lms/model'
+import { CreationResponse } from '../../../langium-model-server/lms/model'
 import type { LangiumModelServerServices } from '../../../langium-model-server/services'
 import type { LmsDocument } from '../../../langium-model-server/workspace/documents'
-import * as identity from '../semantic/task-list-identity'
 import type { TaskListIdentityIndex } from '../semantic/task-list-identity-index'
 import type { TaskListDocument } from '../workspace/documents'
 import { isTaskListDocument } from '../workspace/documents'
 import { Model, Task, Transition } from './model'
-import { TransitionDerivativeName } from '../semantic/model'
 
 export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServerFacade<Model, TaskListIdentityIndex, TaskListDocument> {
 
@@ -24,45 +24,44 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         })
     }
 
-    public addTask(rootModelId: string, newTask: NewModel<Task>, anchorTaskId: string): Task | undefined {
+    public addTask(rootModelId: string, newTask: Creation<Task>, anchorTaskId: string): MaybePromise<CreationResponse> | undefined {
 
         const lmsDocument = this.getDocumentById(rootModelId)
         if (!lmsDocument) {
             return undefined
         }
 
-        const identityIndex = this.identityManager.getIdentityIndex(lmsDocument)
-        const taskIdentity = identity.Model.newTask(newTask.name)
-        identityIndex.addTask(taskIdentity)
-
         const anchorPosition = lmsDocument.semanticDomain.identifiedTasks.get(anchorTaskId)?.$cstNode?.range?.end
-        const serializedModel = Task.serialize(newTask)
+        const serializedModel = `task ${newTask.name} "${newTask.content}"`
 
         const textEdit = anchorPosition ? TextEdit.insert(anchorPosition, '\n' + serializedModel)
             : TextEdit.insert({ line: lmsDocument.textDocument.lineCount, character: 0 }, serializedModel)
-        this.connection.sendRequest(ApplyWorkspaceEditRequest.type,
-            { label: 'Create new task ' + newTask.name, edit: { changes: { [lmsDocument.textDocument.uri]: [textEdit] } } })
 
-        return NewModel.assignId(newTask, taskIdentity.id)
+        return this.connection.sendRequest(ApplyWorkspaceEditRequest.type,
+            { label: 'Create new task ' + newTask.name, edit: { changes: { [lmsDocument.textDocument.uri]: [textEdit] } } })
+            .then(editResult => editResult.applied
+                ? CreationResponse.created()
+                : CreationResponse.failedTextEdit(editResult.failureReason)
+            )
     }
 
-    public addTransition(rootModelId: string, newModel: NewModel<Transition>): Transition | undefined {
+    public addTransition(rootModelId: string, newModel: Creation<Transition>): MaybePromise<CreationResponse> | undefined {
 
         const lmsDocument = this.getDocumentById(rootModelId)
         if (!lmsDocument) {
             return undefined
         }
-
-        const identityIndex = this.identityManager.getIdentityIndex(lmsDocument)
-        const transitionIdentity = identity.Model.newTransition(TransitionDerivativeName.of(newModel.sourceTaskId, newModel.targetTaskId))
-        identityIndex.addTransition(transitionIdentity)
 
         const sourceTask = lmsDocument.semanticDomain.identifiedTasks.get(newModel.sourceTaskId)
         // HACK: You can only add transition for the target node, which is present in the *same* document
         const targetTask = lmsDocument.semanticDomain.identifiedTasks.get(newModel.targetTaskId)
-        // TODO: actually, it is different `undefined`, not because of the document is not found
+        const unresolvedTasks: string[] = []
+        if (!sourceTask)
+            unresolvedTasks.push('source Task by id ' + newModel.sourceTaskId)
+        if (!targetTask)
+            unresolvedTasks.push('target Task by id ' + newModel.targetTaskId)
         if (!sourceTask || !targetTask) {
-            return undefined
+            return CreationResponse.failedValidation('Unable to resolve: ' + unresolvedTasks.join(', '))
         }
 
         const anchorPosition = sourceTask.$cstNode?.range?.end
@@ -76,16 +75,16 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         const serializedModel = prefix + targetTask.name
 
         const textEdit = TextEdit.insert(anchorPosition, serializedModel)
-        this.connection.sendRequest(ApplyWorkspaceEditRequest.type,
+
+        return this.connection.sendRequest(ApplyWorkspaceEditRequest.type,
             {
                 label: 'Create new transition: ' + sourceTask.name + '->' + targetTask.name,
                 edit: { changes: { [lmsDocument.textDocument.uri]: [textEdit] } }
             }
-        ).then(workspaceEditResult => {
-            console.debug('Applied workspace edit', workspaceEditResult)
-        })
-
-        return NewModel.assignId(newModel, transitionIdentity.id)
+        ).then(editResult => editResult.applied
+            ? CreationResponse.created()
+            : CreationResponse.failedTextEdit(editResult.failureReason)
+        )
     }
 
     protected override convertSemanticModelToSourceModel(lmsDocument: LmsDocument): Model | undefined {
