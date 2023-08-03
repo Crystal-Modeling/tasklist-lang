@@ -1,4 +1,5 @@
 import type { MaybePromise } from 'langium'
+import type { Position } from 'vscode-languageserver'
 import { ApplyWorkspaceEditRequest, TextEdit } from 'vscode-languageserver'
 import { AbstractLangiumModelServerFacade } from '../../../langium-model-server/lms/facade'
 import type { Creation } from '../../../langium-model-server/lms/model'
@@ -24,18 +25,26 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         })
     }
 
-    public addTask(rootModelId: string, newTask: Creation<Task>, anchorTaskId: string): MaybePromise<CreationResponse> | undefined {
+    public addTask(rootModelId: string, newTask: Creation<Task>, anchorTaskId?: string): MaybePromise<CreationResponse> | undefined {
 
         const lmsDocument = this.getDocumentById(rootModelId)
         if (!lmsDocument) {
             return undefined
         }
 
-        const anchorPosition = lmsDocument.semanticDomain.identifiedTasks.get(anchorTaskId)?.$cstNode?.range?.end
-        const serializedModel = `task ${newTask.name} "${newTask.content}"`
+        let position: Position | undefined
+        if (anchorTaskId) {
+            const anchorModel = lmsDocument.semanticDomain.identifiedTasks.get(anchorTaskId)
+            if (anchorModel && anchorModel?.$cstNode) {
+                position = { line: anchorModel.$cstNode.range.end.line + 1, character: 0 }
+            }
+        }
+        if (!position) {
+            position = { line: lmsDocument.textDocument.lineCount - 1, character: 0 }
+        }
 
-        const textEdit = anchorPosition ? TextEdit.insert(anchorPosition, '\n' + serializedModel)
-            : TextEdit.insert({ line: lmsDocument.textDocument.lineCount, character: 0 }, serializedModel)
+        const serializedModel = `task ${newTask.name} "${newTask.content}"\n`
+        const textEdit = TextEdit.insert(position, serializedModel)
 
         return this.connection.sendRequest(ApplyWorkspaceEditRequest.type,
             { label: 'Create new task ' + newTask.name, edit: { changes: { [lmsDocument.textDocument.uri]: [textEdit] } } })
