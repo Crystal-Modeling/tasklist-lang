@@ -1,17 +1,18 @@
 import type { LangiumDocument } from 'langium'
 import { DocumentState, MultiMap, interruptAndCheck } from 'langium'
 import type { CancellationToken } from 'vscode-languageserver'
+import * as src from '../lms/model'
+import type { ModelUpdateCombiner } from '../lms/model-update-combiner'
+import type { LmsSubscriptions } from '../lms/subscriptions'
 import type * as id from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { IdentityManager } from '../semantic/identity-manager'
 import type { IdentityReconciler } from '../semantic/identity-reconciler'
 import type { SemanticDomainFactory } from '../semantic/semantic-domain'
 import type { LangiumModelServerServices } from '../services'
-import * as src from '../lms/model'
-import type { LmsSubscriptions } from '../lms/subscriptions'
-import type { ModelUpdateCombiner } from '../lms/model-update-combiner'
 import type { TypeGuard } from '../utils/types'
-import { LmsDocumentState, type ExtendableLangiumDocument, type LmsDocument } from './documents'
+import type { Initialized} from './documents'
+import { LmsDocument, LmsDocumentState, type ExtendableLangiumDocument } from './documents'
 
 export interface LmsDocumentBuilder {
 
@@ -59,11 +60,12 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
 
     protected async reconcileIdentity(documents: LangiumDocument[], cancelToken: CancellationToken) {
         console.debug('====== IDENTITY RECONCILIATION PHASE ======')
-        const newUpdatesForLmsDocuments: Map<D, src.Update<SM>> = new Map()
+        const newUpdatesForLmsDocuments: Map<Initialized<D>, src.Update<SM>> = new Map()
         for (const document of documents) {
             const semanticId = this.identityManager.getIdentityIndex(document).id
             const lmsDocument: ExtendableLangiumDocument = document
-            if (this.isLmsDocument(lmsDocument)) {
+            // NOTE: Actually, all LMS Documents are initialized during `initializeSemanticDomain` phase
+            if (this.isLmsDocument(lmsDocument) && LmsDocument.isInitialized(lmsDocument)) {
                 newUpdatesForLmsDocuments.set(lmsDocument, src.Update.createEmpty<SM>(semanticId))
             }
         }

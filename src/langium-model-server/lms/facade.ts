@@ -7,7 +7,7 @@ import type { IdentityIndex } from '../semantic/identity-index'
 import type { IdentityManager } from '../semantic/identity-manager'
 import type { LangiumModelServerServices } from '../services'
 import { UriConverter } from '../utils/uri-converter'
-import type { InitializedLmsDocument } from '../workspace/documents'
+import type { Initialized } from '../workspace/documents'
 import { LmsDocument, LmsDocumentState } from '../workspace/documents'
 import type { NewModel } from './model'
 import { HighlightResponse } from './model'
@@ -99,7 +99,7 @@ implements LangiumModelServerFacade<SM> {
 
     protected abstract convertSemanticModelToSourceModel(lmsDocument: LmsDocument): SM | undefined
 
-    protected getDocumentById(id: string): InitializedLmsDocument | undefined {
+    protected getDocumentById(id: string): Initialized<LmsDocument> | undefined {
         const documentUri = this.semanticIndexManager.getLanguageDocumentUri(id)
         // Not sure shouldn't I *create* LangiumDocument if it is not built yet (i.e., if the file has not been loaded)
         if (!documentUri || !this.langiumDocuments.hasDocument(documentUri)) {

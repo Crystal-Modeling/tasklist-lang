@@ -14,12 +14,12 @@ export type LmsDocument<T extends AstNode = AstNode> = ExtendableLangiumDocument
 }
 
 export namespace LmsDocument {
-    export function isInitialized<T extends AstNode>(lmsDocument: LmsDocument<T>): lmsDocument is InitializedLmsDocument<T> {
+    export function isInitialized<T extends AstNode>(lmsDocument: LmsDocument<T>): lmsDocument is Initialized<LmsDocument<T>> {
         return lmsDocument.semanticDomain !== undefined
     }
 }
 
-export type InitializedLmsDocument<T extends AstNode = AstNode> = LmsDocument<T> & Required<SemanticAwareDocument>
+export type Initialized<T extends LmsDocument> = T & Required<SemanticAwareDocument>
 
 export type SemanticAwareDocument = {
     /**
