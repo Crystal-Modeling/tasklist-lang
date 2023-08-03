@@ -60,7 +60,7 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
                 if (taskIdentity) {
                     existingUnmappedTasks.delete(task.name)
                 } else {
-                    taskIdentity = Model.newTask(task)
+                    taskIdentity = Model.newTask(task.name)
                     identityIndex.addTask(taskIdentity)
                 }
                 semanticDomain.identifyTask(task, taskIdentity.id)
@@ -87,7 +87,7 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
                 if (transitionIdentity) {
                     existingUnmappedTransitions.delete(transition.name)
                 } else {
-                    transitionIdentity = Model.newTransition(transition)
+                    transitionIdentity = Model.newTransition(transition.name)
                     identityIndex.addTransition(transitionIdentity)
                 }
                 semanticDomain.identifyTransition(transition, transitionIdentity.id)

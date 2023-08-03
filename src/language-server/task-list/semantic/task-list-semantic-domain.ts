@@ -7,8 +7,8 @@ import type * as ast from '../../generated/ast'
 import { Transition } from './model'
 
 export interface QueriableTaskListSemanticDomain {
-    getIdentifiedTasks(): Iterable<Identified<ast.Task>>
-    getIdentifiedTransitions(): Iterable<Identified<Transition>>
+    readonly identifiedTasks: ReadonlyMap<string, Identified<ast.Task>>
+    readonly identifiedTransitions: ReadonlyMap<string, Identified<Transition>>
     getPreviousIdentifiedTask(id: string): Identified<ast.Task> | undefined
     getPreviousIdentifiedTransition(id: string): Identified<Transition> | undefined
 }
@@ -98,7 +98,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
     }
 
     public getValidTransitions(): Stream<Transition> {
-        return stream(this.getIdentifiedTasks())
+        return stream(this.identifiedTasks.values())
             .flatMap(this.getValidTransitionsForSourceTask.bind(this))
     }
 
@@ -123,12 +123,12 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         return this._identifiedRootNode
     }
 
-    public getIdentifiedTasks(): Iterable<Identified<ast.Task>> {
-        return this._identifiedTasksById.values()
+    public get identifiedTasks(): ReadonlyMap<string, Identified<ast.Task>> {
+        return this._identifiedTasksById
     }
 
-    public getIdentifiedTransitions(): Iterable<Identified<Transition>> {
-        return this._identifiedTransitionsById.values()
+    public get identifiedTransitions(): ReadonlyMap<string, Identified<Transition>> {
+        return this._identifiedTransitionsById
     }
 
     public getPreviousIdentifiedTask(id: string): Identified<ast.Task> | undefined {

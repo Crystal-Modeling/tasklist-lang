@@ -1,10 +1,11 @@
 import * as http2 from 'http2'
+import { promisify } from 'util'
+import { isPromise } from 'util/types'
 import type { SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { LangiumModelServerAddedServices, LmsServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
 import { Response, SemanticIdResponse } from './model'
-import { isPromise } from 'util/types'
 
 type Http2RequestHandler = (stream: http2.ServerHttp2Stream, unmatchedPath: PathContainer,
     headers: http2.IncomingHttpHeaders, flags: number) => Http2RequestHandler | void
@@ -67,6 +68,37 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
                 respondWithJson(stream, sourceModel, 200)
             }
         }
+        // FIXME: All the arguments are only here to work around Promise issue (invoking leaf handlers manually 😩)
+        const addModelHandler: Http2RequestHandler = (stream, unmatchedPath, headers, flags) => {
+            const anchorModelId = unmatchedPath.matchPrefix(/^[^\/]+/)
+            if (!anchorModelId) {
+                return notFoundHandler
+            }
+            const uriSegment = unmatchedPath.matchPrefix(/^\/[^\/]+/)
+            if (!uriSegment) {
+                return notFoundHandler
+            }
+            const facadeHandler = langiumModelServerFacade.addModelHandlersByUriSegment.get(uriSegment)
+            if (!facadeHandler) {
+                return notImplementedMethodHandler
+            }
+            readRequestBody(stream).then(requestBody => {
+                if (!facadeHandler.isApplicable(requestBody)) {
+                    badRequestHandler(stream, unmatchedPath, headers, flags)
+                    return
+                }
+                // TODO: Elaborate more here on different cases. Return something meaningful instead of `undefined`
+                const addedModel = facadeHandler.addModel(id, anchorModelId, requestBody)
+                if (!addedModel) {
+                    serverErrorHandler(stream, unmatchedPath, headers, flags)
+                    return
+                }
+                respondWithJson(stream, addedModel, 201)
+                return
+            })
+            return
+        }
+
         const subscribeToModelChangesHandler: Http2RequestHandler = (stream) => {
             console.debug(`Subscribing to the model by id '${id}'`)
             lmsSubscriptions.addSubscription(stream, id)
@@ -103,6 +135,12 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
         }
         if (method === 'GET')
             return getModelHandler
+        if (unmatchedPath.matchPrefix('/') && method === 'POST') {
+            // NOTE: Since in the future models (and their APIs) will be generated, they cannot be named as:
+            //   1. Subscription
+            //   2. Highlight (?)
+            return addModelHandler
+        }
         return notImplementedMethodHandler
     }
     const getModelIdHandler: Http2RequestHandler = (stream, unmatchedPath) => {
@@ -137,9 +175,31 @@ const notImplementedMethodHandler: Http2RequestHandler = (stream, unmatchedPath,
         Response.create(`Path '${header[':path']}' is not implemented for method '${header[':method']}' (unmatched suffix '${unmatchedPath.suffix}')`, 501))
 }
 
+const badRequestHandler: Http2RequestHandler = (stream, _, header) => {
+    respondWithJson(stream,
+        Response.create(`${header[':method']} ('${header[':path']}') cannot be processed: probably due to incorrect request parameters`, 400))
+}
+
 const serverErrorHandler: Http2RequestHandler = (stream) => {
     respondWithJson(stream,
         Response.create('Unexpected server error', 500))
+}
+
+function readRequestBody(stream: http2.ServerHttp2Stream): Promise<object> {
+    const buffers: Array<Buffer | string> = []
+
+    stream.on('data', chunk => {
+        buffers.push(chunk)
+    })
+
+    return promisify(stream.once.bind(stream))('end')
+        .then(() => {
+            const joined = buffers.join()
+            console.debug('The stream ended. Joined first buffer', joined)
+            const parsed = JSON.parse(joined)
+            console.debug('Parsed response body', parsed)
+            return parsed
+        })
 }
 
 function respondWithJson(stream: http2.ServerHttp2Stream, response: Response): void

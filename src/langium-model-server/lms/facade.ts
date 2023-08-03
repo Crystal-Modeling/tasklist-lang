@@ -8,9 +8,13 @@ import type { IdentityManager } from '../semantic/identity-manager'
 import type { LangiumModelServerServices } from '../services'
 import { UriConverter } from '../utils/uri-converter'
 import { LmsDocumentState, type LmsDocument } from '../workspace/documents'
+import type { NewModel } from './model'
 import { HighlightResponse } from './model'
 
 export interface LangiumModelServerFacade<SM> {
+
+    readonly addModelHandlersByUriSegment: ReadonlyMap<string, AddModelHandler>
+
     getById(id: string): SM | undefined
     /**
      * @returns `undefined` if unexpected error happened during showing code (opening document and highligting some range)
@@ -24,6 +28,11 @@ export interface LangiumModelServerFacade<SM> {
     getSemanticId(sourceUri: string): string | undefined
 }
 
+export interface AddModelHandler<T extends SemanticIdentity = SemanticIdentity> {
+    isApplicable(newModel: unknown): boolean
+    addModel(rootModelId: string, anchorModelId: string, newModel: NewModel<T>): object | undefined
+}
+
 export abstract class AbstractLangiumModelServerFacade<SM extends SemanticIdentity, SemI extends IdentityIndex, D extends LmsDocument>
 implements LangiumModelServerFacade<SM> {
 
@@ -31,6 +40,8 @@ implements LangiumModelServerFacade<SM> {
     protected langiumDocuments: LangiumDocuments
     protected languageMetadata: LanguageMetaData
     protected readonly connection: Connection | undefined
+
+    readonly addModelHandlersByUriSegment: Map<string, AddModelHandler> = new Map()
 
     constructor(services: LangiumModelServerServices<SM, SemI, D>) {
         this.semanticIndexManager = services.semantic.IdentityManager
@@ -85,7 +96,7 @@ implements LangiumModelServerFacade<SM> {
 
     protected abstract convertSemanticModelToSourceModel(lmsDocument: LmsDocument): SM | undefined
 
-    private getDocumentById(id: string): LmsDocument | undefined {
+    protected getDocumentById(id: string): LmsDocument | undefined {
         const documentUri = this.semanticIndexManager.getLanguageDocumentUri(id)
         // Not sure shouldn't I *create* LangiumDocument if it is not built yet (i.e., if the file has not been loaded)
         if (!documentUri || !this.langiumDocuments.hasDocument(documentUri)) {

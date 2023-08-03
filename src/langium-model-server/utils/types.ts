@@ -6,6 +6,7 @@
  * Utility type to describe typeguard functions.
  */
 export type TypeGuard<T extends O, O=any> = (element: O) => element is T
+export type OmitProperties<T extends K, K> = Omit<T, keyof K>
 export type ExcludeExisting<T extends keyof any, K extends T> = Exclude<T, K>
 export type Override<T, K extends (keyof T), O> = Omit<T, K> & {
     [P in K]: O

@@ -1,8 +1,6 @@
 import * as uuid from 'uuid'
-import type * as sem from '../../../langium-model-server/semantic/model'
-import type * as semantic from './model'
 import { isArray, isDefinedObject } from '../../../langium-model-server/utils/types'
-import type * as ast from '../../generated/ast'
+import type * as semantic from './model'
 
 export interface Model {
     id: string
@@ -56,18 +54,18 @@ export namespace Model {
         }
     }
 
-    export function newTask(task: sem.Valid<ast.Task>): Task {
+    export function newTask(name: string): Task {
         return {
             id: uuid.v4(),
-            name: task.name
+            name
         }
     }
 
-    export function newTransition(transition: semantic.Transition): Transition {
+    export function newTransition(name: semantic.TransitionDerivativeName): Transition {
         return {
             id: uuid.v4(),
-            sourceTaskId: transition.name[0],
-            targetTaskId: transition.name[1]
+            sourceTaskId: name[0],
+            targetTaskId: name[1]
         }
     }
 }

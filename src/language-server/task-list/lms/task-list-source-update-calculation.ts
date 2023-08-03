@@ -38,7 +38,7 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
     private readonly _transitionsMarkedForDeletion: Map<string, sem.Identified<semantic.Transition> | identity.Transition> = new Map()
 
     public calculateTasksUpdate(identitiesToDelete: Iterable<identity.Task>): ReadonlyArrayUpdate<Task> {
-        const existingTasks = this.semanticDomain.getIdentifiedTasks()
+        const existingTasks = this.semanticDomain.identifiedTasks.values()
         const updates = Array.from(existingTasks, task => this.compareTaskWithExistingBefore(task))
         const deletion: ReadonlyArrayUpdate<Task> = deleteModels(
             this._tasksMarkedForDeletion,
@@ -50,7 +50,7 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
     }
 
     public calculateTransitionsUpdate(identitiesToDelete: Iterable<identity.Transition>): ReadonlyArrayUpdate<Transition> {
-        const existingTransitions = this.semanticDomain.getIdentifiedTransitions()
+        const existingTransitions = this.semanticDomain.identifiedTransitions.values()
         const updates = Array.from(existingTransitions, transition => this.compareTransitionWithExistingBefore(transition))
         const deletion: ReadonlyArrayUpdate<Transition> = deleteModels(
             this._transitionsMarkedForDeletion,

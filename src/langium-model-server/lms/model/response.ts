@@ -7,9 +7,11 @@ export interface Response {
 
 export namespace Response {
 
-    export function create(message: string, code: 404 | 501 | 201 | 200 | 500): Response {
+    export function create(message: string, code: 400 | 404 | 501 | 201 | 200 | 500): Response {
         let type: string
         switch (code) {
+            case 400: type = 'BAD_REQUEST'
+                break
             case 404: type = 'NOT_FOUND'
                 break
             case 501: type = 'NOT_IMPLEMENTED'

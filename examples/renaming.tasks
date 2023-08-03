@@ -1,4 +1,3 @@
 task ga "Welcome, friends" -> aga, nextTask
 task aga "Welcome, friends" -> nextTask
 task nextTask "Task content"
-
