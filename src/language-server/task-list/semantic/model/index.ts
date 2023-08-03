@@ -41,6 +41,9 @@ export namespace Transition {
                 name,
                 sourceTask,
                 targetTask: reference.ref,
+                $container: sourceTask,
+                $containerIndex: referenceIndex,
+                $containerProperty: 'references',
                 get $cstNode() {
                     return findNodeForProperty(sourceTask.$cstNode, 'references', referenceIndex)
                 }
