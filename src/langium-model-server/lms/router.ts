@@ -5,8 +5,8 @@ import type { SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { LangiumModelServerAddedServices, LmsServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
-import type { CreationParams} from './model'
-import { EditingFailureReason, Response, SemanticIdResponse } from './model'
+import type { CreationParams } from './model'
+import { EditingFailureReason, Modification, Response, SemanticIdResponse } from './model'
 
 type Http2RequestHandler = (stream: http2.ServerHttp2Stream, unmatchedPath: PathContainer,
     headers: http2.IncomingHttpHeaders, flags: number) => Http2RequestHandler | void
@@ -101,7 +101,8 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
                 if (isPromise(result)) {
                     result.then(res => {
                         if (res.successful) {
-                            respondWithJson(stream, res, 201)
+                            if (res.modified) respondWithJson(stream, res, 201)
+                            else respondWithJson(stream, res, 200)
                         } else switch (res.failureReason) {
                             case EditingFailureReason.VALIDATION:
                                 respondWithJson(stream, res, 400)
@@ -114,6 +115,81 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
                     return
                 }
             })
+            return
+        }
+        const updateModelHandler: Http2RequestHandler = (stream, unmatchedPath, headers) => {
+            const uriSegment = unmatchedPath.matchPrefix(/^\/[^\/]+/)
+            if (!uriSegment) {
+                return notFoundHandler
+            }
+            const updateModel = langiumModelServerFacade.updateModelHandlersByUriSegment.get(uriSegment)
+            if (!updateModel) {
+                return notImplementedMethodHandler
+            }
+            readRequestBody(stream).then(requestBody => {
+                if (!Modification.is(requestBody)) {
+                    respondWithJson(stream,
+                        Response.create(`${headers[':method']} ('${headers[':path']}') cannot be processed: incorrect request body`, 400))
+                    return
+                }
+                const result = updateModel(id, requestBody)
+                if (!result) {
+                    respondWithJson(stream, Response.create(`Root model (document) for id '${id}' not found`, 404))
+                    return
+                }
+                if (isPromise(result)) {
+                    result.then(res => {
+                        if (res.successful) {
+                            if (res.modified) respondWithJson(stream, res, 200)
+                            else respondWithJson(stream, res, 200)
+                        } else switch (res.failureReason) {
+                            case EditingFailureReason.VALIDATION:
+                                respondWithJson(stream, res, 400)
+                                break
+                            case EditingFailureReason.TEXT_EDIT:
+                                respondWithJson(stream, res, 500)
+                                break
+                        }
+                    })
+                    return
+                }
+            })
+            return
+        }
+        const deleteModelHandler: Http2RequestHandler = (stream, unmatchedPath) => {
+            const uriSegment = unmatchedPath.matchPrefix(/^\/[^\/]+/)
+            if (!uriSegment) {
+                return notFoundHandler
+            }
+            const deleteModel = langiumModelServerFacade.deleteModelHandlersByUriSegment.get(uriSegment)
+            if (!deleteModel) {
+                return notImplementedMethodHandler
+            }
+            const modelId = unmatchedPath.matchPrefix(/^\/[^\/]/)?.slice(1)
+            if (!modelId) {
+                return notFoundHandler
+            }
+            const result = deleteModel(id, modelId)
+            if (!result) {
+                respondWithJson(stream, Response.create(`Model for rootId '${id}' and id '${modelId}' not found`, 404))
+                return
+            }
+            if (isPromise(result)) {
+                result.then(res => {
+                    if (res.successful) {
+                        if (res.modified) respondWithJson(stream, res, 204)
+                        else respondWithJson(stream, res, 404)
+                    } else switch (res.failureReason) {
+                        case EditingFailureReason.VALIDATION:
+                            respondWithJson(stream, res, 400)
+                            break
+                        case EditingFailureReason.TEXT_EDIT:
+                            respondWithJson(stream, res, 500)
+                            break
+                    }
+                })
+                return
+            }
             return
         }
 
@@ -155,6 +231,12 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
             //   1. Subscription
             //   2. Highlight (?)
             return addModelHandler
+        }
+        if (method === 'PUT') {
+            return updateModelHandler
+        }
+        if (method === 'DELETE') {
+            return deleteModelHandler
         }
         return notImplementedMethodHandler
     }

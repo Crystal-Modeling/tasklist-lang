@@ -10,12 +10,14 @@ import type { TypeGuard } from '../utils/types'
 import { UriConverter } from '../utils/uri-converter'
 import type { ExtendableLangiumDocument, Initialized } from '../workspace/documents'
 import { LmsDocument, LmsDocumentState } from '../workspace/documents'
-import type { Creation, CreationParams, EditingResult } from './model'
+import type { Creation, CreationParams, EditingResult, Modification } from './model'
 import { HighlightResponse } from './model'
 
 export interface LangiumModelServerFacade<SM> {
 
     readonly addModelHandlersByUriSegment: ReadonlyMap<string, AddModelHandler>
+    readonly updateModelHandlersByUriSegment: ReadonlyMap<string, UpdateModelHandler>
+    readonly deleteModelHandlersByUriSegment: ReadonlyMap<string, DeleteModelHandler>
 
     getById(id: string): SM | undefined
     /**
@@ -31,9 +33,14 @@ export interface LangiumModelServerFacade<SM> {
 }
 
 export interface AddModelHandler<T extends SemanticIdentity = SemanticIdentity> {
-    isApplicable(newModel: unknown): boolean
+    isApplicable(modelCreation: unknown): boolean
     addModel(rootModelId: string, newModel: Creation<T>, creationParams: CreationParams): MaybePromise<EditingResult> | undefined
 }
+
+export type UpdateModelHandler<T extends SemanticIdentity = SemanticIdentity> =
+    (rootModelId: string, modelUpdate: Modification<T>) => MaybePromise<EditingResult> | undefined
+
+export type DeleteModelHandler = (rootModelId: string, modelId: string) => MaybePromise<EditingResult> | undefined
 
 export abstract class AbstractLangiumModelServerFacade<SM extends SemanticIdentity, SemI extends IdentityIndex, D extends LmsDocument>
 implements LangiumModelServerFacade<SM> {
@@ -45,6 +52,8 @@ implements LangiumModelServerFacade<SM> {
     protected readonly connection: Connection
 
     readonly addModelHandlersByUriSegment: Map<string, AddModelHandler> = new Map()
+    readonly updateModelHandlersByUriSegment: Map<string, UpdateModelHandler> = new Map()
+    readonly deleteModelHandlersByUriSegment: Map<string, DeleteModelHandler> = new Map()
 
     constructor(services: LangiumModelServerServices<SM, SemI, D>) {
         this.identityManager = services.semantic.IdentityManager

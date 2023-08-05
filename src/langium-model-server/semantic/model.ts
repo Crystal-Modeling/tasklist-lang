@@ -16,10 +16,14 @@ export namespace Identified {
 }
 
 export interface ArtificialAstNode {
-    readonly $container: AstNode | ArtificialAstNode;
-    readonly $containerProperty: string;
-    readonly $containerIndex: number;
+    readonly $container: AstNode | ArtificialAstNode
+    readonly $containerProperty: string
+    readonly $containerIndex?: number
     readonly $cstNode?: CstNode
+}
+
+export type ArtificialIndexedAstNode = ArtificialAstNode & {
+    readonly $containerIndex: number
 }
 
 export type AstRootNode = Valid<AstNode> & {

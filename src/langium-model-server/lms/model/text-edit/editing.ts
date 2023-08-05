@@ -1,7 +1,11 @@
 
 export namespace EditingResult {
     export function successful(): EditingResult {
-        return { successful: true }
+        return { successful: true, modified: true }
+    }
+
+    export function unmodified(): EditingResult {
+        return { successful: true, modified: false }
     }
 
     export function failedValidation(validationError: string): EditingResult {
@@ -13,7 +17,10 @@ export namespace EditingResult {
     }
 }
 
-export type EditingResult = { successful: true } | {
+export type EditingResult = {
+    successful: true,
+    modified: boolean
+} | {
     successful: false
     failureReason: EditingFailureReason,
     failureMessage?: string
