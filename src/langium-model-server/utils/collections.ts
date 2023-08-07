@@ -41,6 +41,16 @@ export class ValueBasedMap<K extends string[], V> {
 
 }
 
+export function equals<K extends string[]>(right: K, left: K): boolean {
+    if (right === left) return true
+    if (right.length !== left.length) return false
+    const len = right.length
+    for (let i = 0; i < len; i++) {
+        if (right[i] !== left[i]) return false
+    }
+    return true
+}
+
 function stringifyKey(key: string[]): string {
     return key.join('|')
 }

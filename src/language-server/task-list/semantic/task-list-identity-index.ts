@@ -1,8 +1,9 @@
 import type { RenameableSemanticIdentity } from '../../../langium-model-server/semantic/identity'
 import type { IdentityIndex } from '../../../langium-model-server/semantic/identity-index'
-import { ValueBasedMap } from '../../../langium-model-server/utils/collections'
+import { ValueBasedMap, equals } from '../../../langium-model-server/utils/collections'
 import type * as semantic from './model'
-import type { Model, Task, Transition } from './task-list-identity'
+import type { Model, Task, TaskListDerivativeNameBuilder} from './task-list-identity'
+import { Transition } from './task-list-identity'
 
 export abstract class TaskListIdentityIndex implements IdentityIndex {
     public readonly id: string
@@ -34,28 +35,52 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         }
     }
 
-    public getTaskIdByName(name: string): string | undefined {
-        return this._tasksByName.get(name)?.id
-    }
-
-    public findElementByName(name: string): RenameableSemanticIdentity | undefined {
-        const semanticTask = this._tasksByName.get(name)
-        if (semanticTask) {
+    public findElementByName(name: string): RenameableSemanticIdentity<string> | undefined {
+        const taskIdentity = this._tasksByName.get(name)
+        if (taskIdentity) {
             const index = this
             return {
-                id: semanticTask.id,
+                id: taskIdentity.id,
                 get name(): string {
-                    return semanticTask.name
+                    return taskIdentity.name
                 },
                 updateName(newName): boolean {
-                    if (semanticTask.name !== newName) {
-                        if (index._tasksByName.delete(semanticTask.name))
-                            index._tasksByName.set(newName, semanticTask)
-                        semanticTask.name = newName
+                    if (taskIdentity.name !== newName) {
+                        if (index._tasksByName.delete(taskIdentity.name))
+                            index._tasksByName.set(newName, taskIdentity)
+                        taskIdentity.name = newName
                         return true
                     }
                     return false
                 },
+            }
+        }
+        return undefined
+    }
+
+    // NOTE: Looking for a derived element, but since it is used by lang-specific component (task-list-facade), `Transition` name is specific (not `DerivedElement`)
+    // NOTE: No, it should rather be a generic component, since it has to be **renameable**. I can use TypeGuard to specify which kind of `DerivedElement` I want
+    public findDerivedElementById(id: string, nameBuilder: TaskListDerivativeNameBuilder): RenameableSemanticIdentity<ReturnType<TaskListDerivativeNameBuilder['buildName']>> | undefined {
+        if (nameBuilder.kind === Transition.KIND) {
+            const transitionIdentity = this._transitionsById.get(id)
+            if (transitionIdentity) {
+                const index = this
+                let name = nameBuilder.buildName(transitionIdentity)
+                return {
+                    id: transitionIdentity.id,
+                    get name() {
+                        return name
+                    },
+                    updateName(newName): boolean {
+                        if (!equals(name, newName)) {
+                            if (index._transitionsByName.delete(name))
+                                index._transitionsByName.set(newName, transitionIdentity)
+                            name = newName
+                            return true
+                        }
+                        return false
+                    },
+                }
             }
         }
         return undefined

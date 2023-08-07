@@ -5,11 +5,13 @@ import { ApplyWorkspaceEditRequest, TextEdit } from 'vscode-languageserver'
 import { AbstractLangiumModelServerFacade } from '../../../langium-model-server/lms/facade'
 import type { Creation, CreationParams, Modification } from '../../../langium-model-server/lms/model'
 import { EditingResult } from '../../../langium-model-server/lms/model'
+import type { LmsSubscriptions } from '../../../langium-model-server/lms/subscriptions'
 import * as id from '../../../langium-model-server/semantic/model'
 import type { LangiumModelServerServices } from '../../../langium-model-server/services'
 import type { LmsDocument } from '../../../langium-model-server/workspace/documents'
 import * as ast from '../../generated/ast'
 import * as semantic from '../semantic/model'
+import * as lms from '../../../langium-model-server/lms/model'
 import type { TaskListIdentityIndex } from '../semantic/task-list-identity-index'
 import type { TaskListDocument } from '../workspace/documents'
 import { isTaskListDocument } from '../workspace/documents'
@@ -19,11 +21,13 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
 
     private readonly references: References
     private readonly astNodeLocator: AstNodeLocator
+    private readonly lmsSubscriptions: LmsSubscriptions
 
     constructor(services: LangiumModelServerServices<Model, TaskListIdentityIndex, TaskListDocument>) {
         super(services)
         this.references = services.references.References
         this.astNodeLocator = services.workspace.AstNodeLocator
+        this.lmsSubscriptions = services.lms.LmsSubscriptions
 
         this.addModelHandlersByUriSegment.set('/tasks', {
             isApplicable: Task.isNew,
@@ -105,53 +109,62 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         }
     }
 
-    // public renameTransition(rootModelId: string, transitionModification: Modification<Transition>): MaybePromise<EditingResult> | undefined {
+    public updateTransition(rootModelId: string, transitionModification: Modification<Transition>): MaybePromise<EditingResult> | undefined {
 
-    //     const lmsDocument = this.getDocumentById(rootModelId)
-    //     if (!lmsDocument) {
-    //         return undefined
-    //     }
-    //     const transition = lmsDocument.semanticDomain.identifiedTransitions.get(transitionModification.id)
-    //     if (!transition) {
-    //         return EditingResult.failedValidation('Unable to resolve transition by id ' + transitionModification.id)
-    //     }
-    //     let newSourceTask: id.Identified<ast.Task> | undefined
-    //     let newTargetTask: id.Identified<ast.Task> | undefined
+        const lmsDocument = this.getDocumentById(rootModelId)
+        if (!lmsDocument) {
+            return undefined
+        }
+        const transition = lmsDocument.semanticDomain.identifiedTransitions.get(transitionModification.id)
+        if (!transition) {
+            return EditingResult.failedValidation('Unable to resolve transition by id ' + transitionModification.id)
+        }
+        let newSourceTask: id.Identified<ast.Task> | undefined
+        let newTargetTask: id.Identified<ast.Task> | undefined
 
-    //     // You can only update transition for the source and target node, that are present in the *same* document
-    //     if (transitionModification.sourceTaskId)
-    //         newSourceTask = lmsDocument.semanticDomain.identifiedTasks.get(transitionModification.sourceTaskId)
-    //     if (transitionModification.targetTaskId)
-    //         newTargetTask = lmsDocument.semanticDomain.identifiedTasks.get(transitionModification.targetTaskId)
-    //     const unresolvedTasks: string[] = []
-    //     if (transitionModification.sourceTaskId && !newSourceTask)
-    //         unresolvedTasks.push('new source Task by id ' + transitionModification.sourceTaskId)
-    //     if (transitionModification.targetTaskId && !newTargetTask)
-    //         unresolvedTasks.push('new target Task by id ' + transitionModification.targetTaskId)
-    //     if (unresolvedTasks.length > 0) {
-    //         return EditingResult.failedValidation('Unable to resolve: ' + unresolvedTasks.join(', '))
-    //     }
+        // You can only update transition for the source and target node, that are present in the *same* document
+        if (transitionModification.sourceTaskId)
+            newSourceTask = lmsDocument.semanticDomain.identifiedTasks.get(transitionModification.sourceTaskId)
+        if (transitionModification.targetTaskId)
+            newTargetTask = lmsDocument.semanticDomain.identifiedTasks.get(transitionModification.targetTaskId)
+        const unresolvedTasks: string[] = []
+        if (transitionModification.sourceTaskId && !newSourceTask)
+            unresolvedTasks.push('new source Task by id ' + transitionModification.sourceTaskId)
+        if (transitionModification.targetTaskId && !newTargetTask)
+            unresolvedTasks.push('new target Task by id ' + transitionModification.targetTaskId)
+        if (unresolvedTasks.length > 0) {
+            return EditingResult.failedValidation('Unable to resolve: ' + unresolvedTasks.join(', '))
+        }
 
-    //     if (!transition.$cstNode) {
-    //         throw new Error('Cannot locate model ' + transition.name + '(' + transition.id + ') in text')
-    //     }
-    //     const newTransition = semantic.Transition.createNew(newSourceTask ?? transition.sourceTask, newTargetTask ?? transition.targetTask)
-    //     const changes: TextEdit[] = []
-    //     if (newTransition.sourceTask !== transition.sourceTask) {
-    //         changes.push(this.computeTransitionDeletion(transition))
-    //         changes.push(this.computeTransitionCreation(newTransition))
-    //     } else if (newTransition.targetTask !== transition.targetTask) {
-    //         const serializedModel = newTransition.targetTask.name
-    //         changes.push(TextEdit.replace(transition.$cstNode.range, serializedModel))
-    //     }
+        if (!transition.$cstNode) {
+            throw new Error('Cannot locate model ' + transition.name + '(' + transition.id + ') in text')
+        }
+        const newTransition = semantic.Transition.createNew(newSourceTask ?? transition.sourceTask, newTargetTask ?? transition.targetTask)
+        const changes: TextEdit[] = []
+        if (newTransition.sourceTask !== transition.sourceTask) {
+            changes.push(this.computeTransitionDeletion(transition))
+            changes.push(this.computeTransitionCreation(newTransition))
+        } else if (newTransition.targetTask !== transition.targetTask) {
+            const serializedModel = newTransition.targetTask.name
+            changes.push(TextEdit.replace(transition.$cstNode.range, serializedModel))
+        }
 
-    //     if (changes.length > 0) {
-    //         return this.applyWorkspaceEdit({ changes: { [lmsDocument.textDocument.uri]: changes } },
-    //             'Renamed transition: ' + transition.name + 'to ' + newTransition.name)
-    //     } else {
-    //         return EditingResult.unmodified()
-    //     }
-    // }
+        if (changes.length > 0) {
+            console.debug('Modified Transition attributes. New transition', newTransition)
+            const update = lms.Update.createEmpty<Transition>(transition.id)
+            // TODO: Create overloading of this function with non-nullable props (since ID is assigned manually, and I can be sure it is never undefined if present)
+            lms.Update.assignIfUpdated(update, 'sourceTaskId', transition.sourceTask.id, newTransition.sourceTask.id, transition.sourceTask.id)
+            lms.Update.assignIfUpdated(update, 'targetTaskId', transition.targetTask.id, newTransition.targetTask.id, transition.targetTask.id)
+            // FIXME TODO: Now don't forget to update the identity in a corresponding IdentityIndex
+            const identityIndex = this.identityManager.getIdentityIndex(lmsDocument)
+            identityIndex.findElementByName
+            this.lmsSubscriptions.getSubscription(rootModelId)?.pushUpdate(update)
+            return this.applyWorkspaceEdit({ changes: { [lmsDocument.textDocument.uri]: changes } },
+                'Updated transition: ' + transition.name + 'to ' + newTransition.name)
+        } else {
+            return EditingResult.unmodified()
+        }
+    }
 
     public deleteTask(rootModelId: string, taskId: string): MaybePromise<EditingResult> | undefined {
 

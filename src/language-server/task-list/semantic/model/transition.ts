@@ -3,6 +3,7 @@ import * as sem from '../../../../langium-model-server/semantic/model'
 import { isDefined } from '../../../../langium-model-server/utils/predicates'
 import type * as ast from '../../../generated/ast'
 
+// TODO: Move this into the identity file, since DerivativeName is computed in Identity scope
 export type TransitionDerivativeName = [sourceTaskId: string, targetTaskId: string]
 
 export namespace TransitionDerivativeName {

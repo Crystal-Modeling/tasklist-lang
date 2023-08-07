@@ -1,6 +1,7 @@
 import * as uuid from 'uuid'
+import type { DerivativeNameBuilder } from '../../../langium-model-server/semantic/identity'
 import { isArray, isDefinedObject } from '../../../langium-model-server/utils/types'
-import type * as semantic from './model'
+import type { TransitionDerivativeName } from './model'
 
 export interface Model {
     id: string
@@ -19,6 +20,25 @@ export interface Transition {
     targetTaskId: string
 }
 
+export namespace Transition {
+    export const KIND = 'Transition'
+
+    export const nameBuilder: Transition.NameBuilder = {
+        kind: KIND,
+        buildName: name,
+    }
+
+    export function name(transition: Transition): TransitionDerivativeName {
+        return [transition.sourceTaskId, transition.targetTaskId]
+    }
+
+    export interface NameBuilder extends DerivativeNameBuilder<Transition, TransitionDerivativeName> {
+        kind: typeof Transition.KIND
+    }
+}
+
+export type TaskListDerivativeNameBuilder = Transition.NameBuilder
+
 export namespace Model {
     export function is(obj: unknown): obj is Model {
         if (!isDefinedObject(obj)) {
@@ -33,13 +53,13 @@ export namespace Model {
         return true
     }
 
-    function isTask(obj: unknown): obj is Task {
+    export function isTask(obj: unknown): obj is Task {
         return isDefinedObject(obj)
             && typeof obj.id === 'string'
             && typeof obj.name === 'string'
     }
 
-    function isTransition(obj: unknown): obj is Transition {
+    export function isTransition(obj: unknown): obj is Transition {
         return isDefinedObject(obj)
             && typeof obj.id === 'string'
             && typeof obj.sourceTaskId === 'string'
@@ -61,7 +81,8 @@ export namespace Model {
         }
     }
 
-    export function newTransition(name: semantic.TransitionDerivativeName): Transition {
+    // TODO: Refactor these functions to a dedicated namespaces(?) So that the logic of mapping between Transition args and name is in one place
+    export function newTransition(name: TransitionDerivativeName): Transition {
         return {
             id: uuid.v4(),
             sourceTaskId: name[0],
