@@ -4,20 +4,19 @@ import type { Position, WorkspaceEdit } from 'vscode-languageserver'
 import { ApplyWorkspaceEditRequest, TextEdit } from 'vscode-languageserver'
 import { AbstractLangiumModelServerFacade } from '../../../langium-model-server/lms/facade'
 import type { Creation, CreationParams, Modification } from '../../../langium-model-server/lms/model'
+import * as lms from '../../../langium-model-server/lms/model'
 import { EditingResult } from '../../../langium-model-server/lms/model'
 import type { LmsSubscriptions } from '../../../langium-model-server/lms/subscriptions'
 import * as id from '../../../langium-model-server/semantic/model'
-import * as identity from '../../task-list/semantic/task-list-identity'
 import type { LangiumModelServerServices } from '../../../langium-model-server/services'
 import type { LmsDocument } from '../../../langium-model-server/workspace/documents'
 import * as ast from '../../generated/ast'
+import * as identity from '../../task-list/semantic/task-list-identity'
 import * as semantic from '../semantic/model'
-import * as lms from '../../../langium-model-server/lms/model'
 import type { TaskListIdentityIndex } from '../semantic/task-list-identity-index'
 import type { TaskListDocument } from '../workspace/documents'
 import { isTaskListDocument } from '../workspace/documents'
 import { Model, Task, Transition } from './model'
-import { equal } from '../../../langium-model-server/utils/collections'
 
 export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServerFacade<Model, TaskListIdentityIndex, TaskListDocument> {
 
@@ -138,33 +137,33 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             return EditingResult.failedValidation('Unable to resolve: ' + unresolvedTasks.join(', '))
         }
 
-        if (!transition.$cstNode) {
-            throw new Error('Cannot locate model ' + transition.name + '(' + transition.id + ') in text')
-        }
         const newTransition = semantic.Transition.createNew(newSourceTask ?? transition.sourceTask, newTargetTask ?? transition.targetTask)
-        const changes: TextEdit[] = []
-        if (newTransition.sourceTask !== transition.sourceTask) {
-            changes.push(this.computeTransitionDeletion(transition))
-            changes.push(this.computeTransitionCreation(newTransition))
-        } else if (newTransition.targetTask !== transition.targetTask) {
-            const serializedModel = newTransition.targetTask.name
-            changes.push(TextEdit.replace(transition.$cstNode.range, serializedModel))
-        }
 
-        if (!equal(transition.name, newTransition.name)) {
-            this.identityManager.getIdentityIndex(lmsDocument)
-                .findDerivedElementById(transition.id, identity.Transition.nameBuilder)
-                ?.updateName(newTransition.name)
-        }
+        const renameableTransitionIdentity = this.identityManager.getIdentityIndex(lmsDocument)
+            .findDerivedElementById(transition.id, identity.Transition.nameBuilder)
+
+        const changes = this.computeTransitionUpdate(transition, newTransition)
 
         if (changes.length > 0) {
-            console.debug('Modified Transition attributes. New transition', newTransition)
-            const update = lms.Update.createEmpty<Transition>(transition.id)
-            lms.Update.assignArtificialIfUpdated(update, 'sourceTaskId', transition.sourceTask.id, newTransition.sourceTask.id)
-            lms.Update.assignArtificialIfUpdated(update, 'targetTaskId', transition.targetTask.id, newTransition.targetTask.id)
-            this.lmsSubscriptions.getSubscription(rootModelId)?.pushUpdate(update)
+            renameableTransitionIdentity?.updateName(newTransition.name)
             return this.applyWorkspaceEdit({ changes: { [lmsDocument.textDocument.uri]: changes } },
-                'Updated transition: ' + transition.name + 'to ' + newTransition.name)
+                'Updated transition: ' + transition.name + 'to ' + newTransition.name
+            ).then(editingResult => {
+                if (editingResult.successful) {
+                    console.debug('Modified Transition attributes. New transition', newTransition)
+                    const update = lms.Update.createEmpty<Transition>(transition.id)
+                    lms.Update.assignArtificialIfUpdated(update, 'sourceTaskId', transition.sourceTask.id, newTransition.sourceTask.id)
+                    lms.Update.assignArtificialIfUpdated(update, 'targetTaskId', transition.targetTask.id, newTransition.targetTask.id)
+                    this.lmsSubscriptions.getSubscription(rootModelId)?.pushUpdate(update)
+                } else {
+                    // Reverting modified identity on failure
+                    renameableTransitionIdentity?.updateName(transition.name)
+                }
+                return editingResult
+            }, failure => {
+                renameableTransitionIdentity?.updateName(transition.name)
+                return failure
+            })
         } else {
             return EditingResult.unmodified()
         }
@@ -257,6 +256,21 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
                 : TextEdit.insert(task.$cstNode.range.end, ' ' + serializedTaskContent)
         }
         return undefined
+    }
+
+    private computeTransitionUpdate(transition: id.Identified<semantic.Transition>, newTransition: semantic.NewTransition): TextEdit[] {
+        if (!transition.$cstNode) {
+            throw new Error('Cannot locate model ' + transition.name + '(' + transition.id + ') in text')
+        }
+        const changes: TextEdit[] = []
+        if (newTransition.sourceTask !== transition.sourceTask) {
+            changes.push(this.computeTransitionDeletion(transition))
+            changes.push(this.computeTransitionCreation(newTransition))
+        } else if (newTransition.targetTask !== transition.targetTask) {
+            const serializedModel = newTransition.targetTask.name
+            changes.push(TextEdit.replace(transition.$cstNode.range, serializedModel))
+        }
+        return changes
     }
 
     private computeTaskDeletion(lmsDocument: LmsDocument, task: id.Identified<ast.Task>): WorkspaceEdit {
