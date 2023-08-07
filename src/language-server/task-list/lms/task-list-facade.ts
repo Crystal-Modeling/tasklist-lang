@@ -160,9 +160,8 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         if (changes.length > 0) {
             console.debug('Modified Transition attributes. New transition', newTransition)
             const update = lms.Update.createEmpty<Transition>(transition.id)
-            // TODO: Create overloading of this function with non-nullable props (since ID is assigned manually, and I can be sure it is never undefined if present)
-            lms.Update.assignIfUpdated(update, 'sourceTaskId', transition.sourceTask.id, newTransition.sourceTask.id, transition.sourceTask.id)
-            lms.Update.assignIfUpdated(update, 'targetTaskId', transition.targetTask.id, newTransition.targetTask.id, transition.targetTask.id)
+            lms.Update.assignArtificialIfUpdated(update, 'sourceTaskId', transition.sourceTask.id, newTransition.sourceTask.id)
+            lms.Update.assignArtificialIfUpdated(update, 'targetTaskId', transition.targetTask.id, newTransition.targetTask.id)
             this.lmsSubscriptions.getSubscription(rootModelId)?.pushUpdate(update)
             return this.applyWorkspaceEdit({ changes: { [lmsDocument.textDocument.uri]: changes } },
                 'Updated transition: ' + transition.name + 'to ' + newTransition.name)

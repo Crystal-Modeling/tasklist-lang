@@ -34,6 +34,14 @@ export namespace Update {
         }
     }
 
+    // NOTE: Values taken from an Artificial AST should not be undefined, since they are validated (e.g., other nodes semantic IDs)
+    export function assignArtificialIfUpdated<T extends id.SemanticIdentity, V extends PrimitiveModelAttribute, S extends string>(update: Update<T, S>,
+        key: PrimitiveModelAttributeChangesRequiredKeysOfType<T, V>, value: V, newValue: V): void {
+        if (newValue !== value) {
+            (update as Record<PrimitiveModelAttributeChangesRequiredKeysOfType<T, V>, V>)[key] = newValue
+        }
+    }
+
     export function assign<T extends id.SemanticIdentity, V extends PrimitiveModelAttribute, S extends string>(update: Update<T, S>,
         key: PrimitiveModelAttributeChangesRequiredKeysOfType<T, V>, newValue: V | undefined, defaultValue: V) {
         (update as Record<PrimitiveModelAttributeChangesRequiredKeysOfType<T, V>, V>)[key] = newValue ?? defaultValue
