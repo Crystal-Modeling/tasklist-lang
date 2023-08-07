@@ -7,6 +7,7 @@ import type { Creation, CreationParams, Modification } from '../../../langium-mo
 import { EditingResult } from '../../../langium-model-server/lms/model'
 import type { LmsSubscriptions } from '../../../langium-model-server/lms/subscriptions'
 import * as id from '../../../langium-model-server/semantic/model'
+import * as identity from '../../task-list/semantic/task-list-identity'
 import type { LangiumModelServerServices } from '../../../langium-model-server/services'
 import type { LmsDocument } from '../../../langium-model-server/workspace/documents'
 import * as ast from '../../generated/ast'
@@ -16,6 +17,7 @@ import type { TaskListIdentityIndex } from '../semantic/task-list-identity-index
 import type { TaskListDocument } from '../workspace/documents'
 import { isTaskListDocument } from '../workspace/documents'
 import { Model, Task, Transition } from './model'
+import { equal } from '../../../langium-model-server/utils/collections'
 
 export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServerFacade<Model, TaskListIdentityIndex, TaskListDocument> {
 
@@ -149,15 +151,18 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             changes.push(TextEdit.replace(transition.$cstNode.range, serializedModel))
         }
 
+        if (!equal(transition.name, newTransition.name)) {
+            this.identityManager.getIdentityIndex(lmsDocument)
+                .findDerivedElementById(transition.id, identity.Transition.nameBuilder)
+                ?.updateName(newTransition.name)
+        }
+
         if (changes.length > 0) {
             console.debug('Modified Transition attributes. New transition', newTransition)
             const update = lms.Update.createEmpty<Transition>(transition.id)
             // TODO: Create overloading of this function with non-nullable props (since ID is assigned manually, and I can be sure it is never undefined if present)
             lms.Update.assignIfUpdated(update, 'sourceTaskId', transition.sourceTask.id, newTransition.sourceTask.id, transition.sourceTask.id)
             lms.Update.assignIfUpdated(update, 'targetTaskId', transition.targetTask.id, newTransition.targetTask.id, transition.targetTask.id)
-            // FIXME TODO: Now don't forget to update the identity in a corresponding IdentityIndex
-            const identityIndex = this.identityManager.getIdentityIndex(lmsDocument)
-            identityIndex.findElementByName
             this.lmsSubscriptions.getSubscription(rootModelId)?.pushUpdate(update)
             return this.applyWorkspaceEdit({ changes: { [lmsDocument.textDocument.uri]: changes } },
                 'Updated transition: ' + transition.name + 'to ' + newTransition.name)

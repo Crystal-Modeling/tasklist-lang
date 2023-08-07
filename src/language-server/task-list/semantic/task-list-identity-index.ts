@@ -1,6 +1,6 @@
 import type { RenameableSemanticIdentity } from '../../../langium-model-server/semantic/identity'
 import type { IdentityIndex } from '../../../langium-model-server/semantic/identity-index'
-import { ValueBasedMap, equals } from '../../../langium-model-server/utils/collections'
+import { ValueBasedMap, equal } from '../../../langium-model-server/utils/collections'
 import type * as semantic from './model'
 import type { Model, Task, TaskListDerivativeNameBuilder} from './task-list-identity'
 import { Transition } from './task-list-identity'
@@ -72,10 +72,12 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
                         return name
                     },
                     updateName(newName): boolean {
-                        if (!equals(name, newName)) {
+                        if (!equal(name, newName)) {
                             if (index._transitionsByName.delete(name))
                                 index._transitionsByName.set(newName, transitionIdentity)
                             name = newName
+                            transitionIdentity.sourceTaskId = name[0]
+                            transitionIdentity.targetTaskId = name[1]
                             return true
                         }
                         return false
