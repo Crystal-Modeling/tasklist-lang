@@ -13,8 +13,8 @@ export namespace Transition {
     export function create(transition: sem.Identified<semantic.Transition>): Transition {
         return {
             id: transition.id,
-            sourceTaskId: transition.name[0],
-            targetTaskId: transition.name[1]
+            sourceTaskId: transition.sourceTask.id,
+            targetTaskId: transition.targetTask.id
         }
     }
 

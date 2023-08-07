@@ -1,8 +1,8 @@
 import type { RenameableSemanticIdentity } from '../../../langium-model-server/semantic/identity'
 import type { IdentityIndex } from '../../../langium-model-server/semantic/identity-index'
 import { ValueBasedMap, equal } from '../../../langium-model-server/utils/collections'
-import type { Model, Task, TaskListDerivativeNameBuilder } from './task-list-identity'
-import { Transition, TransitionDerivativeName } from './task-list-identity'
+import type { Model, Task, TaskListDerivativeNameBuilder, TransitionDerivativeName } from './task-list-identity'
+import { Transition } from './task-list-identity'
 
 export abstract class TaskListIdentityIndex implements IdentityIndex {
     public readonly id: string
@@ -108,7 +108,7 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
 
     public addTransition(transition: Transition) {
         this._transitionsById.set(transition.id, transition)
-        this._transitionsByName.set(TransitionDerivativeName.of(transition.sourceTaskId, transition.targetTaskId), transition)
+        this._transitionsByName.set(Transition.name(transition), transition)
     }
 
     public deleteTransitions(transitionIds: Iterable<string>) {
@@ -121,7 +121,7 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         const transition = this._transitionsById.get(transitionId)
         if (transition) {
             this._transitionsById.delete(transition.id)
-            this._transitionsByName.delete([transition.sourceTaskId, transition.targetTaskId])
+            this._transitionsByName.delete(Transition.name(transition))
         }
     }
 }
