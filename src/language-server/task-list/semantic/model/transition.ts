@@ -2,18 +2,10 @@ import { findNodeForProperty } from 'langium'
 import * as sem from '../../../../langium-model-server/semantic/model'
 import { isDefined } from '../../../../langium-model-server/utils/predicates'
 import type * as ast from '../../../generated/ast'
-
-// TODO: Move this into the identity file, since DerivativeName is computed in Identity scope
-export type TransitionDerivativeName = [sourceTaskId: string, targetTaskId: string]
-
-export namespace TransitionDerivativeName {
-    export function of(sourceTaskId: string, targetTaskId: string): TransitionDerivativeName {
-        return [sourceTaskId, targetTaskId]
-    }
-}
+import * as identity from '../task-list-identity'
 
 export type NewTransition = {
-    name: TransitionDerivativeName
+    name: identity.TransitionDerivativeName
     sourceTask: sem.Identified<ast.Task>,
     targetTask: sem.Identified<ast.Task>
 }
@@ -34,7 +26,7 @@ export namespace Transition {
         return {
             sourceTask,
             targetTask,
-            name: TransitionDerivativeName.of(sourceTask.id, targetTask.id)
+            name: identity.TransitionDerivativeName.of(sourceTask.id, targetTask.id)
         }
     }
 
@@ -46,7 +38,7 @@ export namespace Transition {
         if (sem.ResolvedReference.is(reference)
             && isTaskReferenceValid(sourceTask, referenceIndex)
             && sem.Identified.is(reference.ref)) {
-            const name = TransitionDerivativeName.of(sourceTask.id, reference.ref.id)
+            const name = identity.TransitionDerivativeName.of(sourceTask.id, reference.ref.id)
             return {
                 __semantic: 'valid',
                 name,

@@ -1,7 +1,6 @@
 import * as uuid from 'uuid'
 import type { DerivativeNameBuilder } from '../../../langium-model-server/semantic/identity'
 import { isArray, isDefinedObject } from '../../../langium-model-server/utils/types'
-import type { TransitionDerivativeName } from './model'
 
 export interface Model {
     id: string
@@ -29,11 +28,19 @@ export namespace Transition {
     }
 
     export function name(transition: Transition): TransitionDerivativeName {
-        return [transition.sourceTaskId, transition.targetTaskId]
+        return TransitionDerivativeName.of(transition.sourceTaskId, transition.targetTaskId)
     }
 
     export interface NameBuilder extends DerivativeNameBuilder<Transition, TransitionDerivativeName> {
         kind: typeof Transition.KIND
+    }
+}
+
+export type TransitionDerivativeName = [sourceTaskId: string, targetTaskId: string]
+
+export namespace TransitionDerivativeName {
+    export function of(sourceTaskId: string, targetTaskId: string): TransitionDerivativeName {
+        return [sourceTaskId, targetTaskId]
     }
 }
 

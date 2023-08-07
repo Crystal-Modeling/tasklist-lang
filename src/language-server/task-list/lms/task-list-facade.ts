@@ -277,7 +277,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
                     console.debug('Source document or source task are not LMS-compatible', doc, sourceTask)
                     return undefined
                 }
-                const transitionName = semantic.TransitionDerivativeName.of(sourceTask.id, task.id)
+                const transitionName = identity.TransitionDerivativeName.of(sourceTask.id, task.id)
                 const transitionId = this.identityManager.getIdentityIndex(doc).transitionsByName.get(transitionName)?.id
                 if (!transitionId) {
                     console.debug('Cannot find transition identity with name', transitionName)

@@ -1,16 +1,15 @@
 import type { RenameableSemanticIdentity } from '../../../langium-model-server/semantic/identity'
 import type { IdentityIndex } from '../../../langium-model-server/semantic/identity-index'
 import { ValueBasedMap, equal } from '../../../langium-model-server/utils/collections'
-import type * as semantic from './model'
-import type { Model, Task, TaskListDerivativeNameBuilder} from './task-list-identity'
-import { Transition } from './task-list-identity'
+import type { Model, Task, TaskListDerivativeNameBuilder } from './task-list-identity'
+import { Transition, TransitionDerivativeName } from './task-list-identity'
 
 export abstract class TaskListIdentityIndex implements IdentityIndex {
     public readonly id: string
     private readonly _tasksById: Map<string, Task> = new Map()
     private readonly _tasksByName: Map<string, Task> = new Map()
     private readonly _transitionsById: Map<string, Transition> = new Map()
-    private readonly _transitionsByName: ValueBasedMap<semantic.TransitionDerivativeName, Transition>
+    private readonly _transitionsByName: ValueBasedMap<TransitionDerivativeName, Transition>
         = new ValueBasedMap()
 
     public constructor(identityModel: Model) {
@@ -23,7 +22,7 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         return new Map(this._tasksByName)
     }
 
-    public get transitionsByName(): ValueBasedMap<semantic.TransitionDerivativeName, Readonly<Transition>> {
+    public get transitionsByName(): ValueBasedMap<TransitionDerivativeName, Readonly<Transition>> {
         return this._transitionsByName.copy()
     }
 
@@ -109,7 +108,7 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
 
     public addTransition(transition: Transition) {
         this._transitionsById.set(transition.id, transition)
-        this._transitionsByName.set([transition.sourceTaskId, transition.targetTaskId], transition)
+        this._transitionsByName.set(TransitionDerivativeName.of(transition.sourceTaskId, transition.targetTaskId), transition)
     }
 
     public deleteTransitions(transitionIds: Iterable<string>) {
