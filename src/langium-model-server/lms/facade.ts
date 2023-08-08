@@ -15,9 +15,9 @@ import { HighlightResponse } from './model'
 
 export interface LangiumModelServerFacade<SM> {
 
-    readonly addModelHandlersByUriSegment: ReadonlyMap<string, AddModelHandler>
-    readonly updateModelHandlersByUriSegment: ReadonlyMap<string, UpdateModelHandler>
-    readonly deleteModelHandlersByUriSegment: ReadonlyMap<string, DeleteModelHandler>
+    readonly addModelHandlersByPathSegment: ReadonlyMap<string, AddModelHandler>
+    readonly updateModelHandlersByPathSegment: ReadonlyMap<string, UpdateModelHandler>
+    readonly deleteModelHandlersByPathSegment: ReadonlyMap<string, DeleteModelHandler>
 
     getById(id: string): SM | undefined
     /**
@@ -51,9 +51,9 @@ implements LangiumModelServerFacade<SM> {
     protected isLmsDocument: TypeGuard<D, ExtendableLangiumDocument>
     protected readonly connection: Connection
 
-    readonly addModelHandlersByUriSegment: Map<string, AddModelHandler> = new Map()
-    readonly updateModelHandlersByUriSegment: Map<string, UpdateModelHandler> = new Map()
-    readonly deleteModelHandlersByUriSegment: Map<string, DeleteModelHandler> = new Map()
+    readonly addModelHandlersByPathSegment: Map<string, AddModelHandler> = new Map()
+    readonly updateModelHandlersByPathSegment: Map<string, UpdateModelHandler> = new Map()
+    readonly deleteModelHandlersByPathSegment: Map<string, DeleteModelHandler> = new Map()
 
     constructor(services: LangiumModelServerServices<SM, SemI, D>) {
         this.identityManager = services.semantic.IdentityManager

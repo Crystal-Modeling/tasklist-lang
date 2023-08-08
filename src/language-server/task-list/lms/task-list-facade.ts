@@ -30,18 +30,18 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         this.astNodeLocator = services.workspace.AstNodeLocator
         this.lmsSubscriptions = services.lms.LmsSubscriptions
 
-        this.addModelHandlersByUriSegment.set('/tasks', {
+        this.addModelHandlersByPathSegment.set('tasks', {
             isApplicable: Task.isNew,
             addModel: this.addTask.bind(this)
         })
-        this.addModelHandlersByUriSegment.set('/transitions', {
+        this.addModelHandlersByPathSegment.set('transitions', {
             isApplicable: Transition.isNew,
             addModel: this.addTransition.bind(this)
         })
-        this.updateModelHandlersByUriSegment.set('/tasks', this.updateTask.bind(this))
-        this.updateModelHandlersByUriSegment.set('/transitions', this.updateTransition.bind(this))
-        this.deleteModelHandlersByUriSegment.set('/tasks', this.deleteTask.bind(this))
-        this.deleteModelHandlersByUriSegment.set('/transitions', this.deleteTransition.bind(this))
+        this.updateModelHandlersByPathSegment.set('tasks', this.updateTask.bind(this))
+        this.updateModelHandlersByPathSegment.set('transitions', this.updateTransition.bind(this))
+        this.deleteModelHandlersByPathSegment.set('tasks', this.deleteTask.bind(this))
+        this.deleteModelHandlersByPathSegment.set('transitions', this.deleteTransition.bind(this))
     }
 
     public addTask(rootModelId: string, newTask: Creation<Task>, creationParams: CreationParams): MaybePromise<EditingResult> | undefined {

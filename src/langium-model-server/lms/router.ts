@@ -21,10 +21,10 @@ export function LangiumModelServerRouter<SM extends SemanticIdentity, II extends
         const unmatchedPath = new PathContainer(headers[':path'] ?? '')
         let handler: Http2RequestHandler
 
-        if (unmatchedPath.matchPrefix('/')) {
+        if (unmatchedPath.hasPathSegments()) {
             if (unmatchedPath.suffix === '') {
                 handler = helloWorldHandler
-            } else if (unmatchedPath.matchPrefix('models/')) {
+            } else if (unmatchedPath.readPathSegment('models')) {
                 handler = provideModelHandler(services.lms)
             } else {
                 handler = notFoundHandler
@@ -62,7 +62,7 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
     const lmsSubscriptions = sourceServices.LmsSubscriptions
 
     const modelHandler: Http2RequestHandler = (_, unmatchedPath, headers) => {
-        const id = unmatchedPath.matchPrefix(/^[^\/]+/)
+        const id = unmatchedPath.readPathSegment()
         if (!id) {
             return notFoundHandler
         }
@@ -78,12 +78,12 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
             }
         }
         const addModelHandler: Http2RequestHandler = (stream, unmatchedPath, headers) => {
-            const uriSegment = unmatchedPath.matchPrefix(/^\/[^?]+/)
+            const uriSegment = unmatchedPath.readPathSegment()
             if (!uriSegment) {
                 return notFoundHandler
             }
-            const queryParams: CreationParams = unmatchedPath.parseQueryParams() ?? {}
-            const facadeHandler = langiumModelServerFacade.addModelHandlersByUriSegment.get(uriSegment)
+            const queryParams: CreationParams = unmatchedPath.readQueryParams() ?? {}
+            const facadeHandler = langiumModelServerFacade.addModelHandlersByPathSegment.get(uriSegment)
             if (!facadeHandler) {
                 return notImplementedMethodHandler
             }
@@ -121,15 +121,15 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
             return
         }
         const updateModelHandler: Http2RequestHandler = (stream, unmatchedPath, headers) => {
-            const uriSegment = unmatchedPath.matchPrefix(/^\/[^\/]+/)
+            const uriSegment = unmatchedPath.readPathSegment()
             if (!uriSegment) {
                 return notFoundHandler
             }
-            const updateModel = langiumModelServerFacade.updateModelHandlersByUriSegment.get(uriSegment)
+            const updateModel = langiumModelServerFacade.updateModelHandlersByPathSegment.get(uriSegment)
             if (!updateModel) {
                 return notImplementedMethodHandler
             }
-            const modelId = unmatchedPath.matchPrefix(/^\/[^\/]+/)?.slice(1)
+            const modelId = unmatchedPath.readPathSegment()
             if (!modelId) {
                 return notFoundHandler
             }
@@ -167,15 +167,15 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
             return
         }
         const deleteModelHandler: Http2RequestHandler = (stream, unmatchedPath) => {
-            const uriSegment = unmatchedPath.matchPrefix(/^\/[^\/]+/)
+            const uriSegment = unmatchedPath.readPathSegment()
             if (!uriSegment) {
                 return notFoundHandler
             }
-            const deleteModel = langiumModelServerFacade.deleteModelHandlersByUriSegment.get(uriSegment)
+            const deleteModel = langiumModelServerFacade.deleteModelHandlersByPathSegment.get(uriSegment)
             if (!deleteModel) {
                 return notImplementedMethodHandler
             }
-            const modelId = unmatchedPath.matchPrefix(/^\/[^\/]+/)?.slice(1)
+            const modelId = unmatchedPath.readPathSegment()
             if (!modelId) {
                 return notFoundHandler
             }
@@ -214,7 +214,7 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
             setUpStreamForSSE(stream, Response.create(`Created subscription to model with id ${id}`, 201))
         }
         const updateHighlightHandler: Http2RequestHandler = (stream, unmatchedPath) => {
-            const modelId = unmatchedPath.matchPrefix(/^[^\/]+/)
+            const modelId = unmatchedPath.readPathSegment()
             if (!modelId) {
                 return notFoundHandler
             }
@@ -229,12 +229,12 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
         }
 
         const method = headers[':method']
-        if (unmatchedPath.matchPrefix('/subscriptions')) {
+        if (unmatchedPath.readPathSegment('subscriptions')) {
             if (method === 'POST')
                 return subscribeToModelChangesHandler
             return notImplementedMethodHandler
         }
-        if (unmatchedPath.matchPrefix('/highlight/')) {
+        if (unmatchedPath.readPathSegment('highlight')) {
             if (method === 'PUT')
                 return updateHighlightHandler
             return notImplementedMethodHandler
@@ -268,7 +268,7 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
     }
 
     return (_, unmatchedPath, headers) => {
-        if (unmatchedPath.matchPrefix('id/')) {
+        if (unmatchedPath.readPathSegment('id')) {
             if (headers[':method'] === 'GET')
                 return getModelIdHandler
             return notImplementedMethodHandler
@@ -348,40 +348,77 @@ class PathContainer {
     }
 
     /**
-     * If {@link PathContainer}.`suffix` begins with `prefix`, then this prefix is removed from `suffix`
-     * and method returns the matched prefix.
-     * Otherwise {@link PathContainer} remains unmodified and method returns `undefined`.
-     *
-     * @param prefix A string or RegExp against which existing `suffix` is matched
+     * Checks whether unmatched path starts with '/'
      */
-    public matchPrefix(prefix: string | RegExp): string | undefined {
-        let prefixString: string | undefined
-        if (typeof prefix === 'string') {
-            if (this._suffix.startsWith(prefix)) {
-                prefixString = prefix
-            }
-        } else {
-            const prefixRegExp = prefix.source.startsWith('^') ? prefix : new RegExp('^' + prefix.source, prefix.flags)
-            const matchResult = this._suffix.match(prefixRegExp)
-            if (matchResult) {
-                prefixString = matchResult[0]
-            }
-        }
-        if (prefixString !== undefined) {
-            this._suffix = this._suffix.substring(prefixString.length)
-            return prefixString
-        }
-        return undefined
+    public hasPathSegments(): boolean {
+        return (this.testPathSegmentSuffixMatch('') !== undefined)
     }
 
-    public parseQueryParams(): Record<string, string | undefined> | undefined {
-        const queryParamsText = this.matchPrefix(/^[?].+/)
+    /**
+     * Reads segment from the beginning of the path: `/${segmentValue}`. If specified `segmentValue` equals to the segment
+     * (i.e., it matches characters between the path delimimiter ('/') and another path delimiter or query character ('?') or end of the path),
+     * then segmentValue is returned and matched segment is eliminated from the {@link PathContainer}.
+     * If `segmentValue` is not provided, then attempts to match the path segment and return its value, also eliminating from the path.
+     * If the match is unsuccessful, returns `undefined` and leaves the path unchanged.
+     */
+    public readPathSegment(segmentValue?: string): string | undefined {
+        if (segmentValue !== undefined) {
+            if (segmentValue.length === 0) {
+                console.warn('Reading empty path segment (segmentValue is empty). This is most probably unintentionally')
+            }
+            const nextSegmentStart = this.testPathSegmentSuffixMatch(segmentValue)
+            if (nextSegmentStart === undefined || !this.isPathSegmentEnd(nextSegmentStart)) {
+                return undefined
+            }
+            this._suffix = this._suffix.substring(nextSegmentStart)
+            return segmentValue
+        }
+        return this.matchPrefix(/^\/[^\/?]/)?.substring(1)
+    }
+
+    /**
+     * Reads query params (`?param=value&otherParam=value`) from the beginning of the path
+     */
+    public readQueryParams(): Record<string, string | undefined> | undefined {
+        const queryParamsText = this.matchPrefix(/^[?].*/)?.slice(1)
         if (!queryParamsText) return undefined
         const queryParams: Record<string, string | undefined> = {}
-        queryParamsText.slice(1).split('&').forEach(queryParam => {
+        queryParamsText.split('&').forEach(queryParam => {
             const assignment = queryParam.split('=', 2)
             queryParams[assignment[0]] = assignment[1]
         })
         return queryParams
+    }
+
+    /**
+     * If successful, returns the index of the first unmatched character in the path after the matched path segment ('/' + segmentValue)
+     * Else returns `undefined`
+     */
+    private testPathSegmentSuffixMatch(segmentValue: string): number | undefined {
+        if (!this._suffix.startsWith('/' + segmentValue)) {
+            return undefined
+        }
+        return segmentValue.length + 1
+    }
+
+    private isPathSegmentEnd(pathIndex: number): boolean {
+        return this._suffix.length === pathIndex || this._suffix[pathIndex] === '/' || this._suffix[pathIndex] === '?'
+    }
+
+    /**
+     * If {@link PathContainer}.`suffix` begins with `prefix`, then this prefix is removed from `suffix`
+     * and method returns the matched prefix.
+     * Otherwise {@link PathContainer} remains unmodified and method returns `undefined`.
+     *
+     * @param prefix A RegExp against which existing `suffix` is matched
+     */
+    private matchPrefix(prefix: RegExp): string | undefined {
+        const matchResult = this._suffix.match(prefix)
+        if (!matchResult) {
+            return undefined
+        }
+        const prefixString = matchResult[0]
+        this._suffix = this._suffix.substring(prefixString.length)
+        return prefixString
     }
 }
