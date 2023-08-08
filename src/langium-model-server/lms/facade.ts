@@ -38,7 +38,7 @@ export interface AddModelHandler<T extends SemanticIdentity = SemanticIdentity> 
 }
 
 export type UpdateModelHandler<T extends SemanticIdentity = SemanticIdentity> =
-    (rootModelId: string, modelUpdate: Modification<T>) => MaybePromise<EditingResult> | undefined
+    (rootModelId: string, modelId: string, modelUpdate: Modification<T>) => MaybePromise<EditingResult> | undefined
 
 export type DeleteModelHandler = (rootModelId: string, modelId: string) => MaybePromise<EditingResult> | undefined
 

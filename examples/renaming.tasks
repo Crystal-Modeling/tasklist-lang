@@ -1,3 +1,4 @@
-task ga "Welcome, friends" -> aga, nextTask
-task aga "Welcome, friends" -> nextTask
-task nextTask "Task content"
+task a "First" -> b, c, neo
+task b "Second" -> c, neo
+task c "Third" -> neo
+task neo "Empty"

@@ -5,7 +5,7 @@ import type { SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { LangiumModelServerAddedServices, LmsServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
-import type { CreationParams } from './model'
+import type { CreationParams, EditingResult } from './model'
 import { EditingFailureReason, Modification, Response, SemanticIdResponse } from './model'
 
 type Http2RequestHandler = (stream: http2.ServerHttp2Stream, unmatchedPath: PathContainer,
@@ -98,21 +98,24 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
                     respondWithJson(stream, Response.create(`Root model (document) for id '${id}' not found`, 404))
                     return
                 }
+                const handleResult = (res: EditingResult) => {
+                    if (res.successful) {
+                        if (res.modified) respondWithJson(stream, res, 201)
+                        else respondWithJson(stream, res, 200)
+                    } else switch (res.failureReason) {
+                        case EditingFailureReason.VALIDATION:
+                            respondWithJson(stream, res, 400)
+                            break
+                        case EditingFailureReason.TEXT_EDIT:
+                            respondWithJson(stream, res, 500)
+                            break
+                    }
+                }
                 if (isPromise(result)) {
-                    result.then(res => {
-                        if (res.successful) {
-                            if (res.modified) respondWithJson(stream, res, 201)
-                            else respondWithJson(stream, res, 200)
-                        } else switch (res.failureReason) {
-                            case EditingFailureReason.VALIDATION:
-                                respondWithJson(stream, res, 400)
-                                break
-                            case EditingFailureReason.TEXT_EDIT:
-                                respondWithJson(stream, res, 500)
-                                break
-                        }
-                    })
+                    result.then(handleResult)
                     return
+                } else {
+                    handleResult(result)
                 }
             })
             return
@@ -126,32 +129,39 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
             if (!updateModel) {
                 return notImplementedMethodHandler
             }
+            const modelId = unmatchedPath.matchPrefix(/^\/[^\/]+/)?.slice(1)
+            if (!modelId) {
+                return notFoundHandler
+            }
             readRequestBody(stream).then(requestBody => {
                 if (!Modification.is(requestBody)) {
                     respondWithJson(stream,
                         Response.create(`${headers[':method']} ('${headers[':path']}') cannot be processed: incorrect request body`, 400))
                     return
                 }
-                const result = updateModel(id, requestBody)
+                const result = updateModel(id, modelId, requestBody)
                 if (!result) {
                     respondWithJson(stream, Response.create(`Root model (document) for id '${id}' not found`, 404))
                     return
                 }
+                const handleResult = (res: EditingResult) => {
+                    if (res.successful) {
+                        if (res.modified) respondWithJson(stream, res, 200)
+                        else respondWithJson(stream, res, 200)
+                    } else switch (res.failureReason) {
+                        case EditingFailureReason.VALIDATION:
+                            respondWithJson(stream, res, 400)
+                            break
+                        case EditingFailureReason.TEXT_EDIT:
+                            respondWithJson(stream, res, 500)
+                            break
+                    }
+                }
                 if (isPromise(result)) {
-                    result.then(res => {
-                        if (res.successful) {
-                            if (res.modified) respondWithJson(stream, res, 200)
-                            else respondWithJson(stream, res, 200)
-                        } else switch (res.failureReason) {
-                            case EditingFailureReason.VALIDATION:
-                                respondWithJson(stream, res, 400)
-                                break
-                            case EditingFailureReason.TEXT_EDIT:
-                                respondWithJson(stream, res, 500)
-                                break
-                        }
-                    })
+                    result.then(handleResult)
                     return
+                } else {
+                    handleResult(result)
                 }
             })
             return
@@ -165,7 +175,7 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
             if (!deleteModel) {
                 return notImplementedMethodHandler
             }
-            const modelId = unmatchedPath.matchPrefix(/^\/[^\/]/)?.slice(1)
+            const modelId = unmatchedPath.matchPrefix(/^\/[^\/]+/)?.slice(1)
             if (!modelId) {
                 return notFoundHandler
             }
@@ -174,21 +184,26 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
                 respondWithJson(stream, Response.create(`Model for rootId '${id}' and id '${modelId}' not found`, 404))
                 return
             }
+            const handleResult = (res: EditingResult) => {
+                console.debug('Handling Editing result on Deletion', res)
+                if (res.successful) {
+                    if (res.modified) respondWithJson(stream, res, 200)
+                    else respondWithJson(stream, res, 404)
+                } else switch (res.failureReason) {
+                    case EditingFailureReason.VALIDATION:
+                        respondWithJson(stream, res, 400)
+                        break
+                    case EditingFailureReason.TEXT_EDIT:
+                        respondWithJson(stream, res, 500)
+                        break
+                }
+            }
             if (isPromise(result)) {
-                result.then(res => {
-                    if (res.successful) {
-                        if (res.modified) respondWithJson(stream, res, 204)
-                        else respondWithJson(stream, res, 404)
-                    } else switch (res.failureReason) {
-                        case EditingFailureReason.VALIDATION:
-                            respondWithJson(stream, res, 400)
-                            break
-                        case EditingFailureReason.TEXT_EDIT:
-                            respondWithJson(stream, res, 500)
-                            break
-                    }
-                })
+                console.debug('Awaiting promise result...')
+                result.then(handleResult, (error) => console.error('GOT ERROR!!!', error))
                 return
+            } else {
+                handleResult(result)
             }
             return
         }
@@ -292,6 +307,7 @@ function readRequestBody(stream: http2.ServerHttp2Stream): Promise<object> {
 function respondWithJson(stream: http2.ServerHttp2Stream, response: Response): void
 function respondWithJson(stream: http2.ServerHttp2Stream, response: object, status: number): void
 function respondWithJson(stream: http2.ServerHttp2Stream, response: Response | object, status?: number): void {
+    console.debug('Responding with Response', response, status)
     if (!status) {
         status = (response as Response).code
     }
@@ -299,6 +315,10 @@ function respondWithJson(stream: http2.ServerHttp2Stream, response: Response | o
         [http2.constants.HTTP2_HEADER_CONTENT_TYPE]: 'application/json; charset=utf-8',
         [http2.constants.HTTP2_HEADER_STATUS]: status
     })
+    if (status === 204) {
+        console.warn('You are trying to send response body with NO_CONTENT HTTP status. No body will be sent since the HTTP stream is already closed')
+        return
+    }
     stream.end(JSON.stringify(response))
 }
 

@@ -1,5 +1,5 @@
 import type { AstNodeLocator, References } from 'langium'
-import { findNodeForProperty, getContainerOfType, type MaybePromise } from 'langium'
+import { findNodeForProperty, getContainerOfType, getPreviousNode, type MaybePromise } from 'langium'
 import type { Position, WorkspaceEdit } from 'vscode-languageserver'
 import { ApplyWorkspaceEditRequest, TextEdit } from 'vscode-languageserver'
 import { AbstractLangiumModelServerFacade } from '../../../langium-model-server/lms/facade'
@@ -39,6 +39,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             addModel: this.addTransition.bind(this)
         })
         this.updateModelHandlersByUriSegment.set('/tasks', this.updateTask.bind(this))
+        this.updateModelHandlersByUriSegment.set('/transitions', this.updateTransition.bind(this))
         this.deleteModelHandlersByUriSegment.set('/tasks', this.deleteTask.bind(this))
         this.deleteModelHandlersByUriSegment.set('/transitions', this.deleteTransition.bind(this))
     }
@@ -91,15 +92,16 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return this.applyTextEdit(lmsDocument, textEdit, 'Created new transition: ' + newTransition.name)
     }
 
-    public updateTask(rootModelId: string, taskModification: Modification<Task>): MaybePromise<EditingResult> | undefined {
+    public updateTask(rootModelId: string, modelId: string, taskModification: Modification<Task>): MaybePromise<EditingResult> | undefined {
 
+        console.debug('Updating task for rootModelId', rootModelId, 'modelId', modelId)
         const lmsDocument = this.getDocumentById(rootModelId)
         if (!lmsDocument) {
             return undefined
         }
-        const task = lmsDocument.semanticDomain.identifiedTasks.get(taskModification.id)
+        const task = lmsDocument.semanticDomain.identifiedTasks.get(modelId)
         if (!task) {
-            return EditingResult.failedValidation('Unable to resolve task by id ' + taskModification.id)
+            return EditingResult.failedValidation('Unable to resolve task by id ' + modelId)
         }
 
         const textEdit = this.computeTaskUpdate(task, taskModification)
@@ -110,15 +112,16 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         }
     }
 
-    public updateTransition(rootModelId: string, transitionModification: Modification<Transition>): MaybePromise<EditingResult> | undefined {
+    public updateTransition(rootModelId: string, modelId: string, transitionModification: Modification<Transition>): MaybePromise<EditingResult> | undefined {
 
+        console.debug('Updating transition for rootModelId', rootModelId, 'modelId', modelId)
         const lmsDocument = this.getDocumentById(rootModelId)
         if (!lmsDocument) {
             return undefined
         }
-        const transition = lmsDocument.semanticDomain.identifiedTransitions.get(transitionModification.id)
+        const transition = lmsDocument.semanticDomain.identifiedTransitions.get(modelId)
         if (!transition) {
-            return EditingResult.failedValidation('Unable to resolve transition by id ' + transitionModification.id)
+            return EditingResult.failedValidation('Unable to resolve transition by id ' + modelId)
         }
         let newSourceTask: id.Identified<ast.Task> | undefined
         let newTargetTask: id.Identified<ast.Task> | undefined
@@ -201,13 +204,26 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return this.applyTextEdit(lmsDocument, textEdit, 'Deleted transition ' + transition.name)
     }
 
-    private computeTaskCreation(lmsDocument: LmsDocument, newTask: Creation<Task>, anchorModel?: id.Identified<ast.Task>): TextEdit {
+    private computeTaskCreation(lmsDocument: TaskListDocument, newTask: Creation<Task>, anchorModel?: id.Identified<ast.Task>): TextEdit {
 
-        let prefix = '\n'
+        let prefix = ''
         let suffix = ''
-        let position: Position = { line: lmsDocument.textDocument.lineCount - 1, character: 0 }
+        const parsedTasks = lmsDocument.parseResult.value.tasks
+        let position: Position = { line: 0, character: 0 }
+        if (parsedTasks.length > 0) {
+            console.debug('Found', parsedTasks.length, 'parsed tasks')
+            const lastTask = parsedTasks[parsedTasks.length - 1]
+            if (!lastTask.$cstNode) {
+                throw new Error('Cannot locate LAST task ' + lastTask.name + ' in text')
+            }
+            position = lastTask.$cstNode.range.end
+            console.debug('Located end position of the last task:', position)
+            prefix = '\n'
+        }
+
         if (anchorModel?.$cstNode) {
             position = anchorModel.$cstNode.range.start
+            console.debug('Located start position of anchor task:', position)
             prefix = ''
             suffix = '\n'
         }
@@ -280,7 +296,9 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             throw new Error('Cannot locate model ' + task.name + '(' + task.id + ') in text')
         }
 
-        const deleteTaskEdit = TextEdit.del(task.$cstNode.range)
+        const start = getPreviousNode(task.$cstNode, false)?.range?.end ?? { line: 0, character: 0 }
+        const end = task.$cstNode.range.end
+        const deleteTaskEdit = TextEdit.del({ start, end })
         const changes: { [uri: string]: TextEdit[] } = { [lmsDocument.textDocument.uri]: [deleteTaskEdit] }
         this.references.findReferences(task, { includeDeclaration: false })
             .map((ref): [documentUri: string, transition: id.Identified<semantic.Transition>] | undefined => {
