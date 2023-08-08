@@ -1,4 +1,4 @@
-import type { RenameableSemanticIdentity } from '../../../langium-model-server/semantic/identity'
+import { ModelUri, type RenameableSemanticIdentity } from '../../../langium-model-server/semantic/identity'
 import type { IdentityIndex } from '../../../langium-model-server/semantic/identity-index'
 import { ValueBasedMap, equal } from '../../../langium-model-server/utils/collections'
 import type { Model, Task, TaskListDerivativeNameBuilder, TransitionDerivativeName } from './task-list-identity'
@@ -43,6 +43,13 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
                 get name(): string {
                     return taskIdentity.name
                 },
+                // TODO: Here I hardcode ModelUri of Task -- it should be taken from some centralized place (LMS grammar?)
+                get modelUri(): string {
+                    return ModelUri.nested(
+                        ModelUri.Segment.property('tasks'),
+                        ModelUri.Segment.id(taskIdentity.id)
+                    )
+                },
                 updateName(newName): boolean {
                     if (taskIdentity.name !== newName) {
                         if (index._tasksByName.delete(taskIdentity.name))
@@ -69,6 +76,13 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
                     id: transitionIdentity.id,
                     get name() {
                         return name
+                    },
+                    // TODO: Here I hardcode ModelUri of Transition -- it should be taken from some centralized place (LMS grammar?)
+                    get modelUri(): string {
+                        return ModelUri.nested(
+                            ModelUri.Segment.property('transitions'),
+                            ModelUri.Segment.id(transitionIdentity.id)
+                        )
                     },
                     updateName(newName): boolean {
                         if (!equal(name, newName)) {

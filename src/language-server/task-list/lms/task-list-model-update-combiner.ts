@@ -1,21 +1,21 @@
 import { stream } from 'langium'
 import type * as id from '../../../langium-model-server/semantic/identity'
-import { ArrayUpdate, Update } from '../../../langium-model-server/lms/model'
+import { ArrayUpdate, ModelUpdate } from '../../../langium-model-server/lms/model'
 import type { ElementAttributes, ElementUpdate } from '../../../langium-model-server/lms/model'
 import type { ModelUpdateCombiner } from '../../../langium-model-server/lms/model-update-combiner'
 import type { Model, Task, Transition } from './model'
 
 export class TaskListModelUpdateCombiner implements ModelUpdateCombiner<Model> {
 
-    combineUpdates(updates: Array<Update<Model>>): Update<Model> | undefined {
+    combineUpdates(updates: Array<ModelUpdate<Model>>): ModelUpdate<Model> | undefined {
         if (updates.length < 1) {
             return undefined
         }
         if (updates.length === 1) {
             return updates[0]
         }
-        const cumulativeUpdate: Readonly<Update<Model>> = new ModelCumulativeUpdate(updates)
-        const update = Update.createEmpty<Model>(cumulativeUpdate.id)
+        const cumulativeUpdate: Readonly<ModelUpdate<Model>> = new ModelCumulativeUpdate(updates)
+        const update = ModelUpdate.createEmpty<Model>(cumulativeUpdate.id, cumulativeUpdate.modelUri)
         assignPropIfDefined(update, 'tasks', cumulativeUpdate)
         assignPropIfDefined(update, 'transitions', cumulativeUpdate)
         return update
@@ -23,13 +23,13 @@ export class TaskListModelUpdateCombiner implements ModelUpdateCombiner<Model> {
 
 }
 
-class ModelCumulativeUpdate implements Readonly<Update<Model>> {
+class ModelCumulativeUpdate implements Readonly<ModelUpdate<Model>> {
 
-    private readonly updates: Array<Update<Model>>
+    private readonly updates: Array<ModelUpdate<Model>>
     private readonly taskUpdates: Array<ArrayUpdate<Task>>
     private readonly transitionUpdates: Array<ArrayUpdate<Transition>>
 
-    public constructor(updates: Array<Update<Model>>) {
+    public constructor(updates: Array<ModelUpdate<Model>>) {
         this.updates = updates
         this.taskUpdates = updates.map(upd => upd.tasks)
             .filter((upd): upd is ArrayUpdate<Task> => !!upd && !ArrayUpdate.isEmpty(upd))
@@ -39,6 +39,10 @@ class ModelCumulativeUpdate implements Readonly<Update<Model>> {
 
     get id(): string {
         return this.updates[0].id
+    }
+
+    get modelUri(): string {
+        return this.updates[0].modelUri
     }
 
     get tasks(): ArrayUpdate<Task> | undefined {

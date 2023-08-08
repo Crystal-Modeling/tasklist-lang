@@ -1,6 +1,6 @@
 import type { ServerHttp2Stream } from 'http2'
 import type * as id from '../semantic/identity'
-import type { Highlight, Rename } from './model'
+import type { Highlight, ModelUpdate } from './model'
 import { Update } from './model'
 
 export interface LmsSubscriptions {
@@ -9,8 +9,7 @@ export interface LmsSubscriptions {
 }
 
 export interface LmsSubscription {
-    pushUpdate<SM extends id.SemanticIdentity>(update: Update<SM>): void
-    pushRename(rename: Rename): void
+    pushUpdate<SM extends id.SemanticIdentity>(modelUpdate: ModelUpdate<SM>): void
     pushHighlight(highlight: Highlight): void
 }
 
@@ -21,15 +20,10 @@ class SingleLmsSubscription implements LmsSubscription {
         this.stream = stream
     }
 
-    public pushUpdate<SM extends id.SemanticIdentity>(update: Update<SM>): void {
-        console.debug('Pushing update for model with id', update.id)
-        console.debug((Update.isEmpty(update) ? 'EMPTY' : JSON.stringify(update, undefined, 2)))
-        this.stream.write(JSON.stringify(update))
-    }
-
-    public pushRename(rename: Rename): void {
-        console.debug('Pushing rename for submodel with id', rename.id)
-        this.stream.write(JSON.stringify(rename))
+    public pushUpdate<SM extends id.SemanticIdentity>(modelUpdate: ModelUpdate<SM>): void {
+        console.debug('Pushing update for model with id', modelUpdate.id)
+        console.debug((Update.isEmpty(modelUpdate) ? 'EMPTY' : JSON.stringify(modelUpdate, undefined, 2)))
+        this.stream.write(JSON.stringify(modelUpdate))
     }
 
     public pushHighlight(highlight: Highlight): void {
@@ -42,12 +36,8 @@ class SingleLmsSubscription implements LmsSubscription {
 class CompositeLmsSubscription implements LmsSubscription {
     readonly subscriptions: Set<SingleLmsSubscription> = new Set()
 
-    public pushUpdate<SM extends id.SemanticIdentity>(update: Update<SM>): void {
-        this.subscriptions.forEach(sub => sub.pushUpdate(update))
-    }
-
-    public pushRename(rename: Rename): void {
-        this.subscriptions.forEach(sub => sub.pushRename(rename))
+    public pushUpdate<SM extends id.SemanticIdentity>(modelUpdate: ModelUpdate<SM>): void {
+        this.subscriptions.forEach(sub => sub.pushUpdate(modelUpdate))
     }
 
     public pushHighlight(highlight: Highlight): void {

@@ -2,7 +2,7 @@ import type { AstNode, LangiumDocument, ReferenceDescription } from 'langium'
 import { DefaultRenameProvider, findDeclarationNodeAtOffset, getDocument } from 'langium'
 import type { RenameParams, WorkspaceEdit } from 'vscode-languageserver'
 import { TextEdit } from 'vscode-languageserver'
-import type { SemanticIdentity } from '../semantic/identity'
+import type { NamedSemanticIdentity, SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { IdentityManager } from '../semantic/identity-manager'
 import type { LangiumModelServerServices } from '../services'
@@ -43,9 +43,11 @@ export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityI
             console.debug('Found identity for the targetNode:', renameableIdentity)
             if (renameableIdentity && renameableIdentity.updateName(newNameDefinder.targetName)) {
                 console.debug('After updating semantic element, its name has changed')
-                const rename = src.Rename.create(renameableIdentity.id, renameableIdentity.name)
+                const rename = src.ModelUpdate.createEmpty<NamedSemanticIdentity>(renameableIdentity.id, renameableIdentity.modelUri)
+                // FIXME: Refactor the line below: perhaps, I should not declare optional properties on the level of the function args
+                src.Update.assign(rename, 'name', renameableIdentity.name, renameableIdentity.name)
                 console.debug('Looking for subscriptions for id', targetIdentityIndex.id)
-                this.lmsSubscriptions.getSubscription(targetIdentityIndex.id)?.pushRename(rename)
+                this.lmsSubscriptions.getSubscription(targetIdentityIndex.id)?.pushUpdate(rename)
             }
         }
         references.forEach(reference => {

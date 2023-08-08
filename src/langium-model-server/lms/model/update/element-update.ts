@@ -17,4 +17,4 @@ export namespace ElementUpdate {
     }
 }
 
-export type ElementAttributes<T extends id.SemanticIdentity> = ExcludeExisting<keyof ElementUpdate<T>, 'id' | '__state'>
+export type ElementAttributes<T extends id.SemanticIdentity> = ExcludeExisting<keyof ElementUpdate<T>, keyof id.SemanticIdentity | keyof id.ModelUri | '__state'>

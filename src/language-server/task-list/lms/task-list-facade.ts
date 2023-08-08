@@ -154,10 +154,12 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             ).then(editingResult => {
                 if (editingResult.successful) {
                     console.debug('Modified Transition attributes. New transition', newTransition)
-                    const update = lms.Update.createEmpty<Transition>(transition.id)
-                    lms.Update.assignArtificialIfUpdated(update, 'sourceTaskId', transition.sourceTask.id, newTransition.sourceTask.id)
-                    lms.Update.assignArtificialIfUpdated(update, 'targetTaskId', transition.targetTask.id, newTransition.targetTask.id)
-                    this.lmsSubscriptions.getSubscription(rootModelId)?.pushUpdate(update)
+                    if (renameableTransitionIdentity) {
+                        const update = lms.ModelUpdate.createEmpty<Transition>(renameableTransitionIdentity.id, renameableTransitionIdentity.modelUri)
+                        lms.Update.assignArtificialIfUpdated(update, 'sourceTaskId', transition.sourceTask.id, newTransition.sourceTask.id)
+                        lms.Update.assignArtificialIfUpdated(update, 'targetTaskId', transition.targetTask.id, newTransition.targetTask.id)
+                        this.lmsSubscriptions.getSubscription(rootModelId)?.pushUpdate(update)
+                    }
                 } else {
                     // Reverting modified identity on failure
                     renameableTransitionIdentity?.updateName(transition.name)
