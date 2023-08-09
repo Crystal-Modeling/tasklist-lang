@@ -1,7 +1,8 @@
+import type { SemanticPropertyName } from '../../../langium-model-server/semantic/identity'
 import { ModelUri, type RenameableSemanticIdentity } from '../../../langium-model-server/semantic/identity'
 import type { IdentityIndex } from '../../../langium-model-server/semantic/identity-index'
 import { ValueBasedMap, equal } from '../../../langium-model-server/utils/collections'
-import type { Model, Task, TaskListDerivativeNameBuilder, TransitionDerivativeName } from './task-list-identity'
+import type { Model, Task, TransitionDerivativeName } from './task-list-identity'
 import { Transition } from './task-list-identity'
 
 export abstract class TaskListIdentityIndex implements IdentityIndex {
@@ -34,8 +35,8 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         }
     }
 
-    public findElementByName(name: string): RenameableSemanticIdentity<string> | undefined {
-        const taskIdentity = this._tasksByName.get(name)
+    public findIdentityById(id: string): RenameableSemanticIdentity<SemanticPropertyName> | undefined {
+        const taskIdentity = this._tasksById.get(id)
         if (taskIdentity) {
             const index = this
             return {
@@ -64,38 +65,34 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         return undefined
     }
 
-    // NOTE: Looking for a derived element, but since it is used by lang-specific component (task-list-facade), `Transition` name is specific (not `DerivedElement`)
-    // NOTE: No, it should rather be a generic component, since it has to be **renameable**. I can use TypeGuard to specify which kind of `DerivedElement` I want
-    public findDerivedElementById(id: string, nameBuilder: TaskListDerivativeNameBuilder): RenameableSemanticIdentity<ReturnType<TaskListDerivativeNameBuilder['buildName']>> | undefined {
-        if (nameBuilder.kind === Transition.KIND) {
-            const transitionIdentity = this._transitionsById.get(id)
-            if (transitionIdentity) {
-                const index = this
-                let name = nameBuilder.buildName(transitionIdentity)
-                return {
-                    id: transitionIdentity.id,
-                    get name() {
-                        return name
-                    },
-                    // TODO: Here I hardcode ModelUri of Transition -- it should be taken from some centralized place (LMS grammar?)
-                    get modelUri(): string {
-                        return ModelUri.nested(
-                            ModelUri.Segment.property('transitions'),
-                            ModelUri.Segment.id(transitionIdentity.id)
-                        )
-                    },
-                    updateName(newName): boolean {
-                        if (!equal(name, newName)) {
-                            if (index._transitionsByName.delete(name))
-                                index._transitionsByName.set(newName, transitionIdentity)
-                            name = newName
-                            transitionIdentity.sourceTaskId = name[0]
-                            transitionIdentity.targetTaskId = name[1]
-                            return true
-                        }
-                        return false
-                    },
-                }
+    public findTransitionIdentityById(id: string): RenameableSemanticIdentity<TransitionDerivativeName> | undefined {
+        const transitionIdentity = this._transitionsById.get(id)
+        if (transitionIdentity) {
+            const index = this
+            let name = Transition.name(transitionIdentity)
+            return {
+                id: transitionIdentity.id,
+                get name() {
+                    return name
+                },
+                // TODO: Here I hardcode ModelUri of Transition -- it should be taken from some centralized place (LMS grammar?)
+                get modelUri(): string {
+                    return ModelUri.nested(
+                        ModelUri.Segment.property('transitions'),
+                        ModelUri.Segment.id(transitionIdentity.id)
+                    )
+                },
+                updateName(newName): boolean {
+                    if (!equal(name, newName)) {
+                        if (index._transitionsByName.delete(name))
+                            index._transitionsByName.set(newName, transitionIdentity)
+                        name = newName
+                        transitionIdentity.sourceTaskId = name[0]
+                        transitionIdentity.targetTaskId = name[1]
+                        return true
+                    }
+                    return false
+                },
             }
         }
         return undefined

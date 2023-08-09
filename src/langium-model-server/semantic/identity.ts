@@ -5,11 +5,26 @@ export type SemanticIdentity = {
 
 // TODO: Add SemanticIdentity namespace, that would be in charge of generating new IDs (instead of TaskList Model)
 
-export type DerivativeName = string[]
+export type SemanticDerivativeName = string[]
+export type SemanticPropertyName = string
+export type SemanticName = SemanticPropertyName | SemanticDerivativeName
 
-export type DerivativeNameBuilder<T extends SemanticIdentity, NAME extends DerivativeName> = {
-    buildName: (element: T) => NAME
-}
+// export type SemanticNameBuilder<T extends SemanticIdentity, NAME extends SemanticName> = {
+//     readonly kind: string
+//     readonly buildName: (element: T) => NAME
+// }
+
+// export class PropertyBasedNameBuilder<T extends NamedSemanticIdentity<SemanticPropertyName>> implements SemanticNameBuilder<T, SemanticPropertyName> {
+//     readonly kind: string
+
+//     constructor(key: string) {
+//         this.kind = key
+//     }
+
+//     public buildName(element: T): SemanticPropertyName {
+//         return element.name
+//     }
+// }
 
 export type ModelUri = {
     readonly modelUri: string
@@ -43,11 +58,11 @@ export namespace ModelUri {
     }
 }
 
-export type NamedSemanticIdentity<NAME extends string | DerivativeName = string> = Readonly<SemanticIdentity> & ModelUri & {
+export type NamedSemanticIdentity<NAME extends SemanticName> = Readonly<SemanticIdentity> & {
     readonly name: NAME
 }
 
-export type RenameableSemanticIdentity<NAME extends string | DerivativeName> = NamedSemanticIdentity<NAME> & {
+export type RenameableSemanticIdentity<NAME extends SemanticName> = NamedSemanticIdentity<NAME> & ModelUri & {
     /**
      * Replaces the `name` value with supplied argument. If the name changed, returns `true`.
      * Else returns `false`

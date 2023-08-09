@@ -7,6 +7,7 @@ import type { Creation, CreationParams, Modification } from '../../../langium-mo
 import * as lms from '../../../langium-model-server/lms/model'
 import { EditingResult } from '../../../langium-model-server/lms/model'
 import type { LmsSubscriptions } from '../../../langium-model-server/lms/subscriptions'
+import type { RenameableSemanticIdentity, SemanticPropertyName } from '../../../langium-model-server/semantic/identity'
 import * as id from '../../../langium-model-server/semantic/model'
 import type { LangiumModelServerServices } from '../../../langium-model-server/services'
 import type { LmsDocument } from '../../../langium-model-server/workspace/documents'
@@ -104,9 +105,33 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             return EditingResult.failedValidation('Unable to resolve task by id ' + modelId)
         }
 
+        let renameableTaskIdentity: RenameableSemanticIdentity<SemanticPropertyName> | undefined
+
         const textEdit = this.computeTaskUpdate(task, taskModification)
+
         if (textEdit) {
-            return this.applyTextEdit(lmsDocument, textEdit, 'Updated task ' + task.name)
+            if (taskModification.name) {
+                renameableTaskIdentity = this.identityManager.getIdentityIndex(lmsDocument).findIdentityById(task.id)
+                renameableTaskIdentity?.updateName(taskModification.name)
+            }
+            return this.applyTextEdit(lmsDocument, textEdit, 'Updated task ' + task.name
+            ).then(editingResult => {
+                if (editingResult.successful) {
+                    console.debug('Modified Task attributes:', taskModification)
+                    if (renameableTaskIdentity) {
+                        const update = lms.ModelUpdate.createEmpty<Task>(renameableTaskIdentity.id, renameableTaskIdentity.modelUri)
+                        lms.Update.assignArtificialIfUpdated(update, 'name', task.name, taskModification.name ?? task.name)
+                        this.lmsSubscriptions.getSubscription(rootModelId)?.pushUpdate(update)
+                    }
+                } else {
+                    // Reverting modified identity on failure
+                    renameableTaskIdentity?.updateName(task.name)
+                }
+                return editingResult
+            }, failure => {
+                renameableTaskIdentity?.updateName(task.name)
+                return failure
+            })
         } else {
             return EditingResult.unmodified()
         }
@@ -143,7 +168,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         const newTransition = semantic.Transition.createNew(newSourceTask ?? transition.sourceTask, newTargetTask ?? transition.targetTask)
 
         const renameableTransitionIdentity = this.identityManager.getIdentityIndex(lmsDocument)
-            .findDerivedElementById(transition.id, identity.Transition.nameBuilder)
+            .findTransitionIdentityById(transition.id)
 
         const changes = this.computeTransitionUpdate(transition, newTransition)
 
@@ -230,9 +255,9 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             suffix = '\n'
         }
 
-        const serializedModel = prefix + `task ${newTask.name} "${newTask.content}"` + suffix
+        const serializedTask = `task ${newTask.name} "${newTask.content}"`
 
-        return TextEdit.insert(position, serializedModel)
+        return TextEdit.insert(position, prefix + serializedTask + suffix)
     }
 
     private computeTransitionCreation({ sourceTask, targetTask }: semantic.NewTransition,
@@ -265,13 +290,12 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         if (!task.$cstNode) {
             throw new Error('Cannot locate task ' + task.name + '(' + task.id + ') in text')
         }
-        if (taskModification.content && taskModification.content !== task.content) {
-            const serializedTaskContent = `"${taskModification.content}"`
-            const contentNode = findNodeForProperty(task.$cstNode, 'content')
+        if (taskModification.content || taskModification.name) {
+            const serializedTask = `task ${taskModification.name ?? task.name} "${taskModification.content ?? task.content}"`
+            const start = task.$cstNode.range.start
+            const end = findNodeForProperty(task.$cstNode, 'content')?.range.end ?? task.$cstNode.range.end
 
-            return contentNode
-                ? TextEdit.replace(contentNode.range, serializedTaskContent)
-                : TextEdit.insert(task.$cstNode.range.end, ' ' + serializedTaskContent)
+            return TextEdit.replace({ start, end }, serializedTask)
         }
         return undefined
     }

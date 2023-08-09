@@ -1,5 +1,5 @@
 import * as uuid from 'uuid'
-import type { DerivativeNameBuilder } from '../../../langium-model-server/semantic/identity'
+import type { SemanticDerivativeName } from '../../../langium-model-server/semantic/identity'
 import { isArray, isDefinedObject } from '../../../langium-model-server/utils/types'
 
 export interface Model {
@@ -10,7 +10,14 @@ export interface Model {
 
 export interface Task {
     id: string
-    name: string // Derivative identity of Task (since its Source Model is based on the Task AstNode)
+    name: string
+}
+
+export namespace Task {
+    export const KIND = 'Task'
+
+    // export const nameBuilder = new PropertyBasedNameBuilder<Task>(Task.KIND)
+
 }
 
 export interface Transition {
@@ -22,29 +29,23 @@ export interface Transition {
 export namespace Transition {
     export const KIND = 'Transition'
 
-    export const nameBuilder: Transition.NameBuilder = {
-        kind: KIND,
-        buildName: name,
-    }
+    // export const nameBuilder: SemanticNameBuilder<Transition, TransitionDerivativeName> = {
+    //     kind: Transition.KIND,
+    //     buildName: name
+    // }
 
     export function name(transition: Transition): TransitionDerivativeName {
         return TransitionDerivativeName.of(transition.sourceTaskId, transition.targetTaskId)
     }
-
-    export interface NameBuilder extends DerivativeNameBuilder<Transition, TransitionDerivativeName> {
-        kind: typeof Transition.KIND
-    }
 }
 
-export type TransitionDerivativeName = [sourceTaskId: string, targetTaskId: string]
+export type TransitionDerivativeName = SemanticDerivativeName & [sourceTaskId: string, targetTaskId: string]
 
 export namespace TransitionDerivativeName {
     export function of(sourceTaskId: string, targetTaskId: string): TransitionDerivativeName {
         return [sourceTaskId, targetTaskId]
     }
 }
-
-export type TaskListDerivativeNameBuilder = Transition.NameBuilder
 
 export namespace Model {
     export function is(obj: unknown): obj is Model {

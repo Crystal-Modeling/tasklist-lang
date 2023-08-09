@@ -9,6 +9,7 @@ import type { LangiumModelServerServices } from '../services'
 import * as src from '../lms/model'
 import type { LmsSubscriptions } from '../lms/subscriptions'
 import type { LmsDocument } from '../workspace/documents'
+import * as sem from '../semantic/model'
 
 export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> extends DefaultRenameProvider {
 
@@ -35,15 +36,14 @@ export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityI
         const references = this.references.findReferences(targetNode, options)
         const newNameDefinder = this.getNewNameDefiner(targetNode, params)
 
-        const targetIdentityIndex = this.identityManager.getIdentityIndex(getDocument(targetNode))
-        console.debug('Found identity index for the document:', targetIdentityIndex)
-        const targetNodeName = this.nameProvider.getName(targetNode)
-        if (targetNodeName) {
-            const renameableIdentity = targetIdentityIndex.findElementByName(targetNodeName)
+        if (sem.Identified.is(targetNode)) {
+            const targetIdentityIndex = this.identityManager.getIdentityIndex(getDocument(targetNode))
+            console.debug('Found identity index for the document:', targetIdentityIndex)
+            const renameableIdentity = targetIdentityIndex.findIdentityById(targetNode.id)
             console.debug('Found identity for the targetNode:', renameableIdentity)
             if (renameableIdentity && renameableIdentity.updateName(newNameDefinder.targetName)) {
                 console.debug('After updating semantic element, its name has changed')
-                const rename = src.ModelUpdate.createEmpty<NamedSemanticIdentity>(renameableIdentity.id, renameableIdentity.modelUri)
+                const rename = src.ModelUpdate.createEmpty<NamedSemanticIdentity<string>>(renameableIdentity.id, renameableIdentity.modelUri)
                 // FIXME: Refactor the line below: perhaps, I should not declare optional properties on the level of the function args
                 src.Update.assign(rename, 'name', renameableIdentity.name, renameableIdentity.name)
                 console.debug('Looking for subscriptions for id', targetIdentityIndex.id)
