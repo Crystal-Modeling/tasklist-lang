@@ -1,11 +1,27 @@
 import type { LangiumSharedServices } from 'langium'
-import { startLanguageServer } from 'langium'
-import type { Connection } from 'vscode-languageserver'
+import { DefaultLanguageServer, startLanguageServer } from 'langium'
+import type { Connection, InitializeParams, InitializeResult } from 'vscode-languageserver'
 import { FileChangeType } from 'vscode-languageserver'
 import type { SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { LangiumModelServerAddedServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
+
+export class LmsLanguageServer extends DefaultLanguageServer {
+
+    protected override buildInitializeResult(_params: InitializeParams): InitializeResult {
+        const initializeResult = super.buildInitializeResult(_params)
+
+        initializeResult.capabilities.workspace = {
+            ...initializeResult.capabilities.workspace,
+            fileOperations: {
+                didRename: { filters: [{ pattern: { glob: '**' } }] }
+            }
+        }
+
+        return initializeResult
+    }
+}
 
 /**
  * Entry point function to launch LMS language server.
@@ -30,18 +46,25 @@ function addIdentityProcessingHandlers<SM extends SemanticIdentity, II extends I
     const semanticIndexManager = lmsServices.semantic.IdentityManager
 
     connection.onDidSaveTextDocument(params => {
-        semanticIndexManager.saveSemanticIdentity(params.textDocument.uri)
+        semanticIndexManager.saveIdentity(params.textDocument.uri)
     })
 
     connection.onDidChangeWatchedFiles(params => {
         for (const event of params.changes) {
             switch (event.type) {
                 case FileChangeType.Deleted:
-                    semanticIndexManager.deleteSemanticIdentity(event.uri)
+                    semanticIndexManager.deleteIdentity(event.uri)
                     break
                 default:
                     break
             }
         }
+    })
+
+    connection.workspace.onDidRenameFiles(params => {
+        console.debug('============= > RENAMED FILES!!!', params.files)
+        params.files.forEach(fileRename => {
+            semanticIndexManager.renameIdentity(fileRename.oldUri, fileRename.newUri)
+        })
     })
 }

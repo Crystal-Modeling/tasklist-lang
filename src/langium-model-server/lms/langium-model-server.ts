@@ -5,24 +5,24 @@ import type { SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { LangiumModelServerServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
-import { LangiumModelServerRouter } from './source-model-router'
+import { LangiumModelServerRouter } from './router'
 
 export function startLangiumModelServer<
     SM extends SemanticIdentity,
     II extends IdentityIndex,
     D extends LmsDocument
->(lmsServices: LangiumModelServerServices<SM, II, D>): LangiumSourceModelServer {
-    const server = lmsServices.source.LangiumSourceModelServer
+>(lmsServices: LangiumModelServerServices<SM, II, D>): LangiumModelServer {
+    const server = lmsServices.lms.LangiumModelServer
     server.start(8443)
     return server
 }
 
-export interface LangiumSourceModelServer {
+export interface LangiumModelServer {
     start(port: number): void
     shutDown(callback?: (err?: Error | undefined) => void): void
 }
 
-export class DefaultLangiumSourceModelServer<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements LangiumSourceModelServer {
+export class DefaultLangiumSourceModelServer<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements LangiumModelServer {
 
     protected readonly http2Server: http2.Http2SecureServer
 

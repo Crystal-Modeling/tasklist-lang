@@ -1,8 +1,6 @@
 import * as uuid from 'uuid'
-import type * as sem from '../../../langium-model-server/semantic/model'
-import type * as semantic from './model'
+import type { SemanticDerivativeName } from '../../../langium-model-server/semantic/identity'
 import { isArray, isDefinedObject } from '../../../langium-model-server/utils/types'
-import type * as ast from '../../generated/ast'
 
 export interface Model {
     id: string
@@ -12,13 +10,41 @@ export interface Model {
 
 export interface Task {
     id: string
-    name: string // Derivative identity of Task (since its Source Model is based on the Task AstNode)
+    name: string
+}
+
+export namespace Task {
+    export const KIND = 'Task'
+
+    // export const nameBuilder = new PropertyBasedNameBuilder<Task>(Task.KIND)
+
 }
 
 export interface Transition {
     id: string
     sourceTaskId: string
     targetTaskId: string
+}
+
+export namespace Transition {
+    export const KIND = 'Transition'
+
+    // export const nameBuilder: SemanticNameBuilder<Transition, TransitionDerivativeName> = {
+    //     kind: Transition.KIND,
+    //     buildName: name
+    // }
+
+    export function name(transition: Transition): TransitionDerivativeName {
+        return TransitionDerivativeName.of(transition.sourceTaskId, transition.targetTaskId)
+    }
+}
+
+export type TransitionDerivativeName = SemanticDerivativeName & [sourceTaskId: string, targetTaskId: string]
+
+export namespace TransitionDerivativeName {
+    export function of(sourceTaskId: string, targetTaskId: string): TransitionDerivativeName {
+        return [sourceTaskId, targetTaskId]
+    }
 }
 
 export namespace Model {
@@ -35,13 +61,13 @@ export namespace Model {
         return true
     }
 
-    function isTask(obj: unknown): obj is Task {
+    export function isTask(obj: unknown): obj is Task {
         return isDefinedObject(obj)
             && typeof obj.id === 'string'
             && typeof obj.name === 'string'
     }
 
-    function isTransition(obj: unknown): obj is Transition {
+    export function isTransition(obj: unknown): obj is Transition {
         return isDefinedObject(obj)
             && typeof obj.id === 'string'
             && typeof obj.sourceTaskId === 'string'
@@ -56,18 +82,19 @@ export namespace Model {
         }
     }
 
-    export function newTask(task: sem.Valid<ast.Task>): Task {
+    export function newTask(name: string): Task {
         return {
             id: uuid.v4(),
-            name: task.name
+            name
         }
     }
 
-    export function newTransition(transition: semantic.Transition): Transition {
+    // TODO: Refactor these functions to a dedicated namespaces(?) So that the logic of mapping between Transition args and name is in one place
+    export function newTransition(name: TransitionDerivativeName): Transition {
         return {
             id: uuid.v4(),
-            sourceTaskId: transition.name[0],
-            targetTaskId: transition.name[1]
+            sourceTaskId: name[0],
+            targetTaskId: name[1]
         }
     }
 }

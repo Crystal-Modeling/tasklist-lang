@@ -6,14 +6,14 @@ import {
     createDefaultModule, createDefaultSharedModule,
     inject
 } from 'langium'
-import { createLangiumModelServerDefaultModule } from '../langium-model-server/langium-model-server-module'
+import { createLangiumModelServerDefaultModule, langiumModelServerDefaultSharedModule } from '../langium-model-server/langium-model-server-module'
 import { TaskListGeneratedModule, TaskListLangGeneratedSharedModule } from './generated/module'
 import type { TaskListServices } from './task-list/task-list-module'
 import { TaskListModule } from './task-list/task-list-module'
 import { registerValidationChecks } from './task-list/validation/task-list-validation'
 
-import type * as source from './task-list/source/model'
 import type { TaskListIdentityIndex } from './task-list/semantic/task-list-identity-index'
+import type * as source from './task-list/lms/model'
 import type { TaskListDocument } from './task-list/workspace/documents'
 
 /**
@@ -37,6 +37,7 @@ export function createTaskListLangServices(context: DefaultSharedModuleContext):
 } {
     const shared = inject(
         createDefaultSharedModule(context),
+        langiumModelServerDefaultSharedModule,
         TaskListLangGeneratedSharedModule
     )
     const TaskList = inject(

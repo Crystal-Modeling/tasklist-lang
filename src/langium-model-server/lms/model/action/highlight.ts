@@ -1,4 +1,4 @@
-import type { Update } from '../update'
+import type { Update } from '../update/update'
 import type * as id from '../../../semantic/identity'
 
 export type Highlight = Update<Readonly<id.SemanticIdentity>, 'HIGHLIGHTED'>

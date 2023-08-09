@@ -1,15 +1,16 @@
-import type { RenameableSemanticIdentity } from '../../../langium-model-server/semantic/identity'
+import type { SemanticPropertyName } from '../../../langium-model-server/semantic/identity'
+import { ModelUri, type RenameableSemanticIdentity } from '../../../langium-model-server/semantic/identity'
 import type { IdentityIndex } from '../../../langium-model-server/semantic/identity-index'
-import { ValueBasedMap } from '../../../langium-model-server/utils/collections'
-import type * as semantic from './model'
-import type { Model, Task, Transition } from './task-list-identity'
+import { ValueBasedMap, equal } from '../../../langium-model-server/utils/collections'
+import type { Model, Task, TransitionDerivativeName } from './task-list-identity'
+import { Transition } from './task-list-identity'
 
 export abstract class TaskListIdentityIndex implements IdentityIndex {
     public readonly id: string
     private readonly _tasksById: Map<string, Task> = new Map()
     private readonly _tasksByName: Map<string, Task> = new Map()
     private readonly _transitionsById: Map<string, Transition> = new Map()
-    private readonly _transitionsByName: ValueBasedMap<semantic.TransitionDerivativeName, Transition>
+    private readonly _transitionsByName: ValueBasedMap<TransitionDerivativeName, Transition>
         = new ValueBasedMap()
 
     public constructor(identityModel: Model) {
@@ -22,7 +23,7 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         return new Map(this._tasksByName)
     }
 
-    public get transitionsByName(): ValueBasedMap<semantic.TransitionDerivativeName, Readonly<Transition>> {
+    public get transitionsByName(): ValueBasedMap<TransitionDerivativeName, Readonly<Transition>> {
         return this._transitionsByName.copy()
     }
 
@@ -34,24 +35,60 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         }
     }
 
-    public getTaskIdByName(name: string): string | undefined {
-        return this._tasksByName.get(name)?.id
-    }
-
-    public findElementByName(name: string): RenameableSemanticIdentity | undefined {
-        const semanticTask = this._tasksByName.get(name)
-        if (semanticTask) {
+    public findIdentityById(id: string): RenameableSemanticIdentity<SemanticPropertyName> | undefined {
+        const taskIdentity = this._tasksById.get(id)
+        if (taskIdentity) {
             const index = this
             return {
-                id: semanticTask.id,
+                id: taskIdentity.id,
                 get name(): string {
-                    return semanticTask.name
+                    return taskIdentity.name
+                },
+                // TODO: Here I hardcode ModelUri of Task -- it should be taken from some centralized place (LMS grammar?)
+                get modelUri(): string {
+                    return ModelUri.nested(
+                        ModelUri.Segment.property('tasks'),
+                        ModelUri.Segment.id(taskIdentity.id)
+                    )
                 },
                 updateName(newName): boolean {
-                    if (semanticTask.name !== newName) {
-                        if (index._tasksByName.delete(semanticTask.name))
-                            index._tasksByName.set(newName, semanticTask)
-                        semanticTask.name = newName
+                    if (taskIdentity.name !== newName) {
+                        if (index._tasksByName.delete(taskIdentity.name))
+                            index._tasksByName.set(newName, taskIdentity)
+                        taskIdentity.name = newName
+                        return true
+                    }
+                    return false
+                },
+            }
+        }
+        return undefined
+    }
+
+    public findTransitionIdentityById(id: string): RenameableSemanticIdentity<TransitionDerivativeName> | undefined {
+        const transitionIdentity = this._transitionsById.get(id)
+        if (transitionIdentity) {
+            const index = this
+            let name = Transition.name(transitionIdentity)
+            return {
+                id: transitionIdentity.id,
+                get name() {
+                    return name
+                },
+                // TODO: Here I hardcode ModelUri of Transition -- it should be taken from some centralized place (LMS grammar?)
+                get modelUri(): string {
+                    return ModelUri.nested(
+                        ModelUri.Segment.property('transitions'),
+                        ModelUri.Segment.id(transitionIdentity.id)
+                    )
+                },
+                updateName(newName): boolean {
+                    if (!equal(name, newName)) {
+                        if (index._transitionsByName.delete(name))
+                            index._transitionsByName.set(newName, transitionIdentity)
+                        name = newName
+                        transitionIdentity.sourceTaskId = name[0]
+                        transitionIdentity.targetTaskId = name[1]
                         return true
                     }
                     return false
@@ -82,7 +119,7 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
 
     public addTransition(transition: Transition) {
         this._transitionsById.set(transition.id, transition)
-        this._transitionsByName.set([transition.sourceTaskId, transition.targetTaskId], transition)
+        this._transitionsByName.set(Transition.name(transition), transition)
     }
 
     public deleteTransitions(transitionIds: Iterable<string>) {
@@ -95,7 +132,7 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         const transition = this._transitionsById.get(transitionId)
         if (transition) {
             this._transitionsById.delete(transition.id)
-            this._transitionsByName.delete([transition.sourceTaskId, transition.targetTaskId])
+            this._transitionsByName.delete(Transition.name(transition))
         }
     }
 }

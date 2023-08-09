@@ -1,5 +1,5 @@
-import type * as src from '../source/model'
-import type { LmsDocument } from '../workspace/documents'
+import type * as src from '../lms/model'
+import type { Initialized, LmsDocument } from '../workspace/documents'
 import type { SemanticIdentity } from './identity'
 
 export interface IdentityReconciler<SM extends SemanticIdentity, D extends LmsDocument> {
@@ -7,4 +7,4 @@ export interface IdentityReconciler<SM extends SemanticIdentity, D extends LmsDo
 }
 
 export type IdentityReconciliationIteration<SM extends SemanticIdentity, D extends LmsDocument>
-    = (document: D, update: src.Update<SM>) => void
+    = (document: Initialized<D>, update: src.Update<SM>) => void

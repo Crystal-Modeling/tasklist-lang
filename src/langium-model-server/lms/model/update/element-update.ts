@@ -1,5 +1,5 @@
-import type * as id from '../../semantic/identity'
-import type { ExcludeExisting } from '../../utils/types'
+import type * as id from '../../../semantic/identity'
+import type { ExcludeExisting } from '../../../utils/types'
 import { Update } from './update'
 
 export type ElementState = 'DISAPPEARED' | 'REAPPEARED'
@@ -17,4 +17,4 @@ export namespace ElementUpdate {
     }
 }
 
-export type ElementAttributes<T extends id.SemanticIdentity> = ExcludeExisting<keyof ElementUpdate<T>, 'id' | '__state'>
+export type ElementAttributes<T extends id.SemanticIdentity> = ExcludeExisting<keyof ElementUpdate<T>, keyof id.SemanticIdentity | keyof id.ModelUri | '__state'>

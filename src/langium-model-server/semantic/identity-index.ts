@@ -1,8 +1,9 @@
-import type { RenameableSemanticIdentity } from './identity'
+import type { RenameableSemanticIdentity, SemanticPropertyName } from './identity'
 
 export type IdentityIndex = {
     readonly id: string
-    findElementByName(name: string): RenameableSemanticIdentity | undefined
+    findIdentityById(id: string): RenameableSemanticIdentity<SemanticPropertyName> | undefined
+    // findDerivedIdentityById<T extends SemanticIdentity, NAME extends SemanticDerivativeName>(id: string, nameBuilder: SemanticNameBuilder<T, NAME>): RenameableSemanticIdentity<NAME> | undefined
 }
 
 export type ModelExposedIdentityIndex<SemI extends IdentityIndex> = SemI & {

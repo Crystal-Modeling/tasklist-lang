@@ -1,12 +1,15 @@
-import type * as id from '../../semantic/identity'
-import type { KeysOfType, ModelAttribute, OptionalKeys, PrimitiveModelAttribute } from '../../utils/types'
+import type * as id from '../../../semantic/identity'
+import type { KeysOfType, ModelAttribute, OptionalKeys, PrimitiveModelAttribute } from '../../../utils/types'
 import type { ArrayUpdate } from './array-update'
 
 /**
  * Describes changes made to SourceModel element of type T
  */
 export type Update<T extends id.SemanticIdentity, STATE extends string = never> =
-    Readonly<id.SemanticIdentity> & ModelChanges<Omit<T, keyof id.SemanticIdentity>, STATE>
+    Partial<id.ModelUri> &
+    Readonly<id.SemanticIdentity> &
+    ModelChanges<Omit<T, keyof id.SemanticIdentity | keyof id.ModelUri>, STATE>
+
 export namespace Update {
 
     export function isEmpty<T extends id.SemanticIdentity, S extends string>(update: Update<T, S>): boolean {
@@ -15,7 +18,8 @@ export namespace Update {
             // TODO: Currently I check here also that the value != undefined. However, I think it shouldn't be, since:
             // 1. I strive to only assign values if they changed
             // 2. For optional attributes I designed __removeAttribute properties
-            if (key !== 'id' && Object.prototype.hasOwnProperty.call(update, key) && updateRecord[key] !== undefined) {
+            // RECHECK: I wonder, if I can omit comparing to modelUri (if I define it at ModelUpdate, which is an Update child). Perhaps it won't appear at the object prototype?
+            if (key !== 'id' && key !== 'modelUri' && Object.prototype.hasOwnProperty.call(update, key) && updateRecord[key] !== undefined) {
                 return false
             }
         }
@@ -31,6 +35,14 @@ export namespace Update {
         key: PrimitiveModelAttributeChangesRequiredKeysOfType<T, V>, value: V | undefined, newValue: V | undefined, defaultValue: V): void {
         if ((newValue ?? defaultValue) !== (value ?? defaultValue)) {
             (update as Record<PrimitiveModelAttributeChangesRequiredKeysOfType<T, V>, V>)[key] = newValue ?? defaultValue
+        }
+    }
+
+    // NOTE: Values taken from an Artificial AST should not be undefined, since they are validated (e.g., other nodes semantic IDs)
+    export function assignArtificialIfUpdated<T extends id.SemanticIdentity, V extends PrimitiveModelAttribute, S extends string>(update: Update<T, S>,
+        key: PrimitiveModelAttributeChangesRequiredKeysOfType<T, V>, value: V, newValue: V): void {
+        if (newValue !== value) {
+            (update as Record<PrimitiveModelAttributeChangesRequiredKeysOfType<T, V>, V>)[key] = newValue
         }
     }
 
@@ -60,4 +72,4 @@ type NestedModelsChanges<T> = {
 }
 
 type PrimitiveModelAttributeChangesRequiredKeysOfType<T extends id.SemanticIdentity, V extends PrimitiveModelAttribute> =
-    Exclude<KeysOfType<T, V>, 'id' | OptionalKeys<T>>
+    Exclude<KeysOfType<T, V>, keyof id.SemanticIdentity | keyof id.ModelUri | OptionalKeys<T>>

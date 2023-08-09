@@ -6,10 +6,10 @@ import { TaskListIdentityManager } from './semantic/task-list-identity-manager'
 import { TaskListIdentityReconciler } from './semantic/task-list-identity-reconciler'
 import { TaskListIdentityStorage } from './semantic/task-list-identity-storage'
 import { TaskListSemanticDomain } from './semantic/task-list-semantic-domain'
-import type * as source from './source/model'
-import { TaskListSourceModelService } from './source/task-list-source-model-service'
-import { TaskListSourceUpdateCombiner } from './source/task-list-source-update-combiner'
-import { TaskListSourceUpdateManager } from './source/task-list-source-update-manager'
+import type * as source from './lms/model'
+import { TaskListLangiumModelServerFacade } from './lms/task-list-facade'
+import { TaskListModelUpdateCombiner } from './lms/task-list-model-update-combiner'
+import { TaskListModelUpdateCalculators } from './lms/task-list-model-update-calculation'
 import type { TaskListDocument } from './workspace/documents'
 import { isTaskListDocument } from './workspace/documents'
 
@@ -24,9 +24,9 @@ export type TaskListAddedServices = {
         // Redefining the type of IdentityManager to be used in TaskListIdentityReconciler
         IdentityManager: TaskListIdentityManager
     },
-    source: {
+    lms: {
         // Redefining the type
-        SourceUpdateManager: TaskListSourceUpdateManager
+        ModelUpdateCalculators: TaskListModelUpdateCalculators
     }
 }
 
@@ -54,9 +54,9 @@ export const TaskListModule: Module<TaskListServices, PartialLangiumModelServerS
         IdentityReconciler: (services) => new TaskListIdentityReconciler(services),
         SemanticDomainFactory: () => TaskListSemanticDomain.create,
     },
-    source: {
-        SourceModelService: (services) => new TaskListSourceModelService(services),
-        SourceUpdateManager: () => new TaskListSourceUpdateManager(),
-        SourceUpdateCombiner: () => new TaskListSourceUpdateCombiner(),
+    lms: {
+        LangiumModelServerFacade: (services) => new TaskListLangiumModelServerFacade(services),
+        ModelUpdateCalculators: () => new TaskListModelUpdateCalculators(),
+        ModelUpdateCombiner: () => new TaskListModelUpdateCombiner(),
     },
 }

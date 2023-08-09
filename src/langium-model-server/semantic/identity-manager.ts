@@ -1,36 +1,27 @@
-import type { AstNode, LangiumDocument, NameProvider } from 'langium'
-import { getDocument } from 'langium'
 import { URI } from 'vscode-uri'
 import type { LangiumModelServerServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
-import type { RenameableSemanticIdentity, SemanticIdentity } from './identity'
+import type { SemanticIdentity } from './identity'
 import type { IdentityIndex, ModelExposedIdentityIndex } from './identity-index'
 import type { IdentityStorage } from './identity-storage'
 
-export interface IdentityManager<II extends IdentityIndex = IdentityIndex> {
+export interface IdentityManager<II extends IdentityIndex = IdentityIndex, D extends LmsDocument = LmsDocument> {
     getLanguageDocumentUri(id: string): URI | undefined
-    /**
-     * Searches for a Semantic Identity element, which corresponds to specified {@link astNode} by its name.
-     * @returns a view over the identity element, if found.
-     * @param astNode An {@link AstNode}, which name is used to find a corresponding semantic identity
-     */
-    findIdentityByAstName(astNode: AstNode): RenameableSemanticIdentity | undefined
-    getIdentityIndex(langiumDocument: LangiumDocument): II | undefined
-    saveSemanticIdentity(languageDocumentUri: string): void
-    loadSemanticIdentity(languageDocumentUri: string): void
-    deleteSemanticIdentity(languageDocumentUri: string): void
+    getIdentityIndex(lmsDocument: D): II
+    saveIdentity(languageDocumentUri: string): void
+    loadIdentity(languageDocumentUri: string): void
+    deleteIdentity(languageDocumentUri: string): void
+    renameIdentity(oldLanguageDocumentUri: string, languageDocumentUri: string): void
 }
 
-export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements IdentityManager<II> {
+export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements IdentityManager<II, D> {
 
     protected identityStorage: IdentityStorage
-    protected nameProvider: NameProvider
     private indexRegistryByLanguageDocumentUri: Map<string, ModelExposedIdentityIndex<II>>
     private languageDocumentUriById: Map<string, URI>
 
     public constructor(services: LangiumModelServerServices<SM, II, D>) {
         this.identityStorage = services.semantic.IdentityStorage
-        this.nameProvider = services.references.NameProvider
         this.indexRegistryByLanguageDocumentUri = new Map()
         this.languageDocumentUriById = new Map()
     }
@@ -39,34 +30,38 @@ export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II ex
         return this.languageDocumentUriById.get(id)
     }
 
-    public findIdentityByAstName(astNode: AstNode): RenameableSemanticIdentity | undefined {
-        const name = this.nameProvider.getName(astNode)
-        if (!name) {
-            return undefined
-        }
-        return this.getIdentityIndex(getDocument(astNode)).findElementByName(name)
+    public getIdentityIndex(lmsDocument: LmsDocument): II {
+        return this.getOrLoadIdentity(lmsDocument.textDocument.uri)
     }
 
-    public getIdentityIndex(languageDocument: LmsDocument): II {
-        return this.getOrLoadIdentity(languageDocument.textDocument.uri)
+    public loadIdentity(languageDocumentUri: string): void {
+        const identityIndex = this.loadIdentityToIndex(languageDocumentUri)
+        this.languageDocumentUriById.set(identityIndex.id, URI.parse(languageDocumentUri))
+        this.indexRegistryByLanguageDocumentUri.set(languageDocumentUri, identityIndex)
     }
 
-    public loadSemanticIdentity(languageDocumentUri: string): void {
-        const semanticModelIndex = this.loadIdentityToIndex(languageDocumentUri)
-        this.languageDocumentUriById.set(semanticModelIndex.id, URI.parse(languageDocumentUri))
-        this.indexRegistryByLanguageDocumentUri.set(languageDocumentUri, semanticModelIndex)
-    }
-
-    public saveSemanticIdentity(languageDocumentUri: string): void {
+    public saveIdentity(languageDocumentUri: string): void {
         const semanticModel = this.getOrLoadIdentity(languageDocumentUri).model
         this.identityStorage.saveIdentityToFile(languageDocumentUri, semanticModel)
     }
 
-    public deleteSemanticIdentity(languageDocumentUri: string): void {
-        const existingModelIndex = this.indexRegistryByLanguageDocumentUri.get(languageDocumentUri)
-        if (existingModelIndex) {
+    public renameIdentity(oldLanguageDocumentUri: string, languageDocumentUri: string): void {
+        const identityIndex = this.indexRegistryByLanguageDocumentUri.get(oldLanguageDocumentUri)
+        if (identityIndex) {
+            const rootId = identityIndex.id
+            const newLanguageDocumentUri = URI.parse(languageDocumentUri)
+            this.indexRegistryByLanguageDocumentUri.delete(oldLanguageDocumentUri)
+            this.indexRegistryByLanguageDocumentUri.set(languageDocumentUri, identityIndex)
+            this.languageDocumentUriById.set(rootId, newLanguageDocumentUri)
+            this.identityStorage.renameIdentityFile(oldLanguageDocumentUri, newLanguageDocumentUri)
+        }
+    }
+
+    public deleteIdentity(languageDocumentUri: string): void {
+        const existingIdentityIndex = this.indexRegistryByLanguageDocumentUri.get(languageDocumentUri)
+        if (existingIdentityIndex) {
             this.indexRegistryByLanguageDocumentUri.delete(languageDocumentUri)
-            this.languageDocumentUriById.delete(existingModelIndex.id)
+            this.languageDocumentUriById.delete(existingIdentityIndex.id)
         }
         this.identityStorage.deleteIdentityFile(languageDocumentUri)
     }
@@ -78,7 +73,7 @@ export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II ex
         if (loadedIdentity) {
             return loadedIdentity
         }
-        this.loadSemanticIdentity(languageDocumentUri)
+        this.loadIdentity(languageDocumentUri)
         return this.indexRegistryByLanguageDocumentUri.get(languageDocumentUri)!
     }
 }

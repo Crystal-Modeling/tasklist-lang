@@ -2,23 +2,24 @@ import type { AstNode, LangiumDocument, ReferenceDescription } from 'langium'
 import { DefaultRenameProvider, findDeclarationNodeAtOffset, getDocument } from 'langium'
 import type { RenameParams, WorkspaceEdit } from 'vscode-languageserver'
 import { TextEdit } from 'vscode-languageserver'
-import type { SemanticIdentity } from '../semantic/identity'
+import type { NamedSemanticIdentity, SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { IdentityManager } from '../semantic/identity-manager'
 import type { LangiumModelServerServices } from '../services'
-import * as src from '../source/model'
-import type { SourceModelSubscriptions } from '../source/source-model-subscriptions'
+import * as src from '../lms/model'
+import type { LmsSubscriptions } from '../lms/subscriptions'
 import type { LmsDocument } from '../workspace/documents'
+import * as sem from '../semantic/model'
 
 export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> extends DefaultRenameProvider {
 
     protected identityManager: IdentityManager
-    protected sourceModelSubscriptions: SourceModelSubscriptions
+    protected lmsSubscriptions: LmsSubscriptions
 
     constructor(services: LangiumModelServerServices<SM, II, D>) {
         super(services)
         this.identityManager = services.semantic.IdentityManager
-        this.sourceModelSubscriptions = services.source.SourceModelSubscriptions
+        this.lmsSubscriptions = services.lms.LmsSubscriptions
     }
 
     override async rename(document: LangiumDocument, params: RenameParams): Promise<WorkspaceEdit | undefined> {
@@ -35,16 +36,18 @@ export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityI
         const references = this.references.findReferences(targetNode, options)
         const newNameDefinder = this.getNewNameDefiner(targetNode, params)
 
-        const rootIdentityIndex = this.identityManager.getIdentityIndex(getDocument(targetNode))
-        console.debug('Found identity index for the document:', rootIdentityIndex)
-        if (rootIdentityIndex) {
-            const semanticElement = this.identityManager.findIdentityByAstName(targetNode)
-            console.debug('Found semanticElement for the targetNode:', semanticElement)
-            if (semanticElement && semanticElement.updateName(newNameDefinder.targetName)) {
+        if (sem.Identified.is(targetNode)) {
+            const targetIdentityIndex = this.identityManager.getIdentityIndex(getDocument(targetNode))
+            console.debug('Found identity index for the document:', targetIdentityIndex)
+            const renameableIdentity = targetIdentityIndex.findIdentityById(targetNode.id)
+            console.debug('Found identity for the targetNode:', renameableIdentity)
+            if (renameableIdentity && renameableIdentity.updateName(newNameDefinder.targetName)) {
                 console.debug('After updating semantic element, its name has changed')
-                const rename = src.Rename.create(semanticElement.id, semanticElement.name)
-                console.debug('Looking for subscriptions for id', rootIdentityIndex.id)
-                this.sourceModelSubscriptions.getSubscription(rootIdentityIndex.id)?.pushRename(rename)
+                const rename = src.ModelUpdate.createEmpty<NamedSemanticIdentity<string>>(renameableIdentity.id, renameableIdentity.modelUri)
+                // FIXME: Refactor the line below: perhaps, I should not declare optional properties on the level of the function args
+                src.Update.assign(rename, 'name', renameableIdentity.name, renameableIdentity.name)
+                console.debug('Looking for subscriptions for id', targetIdentityIndex.id)
+                this.lmsSubscriptions.getSubscription(targetIdentityIndex.id)?.pushUpdate(rename)
             }
         }
         references.forEach(reference => {

@@ -7,13 +7,13 @@ import type { IdentityIndex } from '../semantic/identity-index'
 import type { IdentityManager } from '../semantic/identity-manager'
 import * as semantic from '../semantic/model'
 import type { LangiumModelServerServices } from '../services'
-import * as source from '../source/model'
-import type { SourceModelSubscriptions } from '../source/source-model-subscriptions'
+import * as source from '../lms/model'
+import type { LmsSubscriptions } from '../lms/subscriptions'
 import type { LmsDocument, SemanticAwareDocument } from '../workspace/documents'
 
 export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> extends DefaultDocumentHighlightProvider {
 
-    private sourceModelSubscriptions: SourceModelSubscriptions
+    private lmsSubscriptions: LmsSubscriptions
     private identityManager: IdentityManager
 
     private highlightedNodeIdByModelId: Map<string, string> = new Map()
@@ -21,7 +21,7 @@ export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, 
 
     constructor(services: LangiumModelServerServices<SM, II, D>) {
         super(services)
-        this.sourceModelSubscriptions = services.source.SourceModelSubscriptions
+        this.lmsSubscriptions = services.lms.LmsSubscriptions
         this.identityManager = services.semantic.IdentityManager
     }
 
@@ -47,11 +47,11 @@ export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, 
 
     private calculateAndPushHighlight(document: LangiumDocument, selectedAstNode: AstNode) {
         const highlightedNodeId = getContainerOfType(selectedAstNode, semantic.Identified.is)?.id
-        const modelId = this.identityManager.getIdentityIndex(document)?.id
-        if (modelId && highlightedNodeId && highlightedNodeId !== this.highlightedNodeIdByModelId.get(modelId)) {
+        const modelId = this.identityManager.getIdentityIndex(document).id
+        if (highlightedNodeId && highlightedNodeId !== this.highlightedNodeIdByModelId.get(modelId)) {
             this.highlightedNodeIdByModelId.set(modelId, highlightedNodeId)
             const highlight = source.Highlight.create(highlightedNodeId)
-            this.sourceModelSubscriptions.getSubscription(modelId)?.pushHighlight(highlight)
+            this.lmsSubscriptions.getSubscription(modelId)?.pushHighlight(highlight)
         }
     }
 }
