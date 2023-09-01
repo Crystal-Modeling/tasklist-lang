@@ -373,7 +373,7 @@ class PathContainer {
             this._suffix = this._suffix.substring(nextSegmentStart)
             return segmentValue
         }
-        return this.matchPrefix(/^\/[^\/?]/)?.substring(1)
+        return this.matchPrefix(/^\/[^\/?]*/)?.substring(1)
     }
 
     /**
