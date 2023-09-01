@@ -35,7 +35,7 @@ export namespace ModelUri {
     export const root = '.'
 
     export function nested(...segments: Segment[]): string {
-        return root + segments.join()
+        return root + segments.join('')
     }
 
     export namespace Segment {
