@@ -1,9 +1,14 @@
+import * as uuid from 'uuid'
 
 export type SemanticIdentity = {
     id: string
 }
 
-// TODO: Add SemanticIdentity namespace, that would be in charge of generating new IDs (instead of TaskList Model)
+export namespace SemanticIdentity {
+    export function generate(): string {
+        return uuid.v4()
+    }
+}
 
 export type SemanticDerivativeName = string[]
 export type SemanticPropertyName = string

@@ -1,5 +1,4 @@
-import * as uuid from 'uuid'
-import type { SemanticDerivativeName } from '../../../langium-model-server/semantic/identity'
+import * as id from '../../../langium-model-server/semantic/identity'
 import { isArray, isDefinedObject } from '../../../langium-model-server/utils/types'
 
 export interface Model {
@@ -39,7 +38,7 @@ export namespace Transition {
     }
 }
 
-export type TransitionDerivativeName = SemanticDerivativeName & [sourceTaskId: string, targetTaskId: string]
+export type TransitionDerivativeName = id.SemanticDerivativeName & [sourceTaskId: string, targetTaskId: string]
 
 export namespace TransitionDerivativeName {
     export function of(sourceTaskId: string, targetTaskId: string): TransitionDerivativeName {
@@ -76,7 +75,7 @@ export namespace Model {
 
     export function newModel(): Model {
         return {
-            id: uuid.v4(),
+            id: id.SemanticIdentity.generate(),
             tasks: [],
             transitions: []
         }
@@ -84,7 +83,7 @@ export namespace Model {
 
     export function newTask(name: string): Task {
         return {
-            id: uuid.v4(),
+            id: id.SemanticIdentity.generate(),
             name
         }
     }
@@ -92,7 +91,7 @@ export namespace Model {
     // TODO: Refactor these functions to a dedicated namespaces(?) So that the logic of mapping between Transition args and name is in one place
     export function newTransition(name: TransitionDerivativeName): Transition {
         return {
-            id: uuid.v4(),
+            id: id.SemanticIdentity.generate(),
             sourceTaskId: name[0],
             targetTaskId: name[1]
         }
