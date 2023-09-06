@@ -51,7 +51,7 @@ export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, 
         if (highlightedNodeId && highlightedNodeId !== this.highlightedNodeIdByModelId.get(modelId)) {
             this.highlightedNodeIdByModelId.set(modelId, highlightedNodeId)
             const highlight = source.Highlight.create(highlightedNodeId)
-            this.lmsSubscriptions.getSubscription(modelId)?.pushHighlight(highlight)
+            this.lmsSubscriptions.getSubscription(modelId)?.pushAction(highlight)
         }
     }
 }

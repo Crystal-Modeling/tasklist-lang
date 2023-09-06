@@ -8,7 +8,11 @@ import type { IdentityStorage } from './identity-storage'
 export interface IdentityManager<II extends IdentityIndex = IdentityIndex, D extends LmsDocument = LmsDocument> {
     getLanguageDocumentUri(id: string): URI | undefined
     getIdentityIndex(lmsDocument: D): II
-    saveIdentity(languageDocumentUri: string): void
+    /**
+     * @param languageDocumentUri URI of the Langium TextDocument to save identity model for
+     * @returns Root id of saved semantic identity
+     */
+    saveIdentity(languageDocumentUri: string): string
     loadIdentity(languageDocumentUri: string): void
     deleteIdentity(languageDocumentUri: string): void
     renameIdentity(oldLanguageDocumentUri: string, languageDocumentUri: string): void
@@ -40,9 +44,10 @@ export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II ex
         this.indexRegistryByLanguageDocumentUri.set(languageDocumentUri, identityIndex)
     }
 
-    public saveIdentity(languageDocumentUri: string): void {
-        const semanticModel = this.getOrLoadIdentity(languageDocumentUri).model
-        this.identityStorage.saveIdentityToFile(languageDocumentUri, semanticModel)
+    public saveIdentity(languageDocumentUri: string): string {
+        const rootIdentity = this.getOrLoadIdentity(languageDocumentUri)
+        this.identityStorage.saveIdentityToFile(languageDocumentUri, rootIdentity.model)
+        return rootIdentity.id
     }
 
     public renameIdentity(oldLanguageDocumentUri: string, languageDocumentUri: string): void {

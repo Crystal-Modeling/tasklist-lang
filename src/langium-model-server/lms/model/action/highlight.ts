@@ -1,12 +1,9 @@
-import type { Update } from '../update/update'
-import type * as id from '../../../semantic/identity'
 
-export type Highlight = Update<Readonly<id.SemanticIdentity>, 'HIGHLIGHTED'>
+import { Action } from './action'
+
+export type Highlight = Action<'HIGHLIGHTED'>
 export namespace Highlight {
     export function create(id: string): Highlight {
-        return {
-            id,
-            __state: 'HIGHLIGHTED'
-        }
+        return Action.create(id, 'HIGHLIGHTED')
     }
 }

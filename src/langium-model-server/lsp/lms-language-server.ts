@@ -6,6 +6,7 @@ import type { SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { LangiumModelServerAddedServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
+import { Save } from '../lms/model'
 
 export class LmsLanguageServer extends DefaultLanguageServer {
 
@@ -44,9 +45,11 @@ function addIdentityProcessingHandlers<SM extends SemanticIdentity, II extends I
 ) {
 
     const semanticIndexManager = lmsServices.semantic.IdentityManager
+    const lmsSubscriptions = lmsServices.lms.LmsSubscriptions
 
     connection.onDidSaveTextDocument(params => {
-        semanticIndexManager.saveIdentity(params.textDocument.uri)
+        const rootId = semanticIndexManager.saveIdentity(params.textDocument.uri)
+        lmsSubscriptions.getSubscription(rootId)?.pushAction(Save.create(rootId))
     })
 
     connection.onDidChangeWatchedFiles(params => {
