@@ -119,7 +119,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
                 if (editingResult.successful) {
                     console.debug('Modified Task attributes:', taskModification)
                     if (renameableTaskIdentity) {
-                        const update = lms.ModelUpdate.createEmpty<Task>(renameableTaskIdentity.id, renameableTaskIdentity.modelUri)
+                        const update = lms.RootUpdate.createEmpty<Task>(renameableTaskIdentity.id, renameableTaskIdentity.modelUri)
                         lms.Update.assignArtificialIfUpdated(update, 'name', task.name, taskModification.name ?? task.name)
                         this.lmsSubscriptions.getSubscription(rootModelId)?.pushUpdate(update)
                     }
@@ -180,7 +180,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
                 if (editingResult.successful) {
                     console.debug('Modified Transition attributes. New transition', newTransition)
                     if (renameableTransitionIdentity) {
-                        const update = lms.ModelUpdate.createEmpty<Transition>(renameableTransitionIdentity.id, renameableTransitionIdentity.modelUri)
+                        const update = lms.RootUpdate.createEmpty<Transition>(renameableTransitionIdentity.id, renameableTransitionIdentity.modelUri)
                         lms.Update.assignArtificialIfUpdated(update, 'sourceTaskId', transition.sourceTask.id, newTransition.sourceTask.id)
                         lms.Update.assignArtificialIfUpdated(update, 'targetTaskId', transition.targetTask.id, newTransition.targetTask.id)
                         this.lmsSubscriptions.getSubscription(rootModelId)?.pushUpdate(update)

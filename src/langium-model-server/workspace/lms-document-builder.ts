@@ -26,7 +26,7 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
     protected readonly lmsSubscriptions: LmsSubscriptions
     protected readonly modelUpdateCombiner: ModelUpdateCombiner<SM>
 
-    protected readonly updatesForLmsDocuments: MultiMap<D, src.ModelUpdate<SM>> = new MultiMap()
+    protected readonly updatesForLmsDocuments: MultiMap<D, src.RootUpdate<SM>> = new MultiMap()
     private updatePushingTimeout: NodeJS.Timeout
 
     constructor(services: LangiumModelServerServices<SM, II, D>) {
@@ -60,13 +60,13 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
 
     protected async reconcileIdentity(documents: LangiumDocument[], cancelToken: CancellationToken) {
         console.debug('====== IDENTITY RECONCILIATION PHASE ======')
-        const newUpdatesForLmsDocuments: Map<Initialized<D>, src.ModelUpdate<SM>> = new Map()
+        const newUpdatesForLmsDocuments: Map<Initialized<D>, src.RootUpdate<SM>> = new Map()
         for (const document of documents) {
             const semanticId = this.identityManager.getIdentityIndex(document).id
             const lmsDocument: ExtendableLangiumDocument = document
             // NOTE: Actually, all LMS Documents are initialized during `initializeSemanticDomain` phase
             if (this.isLmsDocument(lmsDocument) && LmsDocument.isInitialized(lmsDocument)) {
-                newUpdatesForLmsDocuments.set(lmsDocument, src.ModelUpdate.createEmpty<SM>(semanticId, id.ModelUri.root))
+                newUpdatesForLmsDocuments.set(lmsDocument, src.RootUpdate.createEmpty<SM>(semanticId, id.ModelUri.root))
             }
         }
         await interruptAndCheck(cancelToken)
@@ -99,7 +99,7 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
         }
     }
 
-    private pushUpdateToSubscriptions(update: src.ModelUpdate<SM>): void {
+    private pushUpdateToSubscriptions(update: src.RootUpdate<SM>): void {
         this.lmsSubscriptions.getSubscription(update.id)?.pushUpdate(update)
     }
 

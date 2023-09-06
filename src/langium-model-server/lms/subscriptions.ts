@@ -1,6 +1,6 @@
 import type { ServerHttp2Stream } from 'http2'
 import type * as id from '../semantic/identity'
-import type { Highlight, ModelUpdate } from './model'
+import type { Highlight, RootUpdate } from './model'
 import { Update } from './model'
 
 export interface LmsSubscriptions {
@@ -9,7 +9,7 @@ export interface LmsSubscriptions {
 }
 
 export interface LmsSubscription {
-    pushUpdate<SM extends id.SemanticIdentity>(modelUpdate: ModelUpdate<SM>): void
+    pushUpdate<SM extends id.SemanticIdentity>(modelUpdate: RootUpdate<SM>): void
     pushHighlight(highlight: Highlight): void
 }
 
@@ -20,7 +20,7 @@ class SingleLmsSubscription implements LmsSubscription {
         this.stream = stream
     }
 
-    public pushUpdate<SM extends id.SemanticIdentity>(modelUpdate: ModelUpdate<SM>): void {
+    public pushUpdate<SM extends id.SemanticIdentity>(modelUpdate: RootUpdate<SM>): void {
         console.debug('Pushing update for model with id', modelUpdate.id)
         console.debug((Update.isEmpty(modelUpdate) ? 'EMPTY' : JSON.stringify(modelUpdate, undefined, 2)))
         this.stream.write(JSON.stringify(modelUpdate))
@@ -36,7 +36,7 @@ class SingleLmsSubscription implements LmsSubscription {
 class CompositeLmsSubscription implements LmsSubscription {
     readonly subscriptions: Set<SingleLmsSubscription> = new Set()
 
-    public pushUpdate<SM extends id.SemanticIdentity>(modelUpdate: ModelUpdate<SM>): void {
+    public pushUpdate<SM extends id.SemanticIdentity>(modelUpdate: RootUpdate<SM>): void {
         this.subscriptions.forEach(sub => sub.pushUpdate(modelUpdate))
     }
 
