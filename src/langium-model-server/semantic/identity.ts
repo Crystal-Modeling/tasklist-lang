@@ -33,28 +33,32 @@ export type ModelUri = {
 export namespace ModelUri {
 
     export const root = '.'
+    const PROPERTY = '/'
+    const ID = '#'
 
-    export function nested(...segments: Segment[]): string {
-        return root + segments.join('')
+    export function ofSegments(...segments: Segment[]): string {
+        return segments.map(s => s.delimiter + s.value).join('')
     }
 
     export namespace Segment {
 
         export function property(propertyName: string): Segment {
-            return ofValue('/' + propertyName)
+            return of(PROPERTY, propertyName)
         }
 
-        export function id(id: string): Segment {
-            return ofValue('#' + id)
+        export function id(idValue: string): Segment {
+            return of(ID, idValue)
         }
 
-        function ofValue(value: string): Segment {
-            return value as Segment
+        function of(delimiter: string, value: string): Segment {
+            return { delimiter, value } as Segment
         }
     }
 
-    export type Segment = string & {
+    export type Segment = {
         __brand: 'segment'
+        readonly delimiter: string
+        readonly value: string
     }
 }
 

@@ -46,7 +46,7 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
                 },
                 // TODO: Here I hardcode ModelUri of Task -- it should be taken from some centralized place (LMS grammar?)
                 get modelUri(): string {
-                    return ModelUri.nested(
+                    return ModelUri.ofSegments(
                         ModelUri.Segment.property('tasks'),
                         ModelUri.Segment.id(taskIdentity.id)
                     )
@@ -77,7 +77,7 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
                 },
                 // TODO: Here I hardcode ModelUri of Transition -- it should be taken from some centralized place (LMS grammar?)
                 get modelUri(): string {
-                    return ModelUri.nested(
+                    return ModelUri.ofSegments(
                         ModelUri.Segment.property('transitions'),
                         ModelUri.Segment.id(transitionIdentity.id)
                     )
