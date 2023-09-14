@@ -31,11 +31,8 @@ export type AstRootNode = Valid<AstNode> & {
 }
 
 export namespace AstRootNode {
-    export function create(astNode: AstNode): AstRootNode | undefined {
-        if (!astNode.$document) {
-            return undefined
-        }
-        return astNode as AstRootNode
+    export function is(astNode: AstNode): astNode is AstRootNode {
+        return !!astNode.$document
     }
 }
 

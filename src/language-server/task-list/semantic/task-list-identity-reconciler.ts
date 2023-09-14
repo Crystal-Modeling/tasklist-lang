@@ -47,11 +47,10 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         const astModel: ast.Model = document.parseResult.value
 
         // TODO: Suggest AstRootNode as a specific interface in Langium library
-        const rootNode = AstRootNode.create(astModel)
-        if (!rootNode) {
+        if (!AstRootNode.is(astModel)) {
             throw new Error('Expected Model to be a root node, but somehow it was not!. Model: ' + astModel)
         }
-        semanticDomain.identifyRootNode(rootNode, identityIndex.id)
+        semanticDomain.identifyRootNode(astModel, identityIndex.id)
 
         const existingUnmappedTasks = identityIndex.tasksByName
         // Actual mapping: marking semantic elements for deletion, and AST nodes to be added
