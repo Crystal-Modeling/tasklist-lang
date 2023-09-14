@@ -7,7 +7,7 @@ import type { Creation, CreationParams, Modification } from '../../../langium-mo
 import * as lms from '../../../langium-model-server/lms/model'
 import { EditingResult } from '../../../langium-model-server/lms/model'
 import type { LmsSubscriptions } from '../../../langium-model-server/lms/subscriptions'
-import type { RenameableSemanticIdentity, SemanticPropertyName } from '../../../langium-model-server/semantic/identity'
+import type { AstNodeSemanticIdentity, Renameable } from '../../../langium-model-server/semantic/identity'
 import * as id from '../../../langium-model-server/semantic/model'
 import type { LangiumModelServerServices } from '../../../langium-model-server/services'
 import type { LmsDocument } from '../../../langium-model-server/workspace/documents'
@@ -105,13 +105,13 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             return EditingResult.failedValidation('Unable to resolve task by id ' + modelId)
         }
 
-        let renameableTaskIdentity: RenameableSemanticIdentity<SemanticPropertyName> | undefined
+        let renameableTaskIdentity: Renameable<AstNodeSemanticIdentity> | undefined
 
         const textEdit = this.computeTaskUpdate(task, taskModification)
 
         if (textEdit) {
             if (taskModification.name) {
-                renameableTaskIdentity = this.identityManager.getIdentityIndex(lmsDocument).findIdentityById(task.id)
+                renameableTaskIdentity = this.identityManager.getIdentityIndex(lmsDocument).findAstNodeIdentityById(task.id)
                 renameableTaskIdentity?.updateName(taskModification.name)
             }
             return this.applyTextEdit(lmsDocument, textEdit, 'Updated task ' + task.name

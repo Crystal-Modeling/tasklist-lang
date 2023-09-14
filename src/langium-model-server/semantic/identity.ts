@@ -10,10 +10,6 @@ export namespace SemanticIdentity {
     }
 }
 
-export type SemanticDerivativeName = string[]
-export type SemanticPropertyName = string
-export type SemanticName = SemanticPropertyName | SemanticDerivativeName
-
 // export type SemanticNameBuilder<T extends SemanticIdentity, NAME extends SemanticName> = {
 //     readonly kind: string
 //     readonly buildName: (element: T) => NAME
@@ -67,15 +63,31 @@ export namespace ModelUri {
     }
 }
 
-export type NamedSemanticIdentity<NAME extends SemanticName> = Readonly<SemanticIdentity> & {
+export type SemanticDerivativeName = string[]
+export type SemanticPropertyName = string
+export type SemanticName = SemanticPropertyName | SemanticDerivativeName
+
+export interface NamedSemanticIdentity extends Readonly<SemanticIdentity>, Readonly<ModelUri> {
+    readonly name: SemanticName
+}
+
+export interface AstNodeSemanticIdentity extends NamedSemanticIdentity {
+    readonly name: SemanticPropertyName
+}
+
+export interface DerivativeSemanticIdentity<NAME extends SemanticDerivativeName> extends NamedSemanticIdentity {
     readonly name: NAME
 }
 
-export type RenameableSemanticIdentity<NAME extends SemanticName> = NamedSemanticIdentity<NAME> & ModelUri & {
+// export namespace NamedSemanticIdentity {
+//     export function isAstBasedIdentity<NAME extends SemanticName>(semanticIdentity: NamedSemanticIdentity<NAME>): semanticIdentity is NamedSemanticIdentity<SemanticPropertyName>
+// }
+
+export type Renameable<I extends NamedSemanticIdentity> = I & {
     /**
      * Replaces the `name` value with supplied argument. If the name changed, returns `true`.
      * Else returns `false`
      * @param newName New name to replace the `name` property of this identity
      */
-    updateName(newName: NAME): boolean
+    updateName(newName: I['name']): boolean
 }

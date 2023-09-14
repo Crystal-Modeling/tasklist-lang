@@ -1,5 +1,5 @@
-import type { SemanticPropertyName } from '../../../langium-model-server/semantic/identity'
-import { ModelUri, type RenameableSemanticIdentity } from '../../../langium-model-server/semantic/identity'
+import type { AstNodeSemanticIdentity, DerivativeSemanticIdentity, Renameable } from '../../../langium-model-server/semantic/identity'
+import { ModelUri } from '../../../langium-model-server/semantic/identity'
 import type { IdentityIndex } from '../../../langium-model-server/semantic/identity-index'
 import { ValueBasedMap, equal } from '../../../langium-model-server/utils/collections'
 import type { Model, Task, TransitionDerivativeName } from './task-list-identity'
@@ -35,7 +35,7 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         }
     }
 
-    public findIdentityById(id: string): RenameableSemanticIdentity<SemanticPropertyName> | undefined {
+    public findAstNodeIdentityById(id: string): Renameable<AstNodeSemanticIdentity> | undefined {
         const taskIdentity = this._tasksById.get(id)
         if (taskIdentity) {
             const index = this
@@ -65,7 +65,7 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         return undefined
     }
 
-    public findTransitionIdentityById(id: string): RenameableSemanticIdentity<TransitionDerivativeName> | undefined {
+    public findTransitionIdentityById(id: string): Renameable<DerivativeSemanticIdentity<TransitionDerivativeName>> | undefined {
         const transitionIdentity = this._transitionsById.get(id)
         if (transitionIdentity) {
             const index = this

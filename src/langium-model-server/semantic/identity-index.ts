@@ -1,9 +1,9 @@
-import type { RenameableSemanticIdentity, SemanticPropertyName } from './identity'
+import type { AstNodeSemanticIdentity, Renameable } from './identity'
 
 export type IdentityIndex = {
     readonly id: string
-    findIdentityById(id: string): RenameableSemanticIdentity<SemanticPropertyName> | undefined
-    // findDerivedIdentityById<T extends SemanticIdentity, NAME extends SemanticDerivativeName>(id: string, nameBuilder: SemanticNameBuilder<T, NAME>): RenameableSemanticIdentity<NAME> | undefined
+    findAstNodeIdentityById(id: string): Renameable<AstNodeSemanticIdentity> | undefined
+    // findDerivedIdentityById<T extends SemanticIdentity, NAME extends SemanticDerivativeName>(id: string, nameBuilder: SemanticNameBuilder<T, NAME>): Renameable<DerivativeSemanticIdentity<NAME>> | undefined
 }
 
 export type ModelExposedIdentityIndex<SemI extends IdentityIndex> = SemI & {

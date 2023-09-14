@@ -2,7 +2,7 @@ import type { AstNode, LangiumDocument, ReferenceDescription } from 'langium'
 import { DefaultRenameProvider, findDeclarationNodeAtOffset, getDocument } from 'langium'
 import type { RenameParams, WorkspaceEdit } from 'vscode-languageserver'
 import { TextEdit } from 'vscode-languageserver'
-import type { NamedSemanticIdentity, SemanticIdentity } from '../semantic/identity'
+import type { AstNodeSemanticIdentity, SemanticIdentity } from '../semantic/identity'
 import type { IdentityIndex } from '../semantic/identity-index'
 import type { IdentityManager } from '../semantic/identity-manager'
 import type { LangiumModelServerServices } from '../services'
@@ -39,11 +39,11 @@ export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityI
         if (sem.Identified.is(targetNode)) {
             const targetIdentityIndex = this.identityManager.getIdentityIndex(getDocument(targetNode))
             console.debug('Found identity index for the document:', targetIdentityIndex)
-            const renameableIdentity = targetIdentityIndex.findIdentityById(targetNode.id)
+            const renameableIdentity = targetIdentityIndex.findAstNodeIdentityById(targetNode.id)
             console.debug('Found identity for the targetNode:', renameableIdentity)
             if (renameableIdentity && renameableIdentity.updateName(newNameDefinder.targetName)) {
                 console.debug('After updating semantic element, its name has changed')
-                const rename = src.RootUpdate.createEmpty<NamedSemanticIdentity<string>>(renameableIdentity.id, renameableIdentity.modelUri)
+                const rename = src.RootUpdate.createEmpty<AstNodeSemanticIdentity>(renameableIdentity.id, renameableIdentity.modelUri)
                 src.Update.assign(rename, 'name', renameableIdentity.name)
                 console.debug('Looking for subscriptions for id', targetIdentityIndex.id)
                 this.lmsSubscriptions.getSubscription(targetIdentityIndex.id)?.pushUpdate(rename)
