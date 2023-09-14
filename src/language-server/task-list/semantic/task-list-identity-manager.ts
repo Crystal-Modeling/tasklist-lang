@@ -1,5 +1,5 @@
-import type { ModelExposedIdentityIndex } from '../../../langium-model-server/semantic/identity-index'
-import { AbstractIdentityManager } from '../../../langium-model-server/semantic/identity-manager'
+import type { ModelExposedIdentityIndex } from '../../../langium-model-server/identity'
+import { AbstractIdentityManager } from '../../../langium-model-server/identity/manager'
 import type * as source from '../lms/model'
 import type { TaskListDocument } from '../workspace/documents'
 import { Model } from './task-list-identity'

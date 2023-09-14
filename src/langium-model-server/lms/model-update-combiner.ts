@@ -1,4 +1,4 @@
-import type * as id from '../semantic/identity'
+import type * as id from '../identity/model'
 import type { RootUpdate } from './model'
 
 export interface ModelUpdateCombiner<SM extends id.SemanticIdentity> {

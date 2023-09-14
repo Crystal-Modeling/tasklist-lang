@@ -20,7 +20,7 @@ export type TaskListAddedServices = {
     validation: {
         TaskListValidator: TaskListValidator
     },
-    semantic: {
+    identity: {
         // Redefining the type of IdentityManager to be used in TaskListIdentityReconciler
         IdentityManager: TaskListIdentityManager
     },
@@ -48,9 +48,11 @@ export const TaskListModule: Module<TaskListServices, PartialLangiumModelServerS
     workspace: {
         LmsDocumentGuard: () => isTaskListDocument
     },
-    semantic: {
+    identity: {
         IdentityStorage: (services) => new TaskListIdentityStorage(services),
         IdentityManager: (services) => new TaskListIdentityManager(services),
+    },
+    semantic: {
         IdentityReconciler: (services) => new TaskListIdentityReconciler(services),
         SemanticDomainFactory: () => TaskListSemanticDomain.create,
     },

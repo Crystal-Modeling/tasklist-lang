@@ -2,9 +2,9 @@
 import type { AstNode, LangiumDocument, MaybePromise } from 'langium'
 import { DefaultDocumentHighlightProvider, findLeafNodeAtOffset, getContainerOfType } from 'langium'
 import type { DocumentHighlight, DocumentHighlightParams } from 'vscode-languageserver'
-import type * as identity from '../semantic/identity'
-import type { IdentityIndex } from '../semantic/identity-index'
-import type { IdentityManager } from '../semantic/identity-manager'
+import type * as identity from '../identity/model'
+import type { IdentityIndex } from '../identity'
+import type { IdentityManager } from '../identity/manager'
 import * as semantic from '../semantic/model'
 import type { LangiumModelServerServices } from '../services'
 import * as source from '../lms/model'
@@ -22,7 +22,7 @@ export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, 
     constructor(services: LangiumModelServerServices<SM, II, D>) {
         super(services)
         this.lmsSubscriptions = services.lms.LmsSubscriptions
-        this.identityManager = services.semantic.IdentityManager
+        this.identityManager = services.identity.IdentityManager
     }
 
     override getDocumentHighlight(document: LangiumDocument & SemanticAwareDocument, params: DocumentHighlightParams): MaybePromise<DocumentHighlight[] | undefined> {

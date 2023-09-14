@@ -1,5 +1,5 @@
 import { stream } from 'langium'
-import type * as id from '../../../langium-model-server/semantic/identity'
+import type * as id from '../../../langium-model-server/identity/model'
 import { ArrayUpdate, RootUpdate } from '../../../langium-model-server/lms/model'
 import type { ElementAttributes, ElementUpdate } from '../../../langium-model-server/lms/model'
 import type { ModelUpdateCombiner } from '../../../langium-model-server/lms/model-update-combiner'

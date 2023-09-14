@@ -1,4 +1,4 @@
-import type * as id from '../../../semantic/identity'
+import type * as id from '../../../identity/model'
 import { Update } from './update'
 
 export type RootUpdate<T extends id.SemanticIdentity, S extends string = never> = Update<T, S> & id.ModelUri

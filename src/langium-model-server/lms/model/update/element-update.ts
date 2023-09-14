@@ -1,4 +1,4 @@
-import type * as id from '../../../semantic/identity'
+import type * as id from '../../../identity/model'
 import type { ExcludeExisting } from '../../../utils/types'
 import { Update } from './update'
 

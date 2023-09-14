@@ -1,5 +1,5 @@
 import type { Update } from '../update/update'
-import type * as id from '../../../semantic/identity'
+import type * as id from '../../../identity/model'
 
 export type Action<S extends string=string> = Update<Readonly<id.SemanticIdentity>, S>
 export namespace Action {

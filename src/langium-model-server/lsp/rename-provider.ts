@@ -2,9 +2,9 @@ import type { AstNode, LangiumDocument, ReferenceDescription } from 'langium'
 import { DefaultRenameProvider, findDeclarationNodeAtOffset, getDocument } from 'langium'
 import type { RenameParams, WorkspaceEdit } from 'vscode-languageserver'
 import { TextEdit } from 'vscode-languageserver'
-import type { AstNodeSemanticIdentity, SemanticIdentity } from '../semantic/identity'
-import type { IdentityIndex } from '../semantic/identity-index'
-import type { IdentityManager } from '../semantic/identity-manager'
+import type { AstNodeSemanticIdentity, SemanticIdentity } from '../identity/model'
+import type { IdentityIndex } from '../identity'
+import type { IdentityManager } from '../identity/manager'
 import type { LangiumModelServerServices } from '../services'
 import * as src from '../lms/model'
 import type { LmsSubscriptions } from '../lms/subscriptions'
@@ -18,7 +18,7 @@ export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityI
 
     constructor(services: LangiumModelServerServices<SM, II, D>) {
         super(services)
-        this.identityManager = services.semantic.IdentityManager
+        this.identityManager = services.identity.IdentityManager
         this.lmsSubscriptions = services.lms.LmsSubscriptions
     }
 

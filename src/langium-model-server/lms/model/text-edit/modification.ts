@@ -1,5 +1,5 @@
 
-import type * as id from '../../../semantic/identity'
+import type * as id from '../../../identity/model'
 import type { OmitProperties} from '../../../utils/types'
 import { isDefinedObject } from '../../../utils/types'
 

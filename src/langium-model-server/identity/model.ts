@@ -10,23 +10,6 @@ export namespace SemanticIdentity {
     }
 }
 
-// export type SemanticNameBuilder<T extends SemanticIdentity, NAME extends SemanticName> = {
-//     readonly kind: string
-//     readonly buildName: (element: T) => NAME
-// }
-
-// export class PropertyBasedNameBuilder<T extends NamedSemanticIdentity<SemanticPropertyName>> implements SemanticNameBuilder<T, SemanticPropertyName> {
-//     readonly kind: string
-
-//     constructor(key: string) {
-//         this.kind = key
-//     }
-
-//     public buildName(element: T): SemanticPropertyName {
-//         return element.name
-//     }
-// }
-
 export type ModelUri = {
     readonly modelUri: string
 }
@@ -78,10 +61,6 @@ export interface AstNodeSemanticIdentity extends NamedSemanticIdentity {
 export interface DerivativeSemanticIdentity<NAME extends SemanticDerivativeName> extends NamedSemanticIdentity {
     readonly name: NAME
 }
-
-// export namespace NamedSemanticIdentity {
-//     export function isAstBasedIdentity<NAME extends SemanticName>(semanticIdentity: NamedSemanticIdentity<NAME>): semanticIdentity is NamedSemanticIdentity<SemanticPropertyName>
-// }
 
 export type Renameable<I extends NamedSemanticIdentity> = I & {
     /**

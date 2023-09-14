@@ -8,9 +8,9 @@ import type { LangiumModelServerServices } from '../services'
 import type { TypeGuard } from '../utils/types'
 import { UriConverter } from '../utils/uri-converter'
 import type { LmsDocument } from '../workspace/documents'
-import type { SemanticIdentity } from './identity'
-import { IdentityError } from './identity-error'
-import type { IdentityIndex } from './identity-index'
+import type { SemanticIdentity } from './model'
+import { IdentityError } from './error'
+import type { IdentityIndex } from '.'
 
 export interface IdentityStorage {
     saveIdentityToFile(languageDocumentUri: string, identity: unknown): void

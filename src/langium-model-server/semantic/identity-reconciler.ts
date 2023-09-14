@@ -1,6 +1,6 @@
 import type * as src from '../lms/model'
 import type { Initialized, LmsDocument } from '../workspace/documents'
-import type { SemanticIdentity } from './identity'
+import type { SemanticIdentity } from '../identity/model'
 
 export interface IdentityReconciler<SM extends SemanticIdentity, D extends LmsDocument> {
     readonly identityReconciliationIterations: Array<IdentityReconciliationIteration<SM, D>>

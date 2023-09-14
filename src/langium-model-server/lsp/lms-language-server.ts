@@ -2,8 +2,8 @@ import type { LangiumSharedServices } from 'langium'
 import { DefaultLanguageServer, startLanguageServer } from 'langium'
 import type { Connection, InitializeParams, InitializeResult } from 'vscode-languageserver'
 import { FileChangeType } from 'vscode-languageserver'
-import type { SemanticIdentity } from '../semantic/identity'
-import type { IdentityIndex } from '../semantic/identity-index'
+import type { SemanticIdentity } from '../identity/model'
+import type { IdentityIndex } from '../identity'
 import type { LangiumModelServerAddedServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
 import { Save } from '../lms/model'
@@ -44,11 +44,11 @@ function addIdentityProcessingHandlers<SM extends SemanticIdentity, II extends I
     lmsServices: LangiumModelServerAddedServices<SM, II, D>
 ) {
 
-    const semanticIndexManager = lmsServices.semantic.IdentityManager
+    const identityManager = lmsServices.identity.IdentityManager
     const lmsSubscriptions = lmsServices.lms.LmsSubscriptions
 
     connection.onDidSaveTextDocument(params => {
-        const rootId = semanticIndexManager.saveIdentity(params.textDocument.uri)
+        const rootId = identityManager.saveIdentity(params.textDocument.uri)
         lmsSubscriptions.getSubscription(rootId)?.pushAction(Save.create(rootId))
     })
 
@@ -56,7 +56,7 @@ function addIdentityProcessingHandlers<SM extends SemanticIdentity, II extends I
         for (const event of params.changes) {
             switch (event.type) {
                 case FileChangeType.Deleted:
-                    semanticIndexManager.deleteIdentity(event.uri)
+                    identityManager.deleteIdentity(event.uri)
                     break
                 default:
                     break
@@ -67,7 +67,7 @@ function addIdentityProcessingHandlers<SM extends SemanticIdentity, II extends I
     connection.workspace.onDidRenameFiles(params => {
         console.debug('============= > RENAMED FILES!!!', params.files)
         params.files.forEach(fileRename => {
-            semanticIndexManager.renameIdentity(fileRename.oldUri, fileRename.newUri)
+            identityManager.renameIdentity(fileRename.oldUri, fileRename.newUri)
         })
     })
 }

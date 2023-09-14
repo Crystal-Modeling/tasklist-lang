@@ -1,5 +1,5 @@
 import type { ServerHttp2Stream } from 'http2'
-import type * as id from '../semantic/identity'
+import type * as id from '../identity/model'
 import type { Action, RootUpdate } from './model'
 import { Update } from './model'
 

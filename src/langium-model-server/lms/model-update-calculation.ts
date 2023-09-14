@@ -1,5 +1,5 @@
 import { stream } from 'langium'
-import type * as id from '../semantic/identity'
+import type * as id from '../identity/model'
 import type { KeysOfType } from '../utils/types'
 import type { LmsDocument } from '../workspace/documents'
 import { ArrayUpdateCommand, ElementUpdate, type ReadonlyArrayUpdate } from './model'

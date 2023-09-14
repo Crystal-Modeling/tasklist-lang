@@ -7,7 +7,7 @@ import type { Creation, CreationParams, Modification } from '../../../langium-mo
 import * as lms from '../../../langium-model-server/lms/model'
 import { EditingResult } from '../../../langium-model-server/lms/model'
 import type { LmsSubscriptions } from '../../../langium-model-server/lms/subscriptions'
-import type { AstNodeSemanticIdentity, Renameable } from '../../../langium-model-server/semantic/identity'
+import type { AstNodeSemanticIdentity, Renameable } from '../../../langium-model-server/identity/model'
 import * as id from '../../../langium-model-server/semantic/model'
 import type { LangiumModelServerServices } from '../../../langium-model-server/services'
 import type { LmsDocument } from '../../../langium-model-server/workspace/documents'

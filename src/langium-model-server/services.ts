@@ -1,9 +1,9 @@
 import type { DeepPartial, DocumentHighlightProvider, LangiumServices, LanguageServer, PartialLangiumServices, RenameProvider } from 'langium'
-import type { SemanticIdentity } from './semantic/identity'
-import type { IdentityIndex } from './semantic/identity-index'
-import type { IdentityManager } from './semantic/identity-manager'
+import type { SemanticIdentity } from './identity/model'
+import type { IdentityIndex } from './identity'
+import type { IdentityManager } from './identity/manager'
 import type { IdentityReconciler } from './semantic/identity-reconciler'
-import type { IdentityStorage } from './semantic/identity-storage'
+import type { IdentityStorage } from './identity/storage'
 import type { SemanticDomainFactory } from './semantic/semantic-domain'
 import type { LangiumModelServer } from './lms/langium-model-server'
 import type { LangiumModelServerFacade } from './lms/facade'
@@ -42,9 +42,11 @@ export type LangiumModelServerAbstractServices<SM extends SemanticIdentity, II e
     workspace: {
         LmsDocumentGuard: TypeGuard<D, ExtendableLangiumDocument>
     },
-    semantic: {
+    identity: {
         IdentityStorage: IdentityStorage,
         IdentityManager: IdentityManager<II>,
+    }
+    semantic: {
         IdentityReconciler: IdentityReconciler<SM, D>,
         SemanticDomainFactory: SemanticDomainFactory,
     },

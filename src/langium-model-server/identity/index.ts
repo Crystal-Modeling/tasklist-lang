@@ -1,4 +1,4 @@
-import type { AstNodeSemanticIdentity, Renameable } from './identity'
+import type { AstNodeSemanticIdentity, Renameable } from './model'
 
 export type IdentityIndex = {
     readonly id: string

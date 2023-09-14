@@ -1,4 +1,4 @@
-import * as id from '../../../langium-model-server/semantic/identity'
+import * as id from '../../../langium-model-server/identity/model'
 import { isArray, isDefinedObject } from '../../../langium-model-server/utils/types'
 
 export interface Model {

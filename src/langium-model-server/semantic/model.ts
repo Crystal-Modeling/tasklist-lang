@@ -1,5 +1,5 @@
 import type { AstNode, CstNode, LangiumDocument, Reference } from 'langium'
-import type { SemanticIdentity } from './identity'
+import type { SemanticIdentity } from '../identity/model'
 
 export type Valid<T> = T & { __semantic: 'valid' }
 

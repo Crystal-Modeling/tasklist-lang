@@ -1,9 +1,9 @@
 import { URI } from 'vscode-uri'
 import type { LangiumModelServerServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
-import type { SemanticIdentity } from './identity'
-import type { IdentityIndex, ModelExposedIdentityIndex } from './identity-index'
-import type { IdentityStorage } from './identity-storage'
+import type { SemanticIdentity } from './model'
+import type { IdentityIndex, ModelExposedIdentityIndex } from '.'
+import type { IdentityStorage } from './storage'
 
 export interface IdentityManager<II extends IdentityIndex = IdentityIndex, D extends LmsDocument = LmsDocument> {
     getLanguageDocumentUri(id: string): URI | undefined
@@ -25,7 +25,7 @@ export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II ex
     private languageDocumentUriById: Map<string, URI>
 
     public constructor(services: LangiumModelServerServices<SM, II, D>) {
-        this.identityStorage = services.semantic.IdentityStorage
+        this.identityStorage = services.identity.IdentityStorage
         this.indexRegistryByLanguageDocumentUri = new Map()
         this.languageDocumentUriById = new Map()
     }

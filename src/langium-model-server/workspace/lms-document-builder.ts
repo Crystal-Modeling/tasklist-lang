@@ -4,9 +4,9 @@ import type { CancellationToken } from 'vscode-languageserver'
 import * as src from '../lms/model'
 import type { ModelUpdateCombiner } from '../lms/model-update-combiner'
 import type { LmsSubscriptions } from '../lms/subscriptions'
-import * as id from '../semantic/identity'
-import type { IdentityIndex } from '../semantic/identity-index'
-import type { IdentityManager } from '../semantic/identity-manager'
+import * as id from '../identity/model'
+import type { IdentityIndex } from '../identity'
+import type { IdentityManager } from '../identity/manager'
 import type { IdentityReconciler } from '../semantic/identity-reconciler'
 import type { SemanticDomainFactory } from '../semantic/semantic-domain'
 import type { LangiumModelServerServices } from '../services'
@@ -33,7 +33,7 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
         this.createSemanticDomain = services.semantic.SemanticDomainFactory
         this.isLmsDocument = services.workspace.LmsDocumentGuard
         this.identityReconciler = services.semantic.IdentityReconciler
-        this.identityManager = services.semantic.IdentityManager
+        this.identityManager = services.identity.IdentityManager
         this.lmsSubscriptions = services.lms.LmsSubscriptions
         this.modelUpdateCombiner = services.lms.ModelUpdateCombiner
 

@@ -2,9 +2,9 @@ import type { LangiumDocuments, LanguageMetaData, MaybePromise } from 'langium'
 import type { Connection } from 'vscode-languageserver'
 import { ShowDocumentRequest } from 'vscode-languageserver'
 import { URI } from 'vscode-uri'
-import type { SemanticIdentity } from '../semantic/identity'
-import type { IdentityIndex } from '../semantic/identity-index'
-import type { IdentityManager } from '../semantic/identity-manager'
+import type { SemanticIdentity } from '../identity/model'
+import type { IdentityIndex } from '../identity'
+import type { IdentityManager } from '../identity/manager'
 import type { LangiumModelServerServices } from '../services'
 import type { TypeGuard } from '../utils/types'
 import { UriConverter } from '../utils/uri-converter'
@@ -56,7 +56,7 @@ implements LangiumModelServerFacade<SM> {
     readonly deleteModelHandlersByPathSegment: Map<string, DeleteModelHandler> = new Map()
 
     constructor(services: LangiumModelServerServices<SM, SemI, D>) {
-        this.identityManager = services.semantic.IdentityManager
+        this.identityManager = services.identity.IdentityManager
         this.langiumDocuments = services.shared.workspace.LangiumDocuments
         this.languageMetadata = services.LanguageMetaData
         this.isLmsDocument = services.workspace.LmsDocumentGuard

@@ -1,5 +1,5 @@
-import type { IdentityStorage } from '../../../langium-model-server/semantic/identity-storage'
-import { AbstractIdentityStorage } from '../../../langium-model-server/semantic/identity-storage'
+import type { IdentityStorage } from '../../../langium-model-server/identity/storage'
+import { AbstractIdentityStorage } from '../../../langium-model-server/identity/storage'
 import type { TaskListDocument } from '../workspace/documents'
 import { Model } from './task-list-identity'
 import type { TaskListIdentityIndex } from './task-list-identity-index'

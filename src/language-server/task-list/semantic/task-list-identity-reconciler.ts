@@ -15,7 +15,7 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
     private modelUpdateCalculators: TaskListModelUpdateCalculators
 
     public constructor(services: TaskListServices) {
-        this.identityManager = services.semantic.IdentityManager
+        this.identityManager = services.identity.IdentityManager
         this.modelUpdateCalculators = services.lms.ModelUpdateCalculators
     }
 
