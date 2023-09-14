@@ -7,8 +7,8 @@ import type * as source from '../lms/model'
 import type { TaskListModelUpdateCalculators } from '../lms/task-list-model-update-calculation'
 import type { TaskListServices } from '../task-list-module'
 import { type TaskListDocument } from '../workspace/documents'
-import { Model } from './task-list-identity'
-import type { TaskListIdentityManager } from './task-list-identity-manager'
+import { Model } from '../identity/model'
+import type { TaskListIdentityManager } from '../identity/manager'
 
 export class TaskListIdentityReconciler implements IdentityReconciler<source.Model, TaskListDocument>{
     private identityManager: TaskListIdentityManager

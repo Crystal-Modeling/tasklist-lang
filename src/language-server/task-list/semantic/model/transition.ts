@@ -2,7 +2,7 @@ import { findNodeForProperty } from 'langium'
 import * as sem from '../../../../langium-model-server/semantic/model'
 import { isDefined } from '../../../../langium-model-server/utils/predicates'
 import type * as ast from '../../../generated/ast'
-import * as identity from '../task-list-identity'
+import * as identity from '../../identity/model'
 
 export type NewTransition = {
     name: identity.TransitionDerivativeName

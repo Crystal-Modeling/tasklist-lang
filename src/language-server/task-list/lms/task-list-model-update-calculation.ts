@@ -4,7 +4,7 @@ import { AbstractModelUpdateCalculators, deleteModels, type ModelUpdateCalculato
 import type * as sem from '../../../langium-model-server/semantic/model'
 import * as ast from '../../generated/ast'
 import type * as semantic from '../semantic/model'
-import type * as identity from '../semantic/task-list-identity'
+import type * as identity from '../identity/model'
 import type { QueriableTaskListSemanticDomain } from '../semantic/task-list-semantic-domain'
 import type { TaskListDocument } from '../workspace/documents'
 import type { Model } from './model'

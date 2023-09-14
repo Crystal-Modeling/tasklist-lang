@@ -12,13 +12,6 @@ export interface Task {
     name: string
 }
 
-export namespace Task {
-    export const KIND = 'Task'
-
-    // export const nameBuilder = new PropertyBasedNameBuilder<Task>(Task.KIND)
-
-}
-
 export interface Transition {
     id: string
     sourceTaskId: string
@@ -26,13 +19,6 @@ export interface Transition {
 }
 
 export namespace Transition {
-    export const KIND = 'Transition'
-
-    // export const nameBuilder: SemanticNameBuilder<Transition, TransitionDerivativeName> = {
-    //     kind: Transition.KIND,
-    //     buildName: name
-    // }
-
     export function name(transition: Transition): TransitionDerivativeName {
         return TransitionDerivativeName.of(transition.sourceTaskId, transition.targetTaskId)
     }

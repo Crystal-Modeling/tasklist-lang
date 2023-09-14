@@ -2,8 +2,8 @@ import type { AstNodeSemanticIdentity, DerivativeSemanticIdentity, Renameable } 
 import { ModelUri } from '../../../langium-model-server/identity/model'
 import type { IdentityIndex } from '../../../langium-model-server/identity'
 import { ValueBasedMap, equal } from '../../../langium-model-server/utils/collections'
-import type { Model, Task, TransitionDerivativeName } from './task-list-identity'
-import { Transition } from './task-list-identity'
+import type { Model, Task, TransitionDerivativeName } from './model'
+import { Transition } from './model'
 
 export abstract class TaskListIdentityIndex implements IdentityIndex {
     public readonly id: string
