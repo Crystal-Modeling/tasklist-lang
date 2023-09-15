@@ -3,6 +3,7 @@ import type { SemanticIdentity } from '../identity/model'
 
 export type Valid<T> = T & { __semantic: 'valid' }
 
+export type IdentifiedNode = Identified<AstNode | ArtificialAstNode>
 export type Identified<T> = Valid<T> & SemanticIdentity
 
 export namespace Identified {

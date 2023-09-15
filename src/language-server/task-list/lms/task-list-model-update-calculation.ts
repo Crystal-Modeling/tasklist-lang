@@ -1,16 +1,16 @@
+import type { IndexedIdentity } from '../../../langium-model-server/identity/model'
 import type { ReadonlyArrayUpdate } from '../../../langium-model-server/lms/model'
 import { ArrayUpdateCommand, ElementUpdate, Update } from '../../../langium-model-server/lms/model'
 import { AbstractModelUpdateCalculators, deleteModels, type ModelUpdateCalculator } from '../../../langium-model-server/lms/model-update-calculation'
 import type * as sem from '../../../langium-model-server/semantic/model'
 import * as ast from '../../generated/ast'
-import type * as semantic from '../semantic/model'
 import type * as identity from '../identity/model'
+import type * as semantic from '../semantic/model'
 import type { QueriableTaskListSemanticDomain } from '../semantic/task-list-semantic-domain'
 import type { TaskListDocument } from '../workspace/documents'
-import type { Model } from './model'
 import { Task, Transition } from './model'
 
-export class TaskListModelUpdateCalculators extends AbstractModelUpdateCalculators<Model> {
+export class TaskListModelUpdateCalculators extends AbstractModelUpdateCalculators {
 
     public override getOrCreateCalculator(langiumDocument: TaskListDocument): TaskListModelUpdateCalculator {
         return super.getOrCreateCalculator(langiumDocument) as TaskListModelUpdateCalculator
@@ -26,7 +26,7 @@ export class TaskListModelUpdateCalculators extends AbstractModelUpdateCalculato
 
 }
 
-export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Model> {
+export class TaskListModelUpdateCalculator implements ModelUpdateCalculator {
 
     protected semanticDomain: QueriableTaskListSemanticDomain
 
@@ -34,10 +34,10 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
         this.semanticDomain = taskListSemanticDomain
     }
 
-    private readonly _tasksMarkedForDeletion: Map<string, sem.Identified<ast.Task> | identity.Task> = new Map()
-    private readonly _transitionsMarkedForDeletion: Map<string, sem.Identified<semantic.Transition> | identity.Transition> = new Map()
+    private readonly _tasksMarkedForDeletion: Map<string, sem.Identified<ast.Task> | identity.TaskIdentity> = new Map()
+    private readonly _transitionsMarkedForDeletion: Map<string, sem.Identified<semantic.Transition> | identity.TransitionIdentity> = new Map()
 
-    public calculateTasksUpdate(identitiesToDelete: Iterable<identity.Task>): ReadonlyArrayUpdate<Task> {
+    public calculateTasksUpdate(identitiesToDelete: Iterable<identity.TaskIdentity>): ReadonlyArrayUpdate<Task> {
         const existingTasks = this.semanticDomain.identifiedTasks.values()
         const updates = Array.from(existingTasks, task => this.compareTaskWithExistingBefore(task))
         const deletion: ReadonlyArrayUpdate<Task> = deleteModels(
@@ -49,7 +49,7 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
         return ArrayUpdateCommand.all(...updates, deletion)
     }
 
-    public calculateTransitionsUpdate(identitiesToDelete: Iterable<identity.Transition>): ReadonlyArrayUpdate<Transition> {
+    public calculateTransitionsUpdate(identitiesToDelete: Iterable<identity.TransitionIdentity>): ReadonlyArrayUpdate<Transition> {
         const existingTransitions = this.semanticDomain.identifiedTransitions.values()
         const updates = Array.from(existingTransitions, transition => this.compareTransitionWithExistingBefore(transition))
         const deletion: ReadonlyArrayUpdate<Transition> = deleteModels(
@@ -59,6 +59,16 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
         )
 
         return ArrayUpdateCommand.all(...updates, deletion)
+    }
+
+    public resetModelsMarkedForDeletion(): Iterable<sem.IdentifiedNode | IndexedIdentity> {
+        const result: Array<sem.IdentifiedNode | IndexedIdentity> = []
+        for (const el of this._tasksMarkedForDeletion.values())
+            result.push(el)
+        for (const el of this._transitionsMarkedForDeletion.values())
+            result.push(el)
+
+        return result
     }
 
     private compareTaskWithExistingBefore(current: sem.Identified<ast.Task>): ReadonlyArrayUpdate<Task> {

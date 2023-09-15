@@ -1,17 +1,17 @@
 import { stream } from 'langium'
 import type * as id from '../identity/model'
-import type { KeysOfType } from '../utils/types'
+import type { IdentifiedNode } from '../semantic/model'
 import type { LmsDocument } from '../workspace/documents'
 import { ArrayUpdateCommand, ElementUpdate, type ReadonlyArrayUpdate } from './model'
 
-export interface ModelUpdateCalculators<SM extends id.SemanticIdentity> {
-    getOrCreateCalculator(lmsDocument: LmsDocument): ModelUpdateCalculator<SM>
+export interface ModelUpdateCalculators {
+    getOrCreateCalculator(lmsDocument: LmsDocument): ModelUpdateCalculator
 }
 
-export abstract class AbstractModelUpdateCalculators<SM extends id.SemanticIdentity> implements ModelUpdateCalculators<SM> {
-    protected updateCalculatorsByLangiumDocumentUri: Map<string, ModelUpdateCalculator<SM>> = new Map()
+export abstract class AbstractModelUpdateCalculators implements ModelUpdateCalculators {
+    protected updateCalculatorsByLangiumDocumentUri: Map<string, ModelUpdateCalculator> = new Map()
 
-    public getOrCreateCalculator(lmsDocument: LmsDocument): ModelUpdateCalculator<SM> {
+    public getOrCreateCalculator(lmsDocument: LmsDocument): ModelUpdateCalculator {
         const documentUri = lmsDocument.textDocument.uri
         const existingCalculator = this.updateCalculatorsByLangiumDocumentUri.get(documentUri)
         if (existingCalculator) {
@@ -22,14 +22,17 @@ export abstract class AbstractModelUpdateCalculators<SM extends id.SemanticIdent
         return newCalculator
     }
 
-    protected abstract createCalculator(lmsDocument: LmsDocument): ModelUpdateCalculator<SM>
+    protected abstract createCalculator(lmsDocument: LmsDocument): ModelUpdateCalculator
 }
 
-export type ModelUpdateCalculator<SM extends id.SemanticIdentity> = DeletionsCalculation<SM>
-
-type DeletionsCalculation<T> = {
-    [P in KeysOfType<T, id.SemanticIdentity[]> as `calculate${Capitalize<string & P>}Update`]: T[P] extends id.SemanticIdentity[] ? (identitiesToDelete: Iterable<T[P][0]>) => ReadonlyArrayUpdate<T[P][0]> : never
+export interface ModelUpdateCalculator {
+    resetModelsMarkedForDeletion(): Iterable<IdentifiedNode | id.IndexedIdentity>
 }
+
+// TODO: Either delete this pseudo-generic interface, or make it work! DoD: no "redefining the type" of ModelUpdateCalculators in task-list-module
+// type DeletionsCalculation<T> = {
+//     [P in KeysOfType<T, id.SemanticIdentity[]> as `calculate${Capitalize<string & P>}Update`]: T[P] extends id.SemanticIdentity[] ? (identitiesToDelete: Iterable<T[P][0]>) => ReadonlyArrayUpdate<T[P][0]> : never
+// }
 
 /**
  * Computes {@link ReadonlyArrayUpdate} for {@link identitiesToDelete} by comparing them with {@link modelsMarkedForDeletion}.

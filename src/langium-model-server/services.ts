@@ -52,7 +52,7 @@ export type LangiumModelServerAbstractServices<SM extends SemanticIdentity, II e
     },
     lms: {
         LangiumModelServerFacade: LangiumModelServerFacade<SM>,
-        ModelUpdateCalculators: ModelUpdateCalculators<SM>,
+        ModelUpdateCalculators: ModelUpdateCalculators,
         ModelUpdateCombiner: ModelUpdateCombiner<SM>
     }
 }

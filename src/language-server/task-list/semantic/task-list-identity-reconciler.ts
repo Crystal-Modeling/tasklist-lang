@@ -7,7 +7,6 @@ import type * as source from '../lms/model'
 import type { TaskListModelUpdateCalculators } from '../lms/task-list-model-update-calculation'
 import type { TaskListServices } from '../task-list-module'
 import { type TaskListDocument } from '../workspace/documents'
-import { Model } from '../identity/model'
 import type { TaskListIdentityManager } from '../identity/manager'
 
 export class TaskListIdentityReconciler implements IdentityReconciler<source.Model, TaskListDocument>{
@@ -60,8 +59,7 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
                 if (taskIdentity) {
                     existingUnmappedTasks.delete(task.name)
                 } else {
-                    taskIdentity = Model.newTask(task.name)
-                    identityIndex.addTask(taskIdentity)
+                    taskIdentity = identityIndex.addNewTask(task.name)
                 }
                 semanticDomain.identifyTask(task, taskIdentity.id)
             })
@@ -87,8 +85,7 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
                 if (transitionIdentity) {
                     existingUnmappedTransitions.delete(transition.name)
                 } else {
-                    transitionIdentity = Model.newTransition(transition.name)
-                    identityIndex.addTransition(transitionIdentity)
+                    transitionIdentity = identityIndex.addNewTransition(transition.name)
                 }
                 semanticDomain.identifyTransition(transition, transitionIdentity.id)
             })

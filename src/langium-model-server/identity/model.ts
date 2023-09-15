@@ -62,11 +62,19 @@ export interface DerivativeSemanticIdentity<NAME extends SemanticDerivativeName>
     readonly name: NAME
 }
 
-export type Renameable<I extends NamedSemanticIdentity> = I & {
+// FIXME: `Indexed` is not an ideal name, since an object can reach the state when it's no longer belong to `IdentityIndex` (i.e., when it was `delete`d)
+export type IndexedIdentity = Indexed<NamedSemanticIdentity>
+export type Indexed<ID extends NamedSemanticIdentity> = ID & {
     /**
-     * Replaces the `name` value with supplied argument. If the name changed, returns `true`.
-     * Else returns `false`
-     * @param newName New name to replace the `name` property of this identity
+     * Replaces the `name` value with supplied argument. Returns `true` if update was successful. Returns `true` if the name has changed.
+     * @param newName New name to replace the `name` property of this identity.
+     * @returns `true` if identity was successfully renamed, or `false` otherwise.
      */
-    updateName(newName: I['name']): boolean
+    updateName(newName: ID['name']): boolean
+    /**
+     * Removes this identity from IdentityIndex it belongs to. Returns `true` if deletion was successful.
+     * Subsequent attempts to modify `this` identity will always return false.
+     * @returns `true` if identity was successfully deleted, or `false` otherwise.
+     */
+    delete(): boolean
 }
