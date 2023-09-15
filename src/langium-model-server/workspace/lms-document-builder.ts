@@ -11,11 +11,11 @@ import type { IdentityReconciler } from '../semantic/identity-reconciler'
 import type { SemanticDomainFactory } from '../semantic/semantic-domain'
 import type { LangiumModelServerServices } from '../services'
 import type { TypeGuard } from '../utils/types'
-import type { Initialized} from './documents'
+import type { Initialized } from './documents'
 import { LmsDocument, LmsDocumentState, type ExtendableLangiumDocument } from './documents'
 
 export interface LmsDocumentBuilder {
-
+    reconcileIdentity(documents: LangiumDocument[], cancelToken: CancellationToken, withTimeout: boolean): Promise<void>
 }
 export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements LmsDocumentBuilder {
 
@@ -58,7 +58,7 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
         }
     }
 
-    protected async reconcileIdentity(documents: LangiumDocument[], cancelToken: CancellationToken) {
+    public async reconcileIdentity(documents: LangiumDocument[], cancelToken: CancellationToken, withTimeout: boolean = true) {
         console.debug('====== IDENTITY RECONCILIATION PHASE ======')
         const newUpdatesForLmsDocuments: Map<Initialized<D>, src.RootUpdate<SM>> = new Map()
         for (const document of documents) {
@@ -81,10 +81,14 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
         })
         await interruptAndCheck(cancelToken)
 
-        if (!this.updatePushingTimeout) {
-            this.updatePushingTimeout = setTimeout(this.combineAndPushUpdates.bind(this), 300)
+        if (withTimeout) {
+            if (!this.updatePushingTimeout) {
+                this.updatePushingTimeout = setTimeout(this.combineAndPushUpdates.bind(this), 300)
+            } else {
+                this.updatePushingTimeout.refresh()
+            }
         } else {
-            this.updatePushingTimeout.refresh()
+            this.combineAndPushUpdates()
         }
     }
 

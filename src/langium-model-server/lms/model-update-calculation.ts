@@ -1,6 +1,5 @@
 import { stream } from 'langium'
 import type * as id from '../identity/model'
-import type { IdentifiedNode } from '../semantic/model'
 import type { LmsDocument } from '../workspace/documents'
 import { ArrayUpdateCommand, ElementUpdate, type ReadonlyArrayUpdate } from './model'
 
@@ -26,7 +25,7 @@ export abstract class AbstractModelUpdateCalculators implements ModelUpdateCalcu
 }
 
 export interface ModelUpdateCalculator {
-    resetModelsMarkedForDeletion(): Iterable<IdentifiedNode | id.IndexedIdentity>
+    // resetModelsMarkedForDeletion(): Iterable<id.IndexedIdentity>
 }
 
 // TODO: Either delete this pseudo-generic interface, or make it work! DoD: no "redefining the type" of ModelUpdateCalculators in task-list-module

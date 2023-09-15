@@ -1,4 +1,3 @@
-import type { IndexedIdentity } from '../../../langium-model-server/identity/model'
 import type { ReadonlyArrayUpdate } from '../../../langium-model-server/lms/model'
 import { ArrayUpdateCommand, ElementUpdate, Update } from '../../../langium-model-server/lms/model'
 import { AbstractModelUpdateCalculators, deleteModels, type ModelUpdateCalculator } from '../../../langium-model-server/lms/model-update-calculation'
@@ -60,16 +59,22 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator {
 
         return ArrayUpdateCommand.all(...updates, deletion)
     }
-
-    public resetModelsMarkedForDeletion(): Iterable<sem.IdentifiedNode | IndexedIdentity> {
-        const result: Array<sem.IdentifiedNode | IndexedIdentity> = []
-        for (const el of this._tasksMarkedForDeletion.values())
-            result.push(el)
-        for (const el of this._transitionsMarkedForDeletion.values())
-            result.push(el)
+    /*
+    public resetModelsMarkedForDeletion(): Iterable<id.IndexedIdentity> {
+        const result: id.IndexedIdentity[] = []
+        // TODO: Decide how it is better to check: to use AST-based guard, or Indexed.is guard
+        for (const el of this._tasksMarkedForDeletion.values()) {
+            if (ast.isTask(el)) result.push(el.identity)
+            else result.push(el)
+        }
+        for (const el of this._transitionsMarkedForDeletion.values()) {
+            if (id.Indexed.is(el)) result.push(el)
+            else result.push(el.identity)
+        }
 
         return result
     }
+    */
 
     private compareTaskWithExistingBefore(current: sem.Identified<ast.Task>): ReadonlyArrayUpdate<Task> {
         const semanticId = current.id

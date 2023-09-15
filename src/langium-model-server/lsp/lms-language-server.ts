@@ -1,12 +1,13 @@
 import type { LangiumSharedServices } from 'langium'
 import { DefaultLanguageServer, startLanguageServer } from 'langium'
 import type { Connection, InitializeParams, InitializeResult } from 'vscode-languageserver'
-import { FileChangeType } from 'vscode-languageserver'
-import type { SemanticIdentity } from '../identity/model'
+import { CancellationToken, FileChangeType } from 'vscode-languageserver'
+import { URI } from 'vscode-uri'
 import type { IdentityIndex } from '../identity'
+import type { SemanticIdentity } from '../identity/model'
+import { Save } from '../lms/model'
 import type { LangiumModelServerAddedServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
-import { Save } from '../lms/model'
 
 export class LmsLanguageServer extends DefaultLanguageServer {
 
@@ -36,20 +37,30 @@ export function startLMSLanguageServer<SM extends SemanticIdentity, II extends I
     lmsServices: LangiumModelServerAddedServices<SM, II, D>
 ): void {
     startLanguageServer(services)
-    addIdentityProcessingHandlers(services.lsp.Connection!, lmsServices)
+    addIdentityProcessingHandlers(services.lsp.Connection!, lmsServices, services)
 }
 
 function addIdentityProcessingHandlers<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument>(
     connection: Connection,
-    lmsServices: LangiumModelServerAddedServices<SM, II, D>
+    lmsServices: LangiumModelServerAddedServices<SM, II, D>,
+    services: LangiumSharedServices
 ) {
 
     const identityManager = lmsServices.identity.IdentityManager
     const lmsSubscriptions = lmsServices.lms.LmsSubscriptions
+    const langiumDocuments = services.workspace.LangiumDocuments
+    const lmsDocumentBuilder = lmsServices.workspace.LmsDocumentBuilder
 
     connection.onDidSaveTextDocument(params => {
-        const rootId = identityManager.saveIdentity(params.textDocument.uri)
-        lmsSubscriptions.getSubscription(rootId)?.pushAction(Save.create(rootId))
+        const lmsUri = URI.parse(params.textDocument.uri)
+        if (langiumDocuments.hasDocument(lmsUri)) {
+            // FIXME: Running reconciliation artificially to permanently delete identities marked for deletion
+            lmsDocumentBuilder.reconcileIdentity([langiumDocuments.getOrCreateDocument(lmsUri)], CancellationToken.None, false)
+                .then(() => {
+                    const rootId = identityManager.saveIdentity(params.textDocument.uri)
+                    lmsSubscriptions.getSubscription(rootId)?.pushAction(Save.create(rootId))
+                })
+        }
     })
 
     connection.onDidChangeWatchedFiles(params => {
