@@ -1,10 +1,10 @@
-import type { AstNodeSemanticIdentity, Indexed, SemanticPropertyName } from '../../../langium-model-server/identity/model'
-import { ModelUri, SemanticIdentity } from '../../../langium-model-server/identity/model'
 import type { IdentityIndex } from '../../../langium-model-server/identity'
+import type { SemanticPropertyName } from '../../../langium-model-server/identity/model'
+import { ModelUri, SemanticIdentity } from '../../../langium-model-server/identity/model'
 import { ValueBasedMap, equal } from '../../../langium-model-server/utils/collections'
-import { TransitionDerivativeName } from './model'
 import type { TaskIdentity, TransitionIdentity } from './model'
-import { type IdentityModel, Task, Transition } from './storage'
+import { TransitionDerivativeName } from './model'
+import { Task, Transition, type IdentityModel } from './storage'
 
 export abstract class TaskListIdentityIndex implements IdentityIndex {
     public readonly id: string
@@ -36,16 +36,24 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         }
     }
 
-    public findAstNodeIdentityById(id: string): Indexed<AstNodeSemanticIdentity> | undefined {
-        return this._tasksById.get(id)
-    }
-
-    public findTransitionIdentityById(id: string): TransitionIdentity | undefined {
-        return this._transitionsById.get(id)
-    }
-
     public addNewTask(name: SemanticPropertyName): TaskIdentity {
         return this.addTask(SemanticIdentity.generate(), name)
+    }
+
+    public deleteTasks(taskIds: Iterable<string>) {
+        for (const id of taskIds) {
+            this.deleteTask(id)
+        }
+    }
+
+    public addNewTransition(name: TransitionDerivativeName): TransitionIdentity {
+        return this.addTransition(SemanticIdentity.generate(), name)
+    }
+
+    public deleteTransitions(transitionIds: Iterable<string>) {
+        for (const id of transitionIds) {
+            this.deleteTransition(id)
+        }
     }
 
     private addTask(id: string, name: SemanticPropertyName): TaskIdentity {
@@ -80,24 +88,6 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         return taskIdentity
     }
 
-    public deleteTasks(taskIds: Iterable<string>) {
-        for (const id of taskIds) {
-            this.deleteTask(id)
-        }
-    }
-
-    private deleteTask(taskId: string) {
-        const task = this._tasksById.get(taskId)
-        if (task) {
-            this._tasksById.delete(task.id)
-            this._tasksByName.delete(task.name)
-        }
-    }
-
-    public addNewTransition(name: TransitionDerivativeName): TransitionIdentity {
-        return this.addTransition(SemanticIdentity.generate(), name)
-    }
-
     private addTransition(id: string, name: TransitionDerivativeName): TransitionIdentity {
         const index = this
         const transitionIdentity = {
@@ -130,9 +120,11 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         return transitionIdentity
     }
 
-    public deleteTransitions(transitionIds: Iterable<string>) {
-        for (const id of transitionIds) {
-            this.deleteTransition(id)
+    private deleteTask(taskId: string) {
+        const task = this._tasksById.get(taskId)
+        if (task) {
+            this._tasksById.delete(task.id)
+            this._tasksByName.delete(task.name)
         }
     }
 

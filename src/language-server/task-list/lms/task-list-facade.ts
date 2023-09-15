@@ -7,14 +7,13 @@ import type { Creation, CreationParams, Modification } from '../../../langium-mo
 import * as lms from '../../../langium-model-server/lms/model'
 import { EditingResult } from '../../../langium-model-server/lms/model'
 import type { LmsSubscriptions } from '../../../langium-model-server/lms/subscriptions'
-import type { AstNodeSemanticIdentity, Indexed } from '../../../langium-model-server/identity/model'
 import * as id from '../../../langium-model-server/semantic/model'
 import type { LangiumModelServerServices } from '../../../langium-model-server/services'
 import type { LmsDocument } from '../../../langium-model-server/workspace/documents'
 import * as ast from '../../generated/ast'
+import type { TaskListIdentityIndex } from '../identity'
 import * as identity from '../identity/model'
 import * as semantic from '../semantic/model'
-import type { TaskListIdentityIndex } from '../identity'
 import type { TaskListDocument } from '../workspace/documents'
 import { isTaskListDocument } from '../workspace/documents'
 import { Model, Task, Transition } from './model'
@@ -105,31 +104,28 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             return EditingResult.failedValidation('Unable to resolve task by id ' + modelId)
         }
 
-        let renameableTaskIdentity: Indexed<AstNodeSemanticIdentity> | undefined
-
         const textEdit = this.computeTaskUpdate(task, taskModification)
 
         if (textEdit) {
             if (taskModification.name) {
-                renameableTaskIdentity = this.identityManager.getIdentityIndex(lmsDocument).findAstNodeIdentityById(task.id)
-                renameableTaskIdentity?.updateName(taskModification.name)
+                task.identity.updateName(taskModification.name)
             }
             return this.applyTextEdit(lmsDocument, textEdit, 'Updated task ' + task.name
             ).then(editingResult => {
                 if (editingResult.successful) {
                     console.debug('Modified Task attributes:', taskModification)
-                    if (renameableTaskIdentity) {
-                        const update = lms.RootUpdate.createEmpty<Task>(renameableTaskIdentity.id, renameableTaskIdentity.modelUri)
-                        lms.Update.assignIfUpdated(update, 'name', task.name, taskModification.name ?? task.name)
+                    if (taskModification.name) {
+                        const update = lms.RootUpdate.createEmpty<Task>(task.identity.id, task.identity.modelUri)
+                        lms.Update.assignIfUpdated(update, 'name', task.name, taskModification.name)
                         this.lmsSubscriptions.getSubscription(rootModelId)?.pushUpdate(update)
                     }
                 } else {
                     // Reverting modified identity on failure
-                    renameableTaskIdentity?.updateName(task.name)
+                    task.identity.updateName(task.name)
                 }
                 return editingResult
             }, failure => {
-                renameableTaskIdentity?.updateName(task.name)
+                task.identity.updateName(task.name)
                 return failure
             })
         } else {
@@ -167,31 +163,26 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
 
         const newTransition = semantic.Transition.createNew(newSourceTask ?? transition.sourceTask, newTargetTask ?? transition.targetTask)
 
-        const renameableTransitionIdentity = this.identityManager.getIdentityIndex(lmsDocument)
-            .findTransitionIdentityById(transition.id)
-
         const changes = this.computeTransitionUpdate(transition, newTransition)
 
         if (changes.length > 0) {
-            renameableTransitionIdentity?.updateName(newTransition.name)
+            transition.identity.updateName(newTransition.name)
             return this.applyWorkspaceEdit({ changes: { [lmsDocument.textDocument.uri]: changes } },
                 'Updated transition: ' + transition.name + 'to ' + newTransition.name
             ).then(editingResult => {
                 if (editingResult.successful) {
                     console.debug('Modified Transition attributes. New transition', newTransition)
-                    if (renameableTransitionIdentity) {
-                        const update = lms.RootUpdate.createEmpty<Transition>(renameableTransitionIdentity.id, renameableTransitionIdentity.modelUri)
-                        lms.Update.assignIfUpdated(update, 'sourceTaskId', transition.sourceTask.id, newTransition.sourceTask.id)
-                        lms.Update.assignIfUpdated(update, 'targetTaskId', transition.targetTask.id, newTransition.targetTask.id)
-                        this.lmsSubscriptions.getSubscription(rootModelId)?.pushUpdate(update)
-                    }
+                    const update = lms.RootUpdate.createEmpty<Transition>(transition.identity.id, transition.identity.modelUri)
+                    lms.Update.assignIfUpdated(update, 'sourceTaskId', transition.sourceTask.id, newTransition.sourceTask.id)
+                    lms.Update.assignIfUpdated(update, 'targetTaskId', transition.targetTask.id, newTransition.targetTask.id)
+                    this.lmsSubscriptions.getSubscription(rootModelId)?.pushUpdate(update)
                 } else {
                     // Reverting modified identity on failure
-                    renameableTransitionIdentity?.updateName(transition.name)
+                    transition.identity.updateName(transition.name)
                 }
                 return editingResult
             }, failure => {
-                renameableTransitionIdentity?.updateName(transition.name)
+                transition.identity.updateName(transition.name)
                 return failure
             })
         } else {
@@ -330,7 +321,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             .map((ref): [documentUri: string, transition: id.Identified<semantic.Transition>] | undefined => {
                 const doc = this.langiumDocuments.getOrCreateDocument(ref.sourceUri) as LmsDocument
                 const sourceTask = getContainerOfType(this.astNodeLocator.getAstNode(doc.parseResult.value, ref.sourcePath), ast.isTask)
-                if (!this.isLmsDocument(doc) || !id.Identified.is(sourceTask)) {
+                if (!this.isLmsDocument(doc) || !sourceTask || !id.Identified.is(sourceTask)) {
                     console.debug('Source document or source task are not LMS-compatible', doc, sourceTask)
                     return undefined
                 }

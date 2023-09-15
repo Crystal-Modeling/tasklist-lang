@@ -58,7 +58,7 @@ export interface AstNodeSemanticIdentity extends NamedSemanticIdentity {
     readonly name: SemanticPropertyName
 }
 
-export interface DerivativeSemanticIdentity<NAME extends SemanticDerivativeName> extends NamedSemanticIdentity {
+export interface DerivativeSemanticIdentity<NAME extends SemanticDerivativeName = SemanticDerivativeName> extends NamedSemanticIdentity {
     readonly name: NAME
 }
 

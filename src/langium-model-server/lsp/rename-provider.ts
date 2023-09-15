@@ -38,13 +38,12 @@ export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityI
 
         if (sem.Identified.is(targetNode)) {
             const targetIdentityIndex = this.identityManager.getIdentityIndex(getDocument(targetNode))
-            console.debug('Found identity index for the document:', targetIdentityIndex)
-            const renameableIdentity = targetIdentityIndex.findAstNodeIdentityById(targetNode.id)
-            console.debug('Found identity for the targetNode:', renameableIdentity)
-            if (renameableIdentity && renameableIdentity.updateName(newNameDefinder.targetName)) {
+            const targetNodeIdentity = targetNode.identity
+            console.debug('Found identity for the targetNode:', targetNodeIdentity)
+            if (targetNodeIdentity.updateName(newNameDefinder.targetName)) {
                 console.debug('After updating semantic element, its name has changed')
-                const rename = src.RootUpdate.createEmpty<AstNodeSemanticIdentity>(renameableIdentity.id, renameableIdentity.modelUri)
-                src.Update.assign(rename, 'name', renameableIdentity.name)
+                const rename = src.RootUpdate.createEmpty<AstNodeSemanticIdentity>(targetNodeIdentity.id, targetNodeIdentity.modelUri)
+                src.Update.assign(rename, 'name', targetNodeIdentity.name)
                 console.debug('Looking for subscriptions for id', targetIdentityIndex.id)
                 this.lmsSubscriptions.getSubscription(targetIdentityIndex.id)?.pushUpdate(rename)
             }
