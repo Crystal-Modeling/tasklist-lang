@@ -1,5 +1,4 @@
-import type { AstNode } from 'langium'
-import type { ArtificialAstNode, Identified, AstRootNode } from './model'
+import type { AstRootNode, IdentifiedNode, IdentifiedRoot } from './model'
 
 export interface SemanticDomain {
     clear(): void
@@ -8,9 +7,9 @@ export interface SemanticDomain {
      * @param rootNode Am AST Root node of the document
      * @param semanticId Semantic ID, which {@link rootNode} is identified with
      */
-    identifyRootNode(rootNode: AstRootNode, semanticId: string): Identified<AstRootNode>
-    readonly identifiedRootNode: Identified<AstRootNode> | undefined
-    getIdentifiedNode(id: string): Identified<AstNode | ArtificialAstNode> | undefined
+    identifyRootNode(rootNode: AstRootNode, semanticId: string): IdentifiedRoot
+    readonly identifiedRootNode: IdentifiedRoot | undefined
+    getIdentifiedNode(id: string): IdentifiedNode | undefined
 }
 
 export type SemanticDomainFactory = () => SemanticDomain

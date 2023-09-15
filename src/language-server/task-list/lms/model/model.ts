@@ -9,7 +9,7 @@ export interface Model {
 }
 
 export namespace Model {
-    export function create(rootModel: id.Identified<id.AstRootNode>): Model {
+    export function create(rootModel: id.IdentifiedRoot): Model {
         return {
             id: rootModel.id,
             tasks: [],

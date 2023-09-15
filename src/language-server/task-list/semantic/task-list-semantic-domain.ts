@@ -1,10 +1,11 @@
 import type { AstNode, Stream } from 'langium'
 import { stream } from 'langium'
-import type { ArtificialAstNode, AstRootNode, Valid } from '../../../langium-model-server/semantic/model'
+import type { ArtificialAstNode, AstRootNode, IdentifiedRoot, Valid } from '../../../langium-model-server/semantic/model'
 import { Identified } from '../../../langium-model-server/semantic/model'
 import type { SemanticDomain } from '../../../langium-model-server/semantic/semantic-domain'
 import type * as ast from '../../generated/ast'
 import { Transition } from './model'
+import type * as id from '../identity/model'
 
 export interface QueriableTaskListSemanticDomain {
     readonly identifiedTasks: ReadonlyMap<string, Identified<ast.Task>>
@@ -23,17 +24,17 @@ export interface TaskListSemanticDomain extends QueriableTaskListSemanticDomain,
     getValidTransitions(): Stream<Transition>
     // NOTE: 👇 This is considered as part of manipulation with Semantic Model (Identified<ast.Task> and IdentifiedTransition)
     /**
-     * Maps Valid Task node with semantic ID.
+     * Maps Valid Task node with semantic identity.
      * @param task Valid AST Task node
-     * @param semanticId Id, which {@link task} is identified with
+     * @param identity Semantic identity, which {@link task} is identified with
     */
-    identifyTask(task: Valid<ast.Task>, semanticId: string): Identified<ast.Task>
+    identifyTask(task: Valid<ast.Task>, identity: id.TaskIdentity): Identified<ast.Task>
     /**
-     * Maps Transition *artificial* node with semantic ID
+     * Maps Transition *artificial* node with semantic identity
      * @param transition Artificial Transition node (they are created being already validated)
-     * @param semanticId Semantic ID, which {@link transition} is identified with
+     * @param identity Semantic identity, which {@link transition} is identified with
      */
-    identifyTransition(transition: Transition, semanticId: string): Identified<Transition>
+    identifyTransition(transition: Transition, identity: id.TransitionIdentity): Identified<Transition>
 }
 
 export namespace TaskListSemanticDomain {
@@ -48,7 +49,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
     protected invalidTasks: Set<ast.Task>
     protected invalidReferences: Map<ast.Task, Set<number>>
 
-    private _identifiedRootNode: Identified<AstRootNode> | undefined
+    private _identifiedRootNode: IdentifiedRoot | undefined
     private _identifiedTasksById: Map<string, Identified<ast.Task>>
     private _previousIdentifiedTaskById: Map<string, Identified<ast.Task>> | undefined
     private _validTransitionsByIdentifiedTask: Map<Identified<ast.Task>, Transition[]>
@@ -102,24 +103,24 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
             .flatMap(this.getValidTransitionsForSourceTask.bind(this))
     }
 
-    public identifyRootNode(rootNode: AstRootNode, semanticId: string): Identified<AstRootNode> {
-        this._identifiedRootNode = Identified.identify(rootNode, semanticId)
+    public identifyRootNode(rootNode: AstRootNode, semanticId: string): IdentifiedRoot {
+        this._identifiedRootNode = Identified.identifyRoot(rootNode, semanticId)
         return this._identifiedRootNode
     }
 
-    public identifyTask(task: Valid<ast.Task>, semanticId: string): Identified<ast.Task> {
-        const identifiedTask = Identified.identify(task, semanticId)
-        this._identifiedTasksById.set(semanticId, identifiedTask)
+    public identifyTask(task: Valid<ast.Task>, identity: id.TaskIdentity): Identified<ast.Task> {
+        const identifiedTask = Identified.identify(task, identity)
+        this._identifiedTasksById.set(identifiedTask.id, identifiedTask)
         return identifiedTask
     }
 
-    public identifyTransition(transition: Transition, semanticId: string): Identified<Transition> {
-        const identifiedTransition = Identified.identify(transition, semanticId)
-        this._identifiedTransitionsById.set(semanticId, identifiedTransition)
+    public identifyTransition(transition: Transition, identity: id.TransitionIdentity): Identified<Transition> {
+        const identifiedTransition = Identified.identify(transition, identity)
+        this._identifiedTransitionsById.set(identifiedTransition.id, identifiedTransition)
         return identifiedTransition
     }
 
-    get identifiedRootNode(): Identified<AstRootNode> | undefined {
+    get identifiedRootNode(): IdentifiedRoot | undefined {
         return this._identifiedRootNode
     }
 
