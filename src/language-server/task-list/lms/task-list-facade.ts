@@ -22,7 +22,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
 
     private readonly references: References
     private readonly astNodeLocator: AstNodeLocator
-    private readonly lmsSubscriptions: LmsSubscriptions
+    private readonly lmsSubscriptions: LmsSubscriptions<Model>
 
     constructor(services: LangiumModelServerServices<Model, TaskListIdentityIndex, TaskListDocument>) {
         super(services)

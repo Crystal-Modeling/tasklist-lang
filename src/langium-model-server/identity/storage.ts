@@ -22,7 +22,7 @@ export interface IdentityStorage {
 /**
  * Copied and adopted from @eclipse-glsp/server-node/src/features/model/abstract-json-model-storage.ts
  */
-export abstract class AbstractIdentityStorage<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements IdentityStorage {
+export abstract class AbstractIdentityStorage<SM extends SemanticIdentity, II extends IdentityIndex<SM>, D extends LmsDocument> implements IdentityStorage {
 
     private languageMetaData: LanguageMetaData
 

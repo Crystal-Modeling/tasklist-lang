@@ -11,9 +11,9 @@ import * as source from '../lms/model'
 import type { LmsSubscriptions } from '../lms/subscriptions'
 import type { LmsDocument, SemanticAwareDocument } from '../workspace/documents'
 
-export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> extends DefaultDocumentHighlightProvider {
+export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, II extends IdentityIndex<SM>, D extends LmsDocument> extends DefaultDocumentHighlightProvider {
 
-    private lmsSubscriptions: LmsSubscriptions
+    private lmsSubscriptions: LmsSubscriptions<SM>
     private identityManager: IdentityManager
 
     private highlightedNodeIdByModelId: Map<string, string> = new Map()

@@ -11,8 +11,8 @@ import type { LmsDocument } from './workspace/documents'
 import { DefaultLmsDocumentBuilder } from './workspace/lms-document-builder'
 
 export function createLangiumModelServerDefaultModule
-<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument>():
-Module<LangiumModelServerServices<SM, II, D>, LangiumModelServerDefaultServices> {
+<SM extends SemanticIdentity, II extends IdentityIndex<SM>, D extends LmsDocument>():
+Module<LangiumModelServerServices<SM, II, D>, LangiumModelServerDefaultServices<SM>> {
     return {
         lsp: {
             RenameProvider: (services) => new LmsRenameProvider(services),
@@ -23,7 +23,7 @@ Module<LangiumModelServerServices<SM, II, D>, LangiumModelServerDefaultServices>
         },
         lms: {
             LangiumModelServer: (services) => new DefaultLangiumSourceModelServer(services),
-            LmsSubscriptions: () => new DefaultLmsSubscriptions()
+            LmsSubscriptions: (services) => new DefaultLmsSubscriptions(services.lms.ModelUpdateCombiner)
         }
     }
 }

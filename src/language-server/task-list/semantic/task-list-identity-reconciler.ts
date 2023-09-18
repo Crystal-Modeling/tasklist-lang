@@ -38,18 +38,17 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
     // Example of how Identity of Ast-based element is reconciled
     private reconcileTasks(document: Initialized<TaskListDocument>, update: src.Update<source.Model>) {
 
-        const identityIndex = this.identityManager.getIdentityIndex(document)
-        const updateCalculator = this.modelUpdateCalculators.getOrCreateCalculator(document)
-        const semanticDomain = document.semanticDomain
         // NOTE: Here I am expressing an idea, that perhaps I will have to have some sort of nested model indices,
         // which would make it generally necessary to pass the parent model into the semantic domain when requesting some (valid/identified) models
         const astModel: ast.Model = document.parseResult.value
-
+        const identityIndex = this.identityManager.getIdentityIndex(document)
         // TODO: Suggest AstRootNode as a specific interface in Langium library
         if (!AstRootNode.is(astModel)) {
             throw new Error('Expected Model to be a root node, but somehow it was not!. Model: ' + astModel)
         }
+        const semanticDomain = document.semanticDomain
         semanticDomain.identifyRootNode(astModel, identityIndex.id)
+        const updateCalculator = this.modelUpdateCalculators.getOrCreateCalculator(document, identityIndex.id)
 
         const existingUnmappedTasks = identityIndex.tasksByName
         // Actual mapping: marking semantic elements for deletion, and AST nodes to be added
@@ -75,7 +74,7 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
     private reconcileTransitions(document: Initialized<TaskListDocument>, update: src.Update<source.Model>) {
 
         const identityIndex = this.identityManager.getIdentityIndex(document)
-        const updateCalculator = this.modelUpdateCalculators.getOrCreateCalculator(document)
+        const updateCalculator = this.modelUpdateCalculators.getOrCreateCalculator(document, identityIndex.id)
         const semanticDomain = document.semanticDomain
 
         const existingUnmappedTransitions = identityIndex.transitionsByName

@@ -1,12 +1,14 @@
 import type { IdentityIndex } from '../../../langium-model-server/identity'
 import type { SemanticPropertyName } from '../../../langium-model-server/identity/model'
 import { ModelUri, SemanticIdentity } from '../../../langium-model-server/identity/model'
+import type * as src from '../../../langium-model-server/lms/model'
 import { ValueBasedMap, equal } from '../../../langium-model-server/utils/collections'
+import type * as source from '../lms/model'
 import type { TaskIdentity, TransitionIdentity } from './model'
 import { TransitionDerivativeName } from './model'
 import { Task, Transition, type IdentityModel } from './storage'
 
-export abstract class TaskListIdentityIndex implements IdentityIndex {
+export abstract class TaskListIdentityIndex implements IdentityIndex<source.Model> {
     public readonly id: string
     private readonly _tasksById: Map<string, TaskIdentity> = new Map()
     private readonly _tasksByName: Map<string, TaskIdentity> = new Map()
@@ -54,6 +56,11 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
         for (const id of transitionIds) {
             this.deleteTransition(id)
         }
+    }
+
+    public removeDeletedIdentities(modelUpdate: src.RootUpdate<source.Model>): void {
+        this.deleteTasks(modelUpdate.tasks?.removedIds ?? [])
+        this.deleteTransitions(modelUpdate.transitions?.removedIds ?? [])
     }
 
     private addTask(id: string, name: SemanticPropertyName): TaskIdentity {

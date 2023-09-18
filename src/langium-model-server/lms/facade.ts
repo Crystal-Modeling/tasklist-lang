@@ -42,10 +42,10 @@ export type UpdateModelHandler<T extends SemanticIdentity = SemanticIdentity> =
 
 export type DeleteModelHandler = (rootModelId: string, modelId: string) => MaybePromise<EditingResult> | undefined
 
-export abstract class AbstractLangiumModelServerFacade<SM extends SemanticIdentity, SemI extends IdentityIndex, D extends LmsDocument>
+export abstract class AbstractLangiumModelServerFacade<SM extends SemanticIdentity, SemI extends IdentityIndex<SM>, D extends LmsDocument>
 implements LangiumModelServerFacade<SM> {
 
-    protected identityManager: IdentityManager<SemI>
+    protected identityManager: IdentityManager<SM, SemI>
     protected langiumDocuments: LangiumDocuments
     protected languageMetadata: LanguageMetaData
     protected isLmsDocument: TypeGuard<D, ExtendableLangiumDocument>

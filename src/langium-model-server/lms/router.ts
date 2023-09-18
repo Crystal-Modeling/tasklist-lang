@@ -14,7 +14,7 @@ type Http2RequestHandlerProvider<T> = (parameter: T) => Http2RequestHandler
 
 type Http2ServerRouter = (stream: http2.ServerHttp2Stream, headers: http2.IncomingHttpHeaders, flags: number) => void
 
-export function LangiumModelServerRouter<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument>(
+export function LangiumModelServerRouter<SM extends SemanticIdentity, II extends IdentityIndex<SM>, D extends LmsDocument>(
     services: LangiumModelServerAddedServices<SM, II, D>
 ): Http2ServerRouter {
     return (stream, headers, flags) => {
@@ -56,7 +56,7 @@ const helloWorldHandler: Http2RequestHandler = (stream) => {
     stream.end('Hello World')
 }
 
-const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (sourceServices) => {
+const provideModelHandler: Http2RequestHandlerProvider<LmsServices<SemanticIdentity>> = (sourceServices) => {
 
     const langiumModelServerFacade = sourceServices.LangiumModelServerFacade
     const lmsSubscriptions = sourceServices.LmsSubscriptions

@@ -5,7 +5,7 @@ import type { SemanticIdentity } from './model'
 import type { IdentityIndex, ModelExposedIdentityIndex } from '.'
 import type { IdentityStorage } from './storage'
 
-export interface IdentityManager<II extends IdentityIndex = IdentityIndex, D extends LmsDocument = LmsDocument> {
+export interface IdentityManager<SM extends SemanticIdentity = SemanticIdentity, II extends IdentityIndex<SM> = IdentityIndex<SM>, D extends LmsDocument = LmsDocument> {
     getLanguageDocumentUri(id: string): URI | undefined
     getIdentityIndex(lmsDocument: D): II
     /**
@@ -18,10 +18,10 @@ export interface IdentityManager<II extends IdentityIndex = IdentityIndex, D ext
     renameIdentity(oldLanguageDocumentUri: string, languageDocumentUri: string): void
 }
 
-export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements IdentityManager<II, D> {
+export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II extends IdentityIndex<SM>, D extends LmsDocument> implements IdentityManager<SM, II, D> {
 
     protected identityStorage: IdentityStorage
-    private indexRegistryByLanguageDocumentUri: Map<string, ModelExposedIdentityIndex<II>>
+    private indexRegistryByLanguageDocumentUri: Map<string, ModelExposedIdentityIndex<SM, II>>
     private languageDocumentUriById: Map<string, URI>
 
     public constructor(services: LangiumModelServerServices<SM, II, D>) {
@@ -71,9 +71,9 @@ export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II ex
         this.identityStorage.deleteIdentityFile(languageDocumentUri)
     }
 
-    protected abstract loadIdentityToIndex(languageDocumentUri: string): ModelExposedIdentityIndex<II>
+    protected abstract loadIdentityToIndex(languageDocumentUri: string): ModelExposedIdentityIndex<SM, II>
 
-    private getOrLoadIdentity(languageDocumentUri: string): ModelExposedIdentityIndex<II> {
+    private getOrLoadIdentity(languageDocumentUri: string): ModelExposedIdentityIndex<SM, II> {
         const loadedIdentity = this.indexRegistryByLanguageDocumentUri.get(languageDocumentUri)
         if (loadedIdentity) {
             return loadedIdentity

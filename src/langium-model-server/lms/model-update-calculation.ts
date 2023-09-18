@@ -1,31 +1,33 @@
 import { stream } from 'langium'
 import type * as id from '../identity/model'
 import type { LmsDocument } from '../workspace/documents'
-import { ArrayUpdateCommand, ElementUpdate, type ReadonlyArrayUpdate } from './model'
+import { ArrayUpdateCommand, ElementUpdate } from './model'
+import type { RootUpdate, ReadonlyArrayUpdate } from './model'
 
-export interface ModelUpdateCalculators {
-    getOrCreateCalculator(lmsDocument: LmsDocument): ModelUpdateCalculator
+export interface ModelUpdateCalculators<SM extends id.SemanticIdentity> {
+    //FIXME: rootModelId is hardcoded here, because it is challenging to retrieve it from LmsDocument
+    getOrCreateCalculator(lmsDocument: LmsDocument, rootModelId: string): ModelUpdateCalculator<SM>
 }
 
-export abstract class AbstractModelUpdateCalculators implements ModelUpdateCalculators {
-    protected updateCalculatorsByLangiumDocumentUri: Map<string, ModelUpdateCalculator> = new Map()
+export abstract class AbstractModelUpdateCalculators<SM extends id.SemanticIdentity> implements ModelUpdateCalculators<SM> {
+    protected updateCalculatorsByLangiumDocumentUri: Map<string, ModelUpdateCalculator<SM>> = new Map()
 
-    public getOrCreateCalculator(lmsDocument: LmsDocument): ModelUpdateCalculator {
+    public getOrCreateCalculator(lmsDocument: LmsDocument, rootModelId: string): ModelUpdateCalculator<SM> {
         const documentUri = lmsDocument.textDocument.uri
         const existingCalculator = this.updateCalculatorsByLangiumDocumentUri.get(documentUri)
         if (existingCalculator) {
             return existingCalculator
         }
-        const newCalculator = this.createCalculator(lmsDocument)
+        const newCalculator = this.createCalculator(lmsDocument, rootModelId)
         this.updateCalculatorsByLangiumDocumentUri.set(documentUri, newCalculator)
         return newCalculator
     }
 
-    protected abstract createCalculator(lmsDocument: LmsDocument): ModelUpdateCalculator
+    protected abstract createCalculator(lmsDocument: LmsDocument, rootModelId: string): ModelUpdateCalculator<SM>
 }
 
-export interface ModelUpdateCalculator {
-    // resetModelsMarkedForDeletion(): Iterable<id.IndexedIdentity>
+export interface ModelUpdateCalculator<SM extends id.SemanticIdentity> {
+    clearModelsMarkedForDeletion(): RootUpdate<SM>
 }
 
 // TODO: Either delete this pseudo-generic interface, or make it work! DoD: no "redefining the type" of ModelUpdateCalculators in task-list-module

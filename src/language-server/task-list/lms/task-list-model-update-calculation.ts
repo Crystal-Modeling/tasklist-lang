@@ -1,5 +1,6 @@
+import * as id from '../../../langium-model-server/identity/model'
 import type { ReadonlyArrayUpdate } from '../../../langium-model-server/lms/model'
-import { ArrayUpdateCommand, ElementUpdate, Update } from '../../../langium-model-server/lms/model'
+import { ArrayUpdate, ArrayUpdateCommand, ElementUpdate, RootUpdate, Update } from '../../../langium-model-server/lms/model'
 import { AbstractModelUpdateCalculators, deleteModels, type ModelUpdateCalculator } from '../../../langium-model-server/lms/model-update-calculation'
 import type * as sem from '../../../langium-model-server/semantic/model'
 import * as ast from '../../generated/ast'
@@ -7,30 +8,33 @@ import type * as identity from '../identity/model'
 import type * as semantic from '../semantic/model'
 import type { QueriableTaskListSemanticDomain } from '../semantic/task-list-semantic-domain'
 import type { TaskListDocument } from '../workspace/documents'
+import type { Model } from './model'
 import { Task, Transition } from './model'
 
-export class TaskListModelUpdateCalculators extends AbstractModelUpdateCalculators {
+export class TaskListModelUpdateCalculators extends AbstractModelUpdateCalculators<Model> {
 
-    public override getOrCreateCalculator(langiumDocument: TaskListDocument): TaskListModelUpdateCalculator {
-        return super.getOrCreateCalculator(langiumDocument) as TaskListModelUpdateCalculator
+    public override getOrCreateCalculator(langiumDocument: TaskListDocument, rootModelId: string): TaskListModelUpdateCalculator {
+        return super.getOrCreateCalculator(langiumDocument, rootModelId) as TaskListModelUpdateCalculator
     }
 
-    protected override createCalculator(langiumDocument: TaskListDocument): TaskListModelUpdateCalculator {
+    protected override createCalculator(langiumDocument: TaskListDocument, rootModelId: string): TaskListModelUpdateCalculator {
         if (!langiumDocument.semanticDomain) {
             //FIXME: Quick and dirty solution. Introduce stable API here
             throw new Error('Creating Calculator before Semantic Domain got initialized!')
         }
-        return new TaskListModelUpdateCalculator(langiumDocument.semanticDomain)
+        return new TaskListModelUpdateCalculator(langiumDocument.semanticDomain, rootModelId)
     }
 
 }
 
-export class TaskListModelUpdateCalculator implements ModelUpdateCalculator {
+export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Model> {
 
     protected semanticDomain: QueriableTaskListSemanticDomain
+    private readonly rootModelId: string
 
-    public constructor(taskListSemanticDomain: QueriableTaskListSemanticDomain) {
+    public constructor(taskListSemanticDomain: QueriableTaskListSemanticDomain, rootModelId: string) {
         this.semanticDomain = taskListSemanticDomain
+        this.rootModelId = rootModelId
     }
 
     private readonly _tasksMarkedForDeletion: Map<string, sem.Identified<ast.Task> | identity.TaskIdentity> = new Map()
@@ -59,22 +63,18 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator {
 
         return ArrayUpdateCommand.all(...updates, deletion)
     }
-    /*
-    public resetModelsMarkedForDeletion(): Iterable<id.IndexedIdentity> {
-        const result: id.IndexedIdentity[] = []
-        // TODO: Decide how it is better to check: to use AST-based guard, or Indexed.is guard
-        for (const el of this._tasksMarkedForDeletion.values()) {
-            if (ast.isTask(el)) result.push(el.identity)
-            else result.push(el)
-        }
-        for (const el of this._transitionsMarkedForDeletion.values()) {
-            if (id.Indexed.is(el)) result.push(el)
-            else result.push(el.identity)
-        }
 
-        return result
+    public clearModelsMarkedForDeletion(): RootUpdate<Model> {
+        const tasksDeletion = ArrayUpdateCommand.deletion<Task>(this._tasksMarkedForDeletion.values())
+        this._tasksMarkedForDeletion.clear()
+        const transitionsDeletion = ArrayUpdateCommand.deletion<Transition>(this._transitionsMarkedForDeletion.values())
+        this._transitionsMarkedForDeletion.clear()
+
+        const rootUpdate = RootUpdate.createEmpty<Model>(this.rootModelId, id.ModelUri.root)
+        rootUpdate.tasks = ArrayUpdate.create(tasksDeletion)
+        rootUpdate.transitions = ArrayUpdate.create(transitionsDeletion)
+        return rootUpdate
     }
-    */
 
     private compareTaskWithExistingBefore(current: sem.Identified<ast.Task>): ReadonlyArrayUpdate<Task> {
         const semanticId = current.id

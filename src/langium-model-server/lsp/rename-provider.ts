@@ -11,10 +11,10 @@ import type { LmsSubscriptions } from '../lms/subscriptions'
 import type { LmsDocument } from '../workspace/documents'
 import * as sem from '../semantic/model'
 
-export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> extends DefaultRenameProvider {
+export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityIndex<SM>, D extends LmsDocument> extends DefaultRenameProvider {
 
     protected identityManager: IdentityManager
-    protected lmsSubscriptions: LmsSubscriptions
+    protected lmsSubscriptions: LmsSubscriptions<SM>
 
     constructor(services: LangiumModelServerServices<SM, II, D>) {
         super(services)
