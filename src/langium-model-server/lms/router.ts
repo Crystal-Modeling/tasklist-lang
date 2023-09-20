@@ -257,7 +257,10 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<SemanticIdent
     }
     const getModelIdHandler: Http2RequestHandler = (stream, unmatchedPath) => {
         //HACK: LMS should be unaware of the requester. By adding dependency on GLSP Notation URI I break this (temporarily)
-        const notationUri = unmatchedPath.suffix
+        const notationUri: string | undefined = unmatchedPath.readQueryParams()?.uri
+        if (!notationUri) {
+            return notFoundHandler
+        }
         const semanticId = langiumModelServerFacade.getSemanticId(notationUri)
 
         if (!semanticId) {
@@ -265,6 +268,7 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<SemanticIdent
         } else {
             respondWithJson(stream, SemanticIdResponse.create(semanticId), 200)
         }
+        return
     }
 
     return (_, unmatchedPath, headers) => {
