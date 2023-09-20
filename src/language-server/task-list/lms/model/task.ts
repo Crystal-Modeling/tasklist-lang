@@ -15,7 +15,7 @@ export namespace Task {
         return {
             id: task.id,
             name: task.name,
-            content: task.content
+            content: task.content ?? ''
         }
     }
 
