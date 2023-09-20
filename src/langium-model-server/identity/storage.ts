@@ -74,6 +74,7 @@ export abstract class AbstractIdentityStorage<SM extends SemanticIdentity, II ex
                 if (!fileContent) {
                     throw new IdentityError(`Could not load the identity. The file '${path}' is empty!.`)
                 }
+                this.writeFile(path, fileContent)
             }
             if (guard && !guard(fileContent)) {
                 throw new Error('The loaded root object is not of the expected type!')
@@ -110,21 +111,21 @@ export abstract class AbstractIdentityStorage<SM extends SemanticIdentity, II ex
             throw new IdentityError(`Could not read & parse file contents of '${path}' as json`, error)
         }
     }
-    protected writeFile(fileUri: string, model: unknown): void {
-        const filePath = this.uriToPath(fileUri)
+    protected writeFile(fileUriOrPath: string, model: unknown): void {
+        const filePath = this.uriToPath(fileUriOrPath)
         const content = this.stringifyModel(model)
         const dirPath = path.dirname(filePath)
         fs.mkdir(dirPath, { recursive: true })
         fs.writeFileSync(filePath, content)
     }
 
-    protected deleteFile(fileUri: string): void {
-        const filePath = this.uriToPath(fileUri)
+    protected deleteFile(fileUriOrPath: string): void {
+        const filePath = this.uriToPath(fileUriOrPath)
         fs.rmSync(filePath, { force: true })
     }
 
-    protected uriToPath(sourceUri: string): string {
-        return sourceUri.startsWith('file://') ? fileURLToPath(sourceUri) : sourceUri
+    protected uriToPath(sourceUriOrPath: string): string {
+        return sourceUriOrPath.startsWith('file://') ? fileURLToPath(sourceUriOrPath) : sourceUriOrPath
     }
 
     protected parseContent(fileContent: string): unknown {
