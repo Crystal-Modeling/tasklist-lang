@@ -2,19 +2,22 @@
 import type { AstNode, LangiumDocument, MaybePromise } from 'langium'
 import { DefaultDocumentHighlightProvider, findLeafNodeAtOffset, getContainerOfType } from 'langium'
 import type { DocumentHighlight, DocumentHighlightParams } from 'vscode-languageserver'
-import type * as identity from '../identity/model'
 import type { IdentityIndex } from '../identity'
 import type { IdentityManager } from '../identity/manager'
-import * as semantic from '../semantic/model'
-import type { LangiumModelServerServices } from '../services'
+import type * as identity from '../identity/model'
 import * as source from '../lms/model'
 import type { LmsSubscriptions } from '../lms/subscriptions'
-import type { LmsDocument, SemanticAwareDocument } from '../workspace/documents'
+import * as semantic from '../semantic/model'
+import type { LangiumModelServerServices } from '../services'
+import type { TypeGuard } from '../utils/types'
+import type { ExtendableLangiumDocument } from '../workspace/documents'
+import type { LmsDocument } from '../workspace/documents'
 
 export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, II extends IdentityIndex<SM>, D extends LmsDocument> extends DefaultDocumentHighlightProvider {
 
     private lmsSubscriptions: LmsSubscriptions<SM>
     private identityManager: IdentityManager
+    private isLmsDocument: TypeGuard<LmsDocument, ExtendableLangiumDocument>
 
     private highlightedNodeIdByModelId: Map<string, string> = new Map()
     private highlightPushingTimeout: NodeJS.Timeout
@@ -23,9 +26,10 @@ export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, 
         super(services)
         this.lmsSubscriptions = services.lms.LmsSubscriptions
         this.identityManager = services.identity.IdentityManager
+        this.isLmsDocument = services.workspace.LmsDocumentGuard
     }
 
-    override getDocumentHighlight(document: LangiumDocument & SemanticAwareDocument, params: DocumentHighlightParams): MaybePromise<DocumentHighlight[] | undefined> {
+    override getDocumentHighlight(document: LangiumDocument, params: DocumentHighlightParams): MaybePromise<DocumentHighlight[] | undefined> {
         const rootNode = document.parseResult.value.$cstNode
         if (!rootNode) {
             return undefined
@@ -35,7 +39,7 @@ export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, 
             return undefined
         }
 
-        if (document.semanticDomain) {
+        if (this.isLmsDocument(document)) {
             if (this.highlightPushingTimeout) {
                 clearInterval(this.highlightPushingTimeout)
             }
@@ -45,7 +49,7 @@ export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, 
         return super.getDocumentHighlight(document, params)
     }
 
-    private calculateAndPushHighlight(document: LangiumDocument, selectedAstNode: AstNode) {
+    private calculateAndPushHighlight(document: LmsDocument, selectedAstNode: AstNode) {
         const highlightedNodeId = getContainerOfType(selectedAstNode, semantic.Identified.is)?.id
         const modelId = this.identityManager.getIdentityIndex(document).id
         if (highlightedNodeId && highlightedNodeId !== this.highlightedNodeIdByModelId.get(modelId)) {

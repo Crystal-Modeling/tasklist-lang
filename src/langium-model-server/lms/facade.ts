@@ -70,8 +70,11 @@ implements LangiumModelServerFacade<SM> {
         if (!this.langiumDocuments.hasDocument(documentUri)) {
             return undefined
         }
-        const langiumDocument = this.langiumDocuments.getOrCreateDocument(documentUri)
-        return this.identityManager.getIdentityIndex(langiumDocument).id
+        const document = this.langiumDocuments.getOrCreateDocument(documentUri)
+        if (this.isLmsDocument(document)) {
+            return this.identityManager.getIdentityIndex(document).id
+        }
+        return undefined
     }
 
     public getById(id: string): SM | undefined {
@@ -116,7 +119,7 @@ implements LangiumModelServerFacade<SM> {
             return undefined
         }
         // NOTE: Since document URI is known to SemanticIndexManager, this LangiumDocument is LmsDocument
-        const document: LmsDocument = this.langiumDocuments.getOrCreateDocument(documentUri)
+        const document = this.langiumDocuments.getOrCreateDocument(documentUri)
         if (!this.isLmsDocument(document)) {
             throw new Error('Supplied ID is not compatible with LMSDocument type served')
         }

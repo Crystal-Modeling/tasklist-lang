@@ -2,6 +2,7 @@ import type { AstNode, LangiumDocument } from 'langium'
 import { DocumentState } from 'langium'
 import type { SemanticDomain } from '../semantic/semantic-domain'
 import type { Override } from '../utils/types'
+import type * as sem from '../semantic/model'
 
 export type ExtendableLangiumDocument<T extends AstNode = AstNode> = Override<LangiumDocument<T>, 'state', number>
 
@@ -11,8 +12,11 @@ export type ExtendableLangiumDocument<T extends AstNode = AstNode> = Override<La
  */
 export type LmsDocument<T extends AstNode = AstNode> = ExtendableLangiumDocument<T> & SemanticAwareDocument & {
     state: LmsDocumentState
+    parseResult: {
+        // TODO: Suggest AstRootNode as a specific interface in Langium library
+        value: sem.AstRootNode<T>
+    }
 }
-
 export namespace LmsDocument {
     export function isInitialized<T extends AstNode>(lmsDocument: LmsDocument<T>): lmsDocument is Initialized<LmsDocument<T>> {
         return lmsDocument.semanticDomain !== undefined

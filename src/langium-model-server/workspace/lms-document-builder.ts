@@ -46,7 +46,8 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
                 await interruptAndCheck(cancelToken)
                 if (!lmsDocument.semanticDomain) {
                     console.log(`Initializing semantic domain for ${document.uri.toString()}`)
-                    lmsDocument.semanticDomain = this.createSemanticDomain()
+                    const identityIndex = this.identityManager.getIdentityIndex(lmsDocument)
+                    lmsDocument.semanticDomain = this.createSemanticDomain(identityIndex.id)
                 } else {
                     lmsDocument.semanticDomain.clear()
                 }
@@ -58,10 +59,10 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
         console.debug('====== IDENTITY RECONCILIATION PHASE ======')
         const newUpdatesForLmsDocuments: Map<Initialized<D>, src.RootUpdate<SM>> = new Map()
         for (const document of documents) {
-            const semanticId = this.identityManager.getIdentityIndex(document).id
             const lmsDocument: ExtendableLangiumDocument = document
             // NOTE: Actually, all LMS Documents are initialized during `initializeSemanticDomain` phase
             if (this.isLmsDocument(lmsDocument) && LmsDocument.isInitialized(lmsDocument)) {
+                const semanticId = lmsDocument.semanticDomain.rootId
                 newUpdatesForLmsDocuments.set(lmsDocument, src.RootUpdate.createEmpty<SM>(semanticId, id.ModelUri.root))
             }
         }

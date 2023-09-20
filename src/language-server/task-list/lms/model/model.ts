@@ -1,4 +1,3 @@
-import type * as id from '../../../../langium-model-server/semantic/model'
 import type { Task } from './task'
 import type { Transition } from './transition'
 
@@ -9,9 +8,9 @@ export interface Model {
 }
 
 export namespace Model {
-    export function create(rootModel: id.IdentifiedRoot): Model {
+    export function createEmpty(rootId: string): Model {
         return {
-            id: rootModel.id,
+            id: rootId,
             tasks: [],
             transitions: []
         }

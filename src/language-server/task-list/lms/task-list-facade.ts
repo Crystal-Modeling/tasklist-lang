@@ -9,7 +9,7 @@ import { EditingResult } from '../../../langium-model-server/lms/model'
 import type { LmsSubscriptions } from '../../../langium-model-server/lms/subscriptions'
 import * as id from '../../../langium-model-server/semantic/model'
 import type { LangiumModelServerServices } from '../../../langium-model-server/services'
-import type { LmsDocument } from '../../../langium-model-server/workspace/documents'
+import { LmsDocument } from '../../../langium-model-server/workspace/documents'
 import * as ast from '../../generated/ast'
 import type { TaskListIdentityIndex } from '../identity'
 import * as identity from '../identity/model'
@@ -394,10 +394,10 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
 
     protected override convertSemanticModelToSourceModel(lmsDocument: LmsDocument): Model | undefined {
 
-        if (!isTaskListDocument(lmsDocument) || !lmsDocument.semanticDomain?.identifiedRootNode) {
+        if (!isTaskListDocument(lmsDocument) || !LmsDocument.isInitialized(lmsDocument)) {
             return undefined
         }
-        const sourceModel = Model.create(lmsDocument.semanticDomain.identifiedRootNode)
+        const sourceModel = Model.createEmpty(lmsDocument.semanticDomain.rootId)
         for (const task of lmsDocument.semanticDomain.identifiedTasks.values()) {
             sourceModel.tasks.push(Task.create(task))
         }

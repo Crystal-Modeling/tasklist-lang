@@ -44,8 +44,8 @@ export type ArtificialIndexedAstNode = ArtificialAstNode & {
     readonly $containerIndex: number
 }
 
-export type AstRootNode = Valid<AstNode> & {
-    readonly $document: LangiumDocument
+export type AstRootNode<T extends AstNode = AstNode> = T & {
+    readonly $document: LangiumDocument<T>
 }
 
 export namespace AstRootNode {
