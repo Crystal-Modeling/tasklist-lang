@@ -11,7 +11,7 @@ import type { IdentityReconciler } from '../semantic/identity-reconciler'
 import type { SemanticDomainFactory } from '../semantic/semantic-domain'
 import type { LangiumModelServerServices } from '../services'
 import type { TypeGuard } from '../utils/types'
-import type { Initialized } from './documents'
+import type { Initialized, SemanticAwareDocument } from './documents'
 import { LmsDocument, LmsDocumentState, type ExtendableLangiumDocument } from './documents'
 
 export interface LmsDocumentBuilder {
@@ -60,7 +60,9 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
         for (const document of documents) {
             const lmsDocument: ExtendableLangiumDocument = document
             // NOTE: Actually, all LMS Documents are initialized during `initializeSemanticDomain` phase
+            console.debug('Trying to reconcile document', lmsDocument.uri.toString(), 'isLMS?', this.isLmsDocument(lmsDocument), 'isInitialized?', !!(lmsDocument as SemanticAwareDocument).semanticDomain)
             if (this.isLmsDocument(lmsDocument) && LmsDocument.isInitialized(lmsDocument)) {
+                console.debug('  => For document ', lmsDocument.uri.toString(), `(${lmsDocument.semanticDomain.rootId})`)
                 newUpdatesForLmsDocuments.set(lmsDocument,
                     src.RootUpdate.createEmpty<SM>(lmsDocument.semanticDomain.rootId, id.ModelUri.root))
             }

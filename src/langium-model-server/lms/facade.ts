@@ -2,9 +2,9 @@ import type { LangiumDocuments, LanguageMetaData, MaybePromise } from 'langium'
 import type { Connection } from 'vscode-languageserver'
 import { ShowDocumentRequest } from 'vscode-languageserver'
 import { URI } from 'vscode-uri'
-import type { SemanticIdentity } from '../identity/model'
 import type { IdentityIndex } from '../identity'
 import type { IdentityManager } from '../identity/manager'
+import type { SemanticIdentity } from '../identity/model'
 import type { LangiumModelServerServices } from '../services'
 import type { TypeGuard } from '../utils/types'
 import { UriConverter } from '../utils/uri-converter'
@@ -68,6 +68,7 @@ implements LangiumModelServerFacade<SM> {
             .replaceFileExtensionWith(this.getSourceModelFileExtension())
             .toUri()
         if (!this.langiumDocuments.hasDocument(documentUri)) {
+            console.debug('Cannot find Langium Document with URI', documentUri.toString())
             return undefined
         }
         const document = this.langiumDocuments.getOrCreateDocument(documentUri)
@@ -116,6 +117,7 @@ implements LangiumModelServerFacade<SM> {
         const documentUri = this.identityManager.getLanguageDocumentUri(id)
         // Not sure shouldn't I *create* LangiumDocument if it is not built yet (i.e., if the file has not been loaded)
         if (!documentUri || !this.langiumDocuments.hasDocument(documentUri)) {
+            console.debug('Unable to find document')
             return undefined
         }
         // NOTE: Since document URI is known to SemanticIndexManager, this LangiumDocument is LmsDocument
@@ -124,6 +126,7 @@ implements LangiumModelServerFacade<SM> {
             throw new Error('Supplied ID is not compatible with LMSDocument type served')
         }
         // TODO: Change this to return Promise, if the document didn't reach the desired state.
+        console.debug('Document with id', id, 'has semanticDomain initialized?', !!document.semanticDomain, 'and its state is', document.state)
         if (!LmsDocument.isInitialized(document) || document.state < LmsDocumentState.Identified) {
             return undefined
         }
