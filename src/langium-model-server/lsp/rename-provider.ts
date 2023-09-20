@@ -72,7 +72,7 @@ export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityI
      */
     protected getNewNameDefiner(targetNode: AstNode, params: RenameParams): NewNameDefiner {
         return {
-            getNameForReference: _ => params.newName,
+            getNameForReference: _ref => params.newName,
             targetName: params.newName
         }
     }

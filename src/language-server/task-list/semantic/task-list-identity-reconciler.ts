@@ -1,6 +1,6 @@
 import * as src from '../../../langium-model-server/lms/model'
 import type { IdentityReconciler } from '../../../langium-model-server/semantic/identity-reconciler'
-import type { Initialized, LmsDocument } from '../../../langium-model-server/workspace/documents'
+import type { Initialized } from '../../../langium-model-server/workspace/documents'
 import type * as ast from '../../generated/ast'
 import type { TaskListIdentityManager } from '../identity/manager'
 import type * as source from '../lms/model'
@@ -28,18 +28,11 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
       = which AST node I assume correct enough to track his identity?
     */
     identityReconciliationIterations = [
-        // NOTE: ITERATION 0: mapping Root node
-        this.identifyRoot.bind(this),
         // NOTE: ITERATION 1: mapping Tasks
         this.reconcileTasks.bind(this),
         // NOTE: ITERATION 2: mapping Transitions
         this.reconcileTransitions.bind(this),
     ]
-
-    // TODO: Extract it to an abstract superclass
-    private identifyRoot(document: Initialized<LmsDocument>) {
-        document.semanticDomain.identifyRoot(document.parseResult.value)
-    }
 
     // Example of how Identity of Ast-based element is reconciled
     private reconcileTasks(document: Initialized<TaskListDocument>, update: src.Update<source.Model>) {
@@ -49,8 +42,8 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         const astModel: ast.Model = document.parseResult.value
 
         const identityIndex = this.identityManager.getIdentityIndex(document)
+        const updateCalculator = this.modelUpdateCalculators.getOrCreateCalculator(document)
         const semanticDomain = document.semanticDomain
-        const updateCalculator = this.modelUpdateCalculators.getOrCreateCalculator(document, semanticDomain.rootId)
 
         const existingUnmappedTasks = identityIndex.tasksByName
         // Actual mapping: marking semantic elements for deletion, and AST nodes to be added
@@ -76,8 +69,8 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
     private reconcileTransitions(document: Initialized<TaskListDocument>, update: src.Update<source.Model>) {
 
         const identityIndex = this.identityManager.getIdentityIndex(document)
+        const updateCalculator = this.modelUpdateCalculators.getOrCreateCalculator(document)
         const semanticDomain = document.semanticDomain
-        const updateCalculator = this.modelUpdateCalculators.getOrCreateCalculator(document, semanticDomain.rootId)
 
         const existingUnmappedTransitions = identityIndex.transitionsByName
         semanticDomain.getValidTransitions()

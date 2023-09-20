@@ -1,29 +1,29 @@
 import { stream } from 'langium'
 import type * as id from '../identity/model'
+import type { Initialized } from '../workspace/documents'
 import type { LmsDocument } from '../workspace/documents'
+import type { ReadonlyArrayUpdate, RootUpdate } from './model'
 import { ArrayUpdateCommand, ElementUpdate } from './model'
-import type { RootUpdate, ReadonlyArrayUpdate } from './model'
 
 export interface ModelUpdateCalculators<SM extends id.SemanticIdentity> {
-    //FIXME: rootModelId is hardcoded here, because it is challenging to retrieve it from LmsDocument
-    getOrCreateCalculator(lmsDocument: LmsDocument, rootModelId: string): ModelUpdateCalculator<SM>
+    getOrCreateCalculator(lmsDocument: Initialized<LmsDocument>): ModelUpdateCalculator<SM>
 }
 
 export abstract class AbstractModelUpdateCalculators<SM extends id.SemanticIdentity> implements ModelUpdateCalculators<SM> {
     protected updateCalculatorsByLangiumDocumentUri: Map<string, ModelUpdateCalculator<SM>> = new Map()
 
-    public getOrCreateCalculator(lmsDocument: LmsDocument, rootModelId: string): ModelUpdateCalculator<SM> {
+    public getOrCreateCalculator(lmsDocument: Initialized<LmsDocument>): ModelUpdateCalculator<SM> {
         const documentUri = lmsDocument.textDocument.uri
         const existingCalculator = this.updateCalculatorsByLangiumDocumentUri.get(documentUri)
         if (existingCalculator) {
             return existingCalculator
         }
-        const newCalculator = this.createCalculator(lmsDocument, rootModelId)
+        const newCalculator = this.createCalculator(lmsDocument)
         this.updateCalculatorsByLangiumDocumentUri.set(documentUri, newCalculator)
         return newCalculator
     }
 
-    protected abstract createCalculator(lmsDocument: LmsDocument, rootModelId: string): ModelUpdateCalculator<SM>
+    protected abstract createCalculator(lmsDocument: Initialized<LmsDocument>): ModelUpdateCalculator<SM>
 }
 
 export interface ModelUpdateCalculator<SM extends id.SemanticIdentity> {

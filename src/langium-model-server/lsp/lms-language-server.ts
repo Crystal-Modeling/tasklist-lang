@@ -7,7 +7,7 @@ import type { IdentityIndex } from '../identity'
 import type { SemanticIdentity } from '../identity/model'
 import { Save } from '../lms/model'
 import type { LangiumModelServerAddedServices } from '../services'
-import type { LmsDocument } from '../workspace/documents'
+import { LmsDocument } from '../workspace/documents'
 
 export class LmsLanguageServer extends DefaultLanguageServer {
 
@@ -56,10 +56,10 @@ function addIdentityProcessingHandlers<SM extends SemanticIdentity, II extends I
         const lmsUri = URI.parse(params.textDocument.uri)
         if (langiumDocuments.hasDocument(lmsUri)) {
             const document = langiumDocuments.getOrCreateDocument(lmsUri)
-            if (isLmsDocument(document)) {
+            if (isLmsDocument(document) && LmsDocument.isInitialized(document)) {
                 const identityIndex = identityManager.getIdentityIndex(document)
-                const rootId = identityIndex.id
-                const modelsPermanentDeletion = modelUpdateCalculators.getOrCreateCalculator(document, rootId).clearModelsMarkedForDeletion()
+                const rootId = document.semanticDomain.rootId
+                const modelsPermanentDeletion = modelUpdateCalculators.getOrCreateCalculator(document).clearModelsMarkedForDeletion()
                 identityIndex.removeDeletedIdentities(modelsPermanentDeletion)
                 lmsSubscriptions.getSubscription(rootId)?.pushModelUpdate(modelsPermanentDeletion)
                 identityManager.saveIdentity(params.textDocument.uri)

@@ -3,6 +3,7 @@ import type { ReadonlyArrayUpdate } from '../../../langium-model-server/lms/mode
 import { ArrayUpdate, ArrayUpdateCommand, ElementUpdate, RootUpdate, Update } from '../../../langium-model-server/lms/model'
 import { AbstractModelUpdateCalculators, deleteModels, type ModelUpdateCalculator } from '../../../langium-model-server/lms/model-update-calculation'
 import type * as sem from '../../../langium-model-server/semantic/model'
+import type { Initialized } from '../../../langium-model-server/workspace/documents'
 import * as ast from '../../generated/ast'
 import type * as identity from '../identity/model'
 import type * as semantic from '../semantic/model'
@@ -13,16 +14,12 @@ import { Task, Transition } from './model'
 
 export class TaskListModelUpdateCalculators extends AbstractModelUpdateCalculators<Model> {
 
-    public override getOrCreateCalculator(langiumDocument: TaskListDocument, rootModelId: string): TaskListModelUpdateCalculator {
-        return super.getOrCreateCalculator(langiumDocument, rootModelId) as TaskListModelUpdateCalculator
+    public override getOrCreateCalculator(lmsDocument: Initialized<TaskListDocument>): TaskListModelUpdateCalculator {
+        return super.getOrCreateCalculator(lmsDocument) as TaskListModelUpdateCalculator
     }
 
-    protected override createCalculator(langiumDocument: TaskListDocument, rootModelId: string): TaskListModelUpdateCalculator {
-        if (!langiumDocument.semanticDomain) {
-            //FIXME: Quick and dirty solution. Introduce stable API here
-            throw new Error('Creating Calculator before Semantic Domain got initialized!')
-        }
-        return new TaskListModelUpdateCalculator(langiumDocument.semanticDomain, rootModelId)
+    protected override createCalculator(langiumDocument: Initialized<TaskListDocument>): TaskListModelUpdateCalculator {
+        return new TaskListModelUpdateCalculator(langiumDocument.semanticDomain)
     }
 
 }
@@ -30,11 +27,9 @@ export class TaskListModelUpdateCalculators extends AbstractModelUpdateCalculato
 export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Model> {
 
     protected semanticDomain: QueriableTaskListSemanticDomain
-    private readonly rootModelId: string
 
-    public constructor(taskListSemanticDomain: QueriableTaskListSemanticDomain, rootModelId: string) {
+    public constructor(taskListSemanticDomain: QueriableTaskListSemanticDomain) {
         this.semanticDomain = taskListSemanticDomain
-        this.rootModelId = rootModelId
     }
 
     private readonly _tasksMarkedForDeletion: Map<string, sem.Identified<ast.Task> | identity.TaskIdentity> = new Map()
@@ -70,9 +65,9 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
         const transitionsDeletion = ArrayUpdateCommand.deletion<Transition>(this._transitionsMarkedForDeletion.values())
         this._transitionsMarkedForDeletion.clear()
 
-        const rootUpdate = RootUpdate.createEmpty<Model>(this.rootModelId, id.ModelUri.root)
-        rootUpdate.tasks = ArrayUpdate.create(tasksDeletion)
-        rootUpdate.transitions = ArrayUpdate.create(transitionsDeletion)
+        const rootUpdate = RootUpdate.createEmpty<Model>(this.semanticDomain.rootId, id.ModelUri.root)
+        if (!ArrayUpdate.isEmpty(tasksDeletion)) rootUpdate.tasks = ArrayUpdate.create(tasksDeletion)
+        if (!ArrayUpdate.isEmpty(transitionsDeletion)) rootUpdate.transitions = ArrayUpdate.create(transitionsDeletion)
         return rootUpdate
     }
 

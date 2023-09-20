@@ -41,15 +41,14 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
 
     protected async initializeSemanticDomain(documents: LangiumDocument[], cancelToken: CancellationToken) {
         for (const document of documents) {
-            const lmsDocument: ExtendableLangiumDocument = document
-            if (this.isLmsDocument(lmsDocument)) {
+            if (this.isLmsDocument(document)) {
                 await interruptAndCheck(cancelToken)
-                if (!lmsDocument.semanticDomain) {
+                if (!document.semanticDomain) {
                     console.log(`Initializing semantic domain for ${document.uri.toString()}`)
-                    const identityIndex = this.identityManager.getIdentityIndex(lmsDocument)
-                    lmsDocument.semanticDomain = this.createSemanticDomain(identityIndex.id)
+                    const identityIndex = this.identityManager.getIdentityIndex(document)
+                    document.semanticDomain = this.createSemanticDomain(identityIndex.id)
                 } else {
-                    lmsDocument.semanticDomain.clear()
+                    document.semanticDomain.clear()
                 }
             }
         }
@@ -62,8 +61,8 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
             const lmsDocument: ExtendableLangiumDocument = document
             // NOTE: Actually, all LMS Documents are initialized during `initializeSemanticDomain` phase
             if (this.isLmsDocument(lmsDocument) && LmsDocument.isInitialized(lmsDocument)) {
-                const semanticId = lmsDocument.semanticDomain.rootId
-                newUpdatesForLmsDocuments.set(lmsDocument, src.RootUpdate.createEmpty<SM>(semanticId, id.ModelUri.root))
+                newUpdatesForLmsDocuments.set(lmsDocument,
+                    src.RootUpdate.createEmpty<SM>(lmsDocument.semanticDomain.rootId, id.ModelUri.root))
             }
         }
         await interruptAndCheck(cancelToken)
