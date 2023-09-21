@@ -10,7 +10,10 @@ export interface LmsSubscriptions<SM extends id.SemanticIdentity> {
 }
 
 export interface LmsSubscription<SM extends id.SemanticIdentity> {
-    pushModelUpdate(modelUpdate: RootUpdate<SM>, awaitAccumulation?: boolean): void
+    /**
+     * @returns `true` if the update was immediately pushed (`modelUpdate` not empty and accumulation was not awaited)
+     */
+    pushModelUpdate(modelUpdate: RootUpdate<SM>, awaitAccumulation?: boolean): boolean
     pushUpdate<M extends id.SemanticIdentity>(modelUpdate: RootUpdate<M>): void
     pushAction(action: Action): void
 }
@@ -92,7 +95,7 @@ class CompositeLmsSubscription<SM extends id.SemanticIdentity> implements LmsSub
         return this.subscriptionStreams.size + this.accumulatedModelUpdatesForNewSubscriptions.size
     }
 
-    public pushModelUpdate(modelUpdate: RootUpdate<SM>, awaitAccumulation?: boolean): void {
+    public pushModelUpdate(modelUpdate: RootUpdate<SM>, awaitAccumulation?: boolean): boolean {
         if (!Update.isEmpty(modelUpdate)) {
             this.accumulatedModelUpdates.push(modelUpdate)
             for (const newSub of this.accumulatedModelUpdatesForNewSubscriptions.keys()) {
@@ -111,8 +114,9 @@ class CompositeLmsSubscription<SM extends id.SemanticIdentity> implements LmsSub
         if (!awaitAccumulation) {
             clearTimeout(this.updatePushingTimeout)
             this.updatePushingTimeout = undefined
-            this.combineAndPushModelUpdates()
+            return this.combineAndPushModelUpdates()
         }
+        return false
     }
 
     public pushUpdate<SM extends id.SemanticIdentity>(modelUpdate: RootUpdate<SM>): void {
@@ -132,8 +136,9 @@ class CompositeLmsSubscription<SM extends id.SemanticIdentity> implements LmsSub
         }
     }
 
-    protected combineAndPushModelUpdates(): void {
+    protected combineAndPushModelUpdates(): boolean {
         this.modelUpdateScheduled = false
+
         const update = this.modelUpdateCombiner.combineUpdates(this.accumulatedModelUpdates)
         if (this.accumulatedModelUpdates.length > 0) {
             this.accumulatedModelUpdates = []
@@ -146,7 +151,7 @@ class CompositeLmsSubscription<SM extends id.SemanticIdentity> implements LmsSub
             // FIXME: Optimize the structure of accumulatedModelUpdatesForNewSubscriptions (nested subsets, see your piece of paper)
             // Returning early: if all updates combined are empty, then their combined subsets are also empty
             this.accumulatedModelUpdatesForNewSubscriptions.clear()
-            return
+            return false
         }
 
         this.accumulatedModelUpdatesForNewSubscriptions.forEach((updates, newSubStream) => {
@@ -157,6 +162,7 @@ class CompositeLmsSubscription<SM extends id.SemanticIdentity> implements LmsSub
             this.subscriptionStreams.add(newSubStream)
         })
         this.accumulatedModelUpdatesForNewSubscriptions.clear()
+        return true
     }
 }
 

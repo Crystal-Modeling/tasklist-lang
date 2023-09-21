@@ -57,13 +57,17 @@ function addIdentityProcessingHandlers<SM extends SemanticIdentity, II extends I
         if (langiumDocuments.hasDocument(lmsUri)) {
             const document = langiumDocuments.getOrCreateDocument(lmsUri)
             if (isLmsDocument(document) && LmsDocument.isInitialized(document)) {
-                const identityIndex = identityManager.getIdentityIndex(document)
                 const rootId = document.semanticDomain.rootId
+                const identityIndex = identityManager.getIdentityIndex(document)
                 const modelsPermanentDeletion = modelUpdateCalculators.getOrCreateCalculator(document).clearModelsMarkedForDeletion()
                 identityIndex.removeDeletedIdentities(modelsPermanentDeletion)
-                lmsSubscriptions.getSubscription(rootId)?.pushModelUpdate(modelsPermanentDeletion)
+                const pushed = lmsSubscriptions.getSubscription(rootId)?.pushModelUpdate(modelsPermanentDeletion) ?? false
                 identityManager.saveIdentity(params.textDocument.uri)
-                lmsSubscriptions.getSubscription(rootId)?.pushAction(Save.create(rootId))
+                console.debug('Document was persisted externally?', document.semanticDomain.persistedExternally)
+                if (!document.semanticDomain.persistedExternally || pushed) {
+                    lmsSubscriptions.getSubscription(rootId)?.pushAction(Save.create(rootId))
+                }
+                document.semanticDomain.persistedExternally = false
             }
         }
     })
