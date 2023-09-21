@@ -22,10 +22,10 @@ export function readRequestBody(stream: http2.ServerHttp2Stream): Promise<object
 export function respondWithJson(stream: http2.ServerHttp2Stream, response: Response): void
 export function respondWithJson(stream: http2.ServerHttp2Stream, response: object, status: number): void
 export function respondWithJson(stream: http2.ServerHttp2Stream, response: Response | object, status?: number): void {
-    console.debug('Responding with Response', response, status)
     if (!status) {
         status = (response as Response).code
     }
+    console.debug('Responding with Response', response, status)
     stream.respond({
         [http2.constants.HTTP2_HEADER_CONTENT_TYPE]: 'application/json; charset=utf-8',
         [http2.constants.HTTP2_HEADER_STATUS]: status

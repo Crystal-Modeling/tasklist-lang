@@ -8,7 +8,6 @@ import type { CreationParams, EditingResult } from './model'
 import { EditingFailureReason, Modification, Response, SemanticIdResponse } from './model'
 import { PathContainer } from './utils/path-container'
 import { readRequestBody, respondWithJson, setUpStreamForSSE } from './utils/http2-util'
-import * as vscode from 'vscode'
 
 type Http2RequestHandler = (stream: http2.ServerHttp2Stream, unmatchedPath: PathContainer,
     headers: http2.IncomingHttpHeaders, flags: number) => Http2RequestHandler | void
@@ -220,15 +219,13 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<SemanticIdent
             return
         }
 
-        const persistModelHandler: Http2RequestHandler = (stream, unmatchedPath) => {
-            const modelId = unmatchedPath.readPathSegment()
-            if (!modelId) {
-                return notFoundHandler
-            }
-            // workbench.action.files.saveLocalFile ?
-            vscode.commands.executeCommand('workbench.action.files.save').then((result) => {
-                console.debug('VSCode command executed with result', result)
-                respondWithJson(stream, Response.create('Executed Model Persist action', 200))
+        const persistModelHandler: Http2RequestHandler = (stream) => {
+            const result = langiumModelServerFacade.persist(id)
+
+            if (!isPromise(result)) return notFoundHandler
+            result.then((success) => {
+                success ? respondWithJson(stream, Response.create('Executed Model Persist action', 200))
+                    : respondWithJson(stream, Response.create('Failed to execute Model Persist action', 500))
             })
             return
         }

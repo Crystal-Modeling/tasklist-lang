@@ -24,6 +24,7 @@ export interface LangiumModelServerFacade<SM> {
      * @returns `undefined` if unexpected error happened during showing code (opening document and highligting some range)
      */
     highlight(rootModelId: string, id: string): MaybePromise<HighlightResponse>
+    persist(rootModelId: string): MaybePromise<boolean>
     //HACK: I rely on LMS consumers having the file URI almost identical to Langium Document URI
     /**
      * @param sourceUri URI of some **other** file which is 'linked' to the source model file.
@@ -105,6 +106,21 @@ implements LangiumModelServerFacade<SM> {
         return this.connection.sendRequest(ShowDocumentRequest.type,
             { uri: lmsDocument.textDocument.uri, selection: identifiedNode.$cstNode?.range, takeFocus: true }
         ).then(({ success }) => HighlightResponse.modelHighlighted(rootModelId, identifiedNode.id, success))
+    }
+
+    public persist(rootModelId: string): MaybePromise<boolean> {
+        const lmsDocument = this.getDocumentById(rootModelId)
+        if (!lmsDocument) {
+            return Promise.resolve(false)
+        }
+        const uri = lmsDocument.textDocument.uri
+        return this.connection.sendRequest<boolean>('lms/persistModel', uri).then((result) => {
+            result ? console.log(`Document saved from Language Server: ${uri}`) : console.warn('Document', uri, 'NOT saved!')
+            return result
+        }, (error) => {
+            console.error(`Error saving document from Language Server: ${error}`)
+            return false
+        })
     }
 
     protected getSourceModelFileExtension(): string {

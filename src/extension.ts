@@ -53,6 +53,13 @@ function startLanguageClient(context: vscode.ExtensionContext): LanguageClient {
         serverOptions,
         clientOptions
     )
+    const persistModelNotificationListener = client.onRequest('lms/persistModel', (uri: string) =>
+        vscode.workspace.openTextDocument(vscode.Uri.parse(uri)).then((document) =>
+            document.save().then(s => s, (error) => {
+                vscode.window.showErrorMessage(`Error saving document: ${error}`)
+            }))
+    )
+    context.subscriptions.push(persistModelNotificationListener)
 
     // Start the client. This will also launch the server
     client.start()
