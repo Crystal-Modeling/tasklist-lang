@@ -16,7 +16,7 @@ export type ModelUri = {
 
 export namespace ModelUri {
 
-    export const root = '.'
+    export const root = '/'
     const PROPERTY = '/'
     const ID = '#'
 
