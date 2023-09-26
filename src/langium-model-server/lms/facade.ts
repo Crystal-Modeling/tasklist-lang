@@ -114,17 +114,10 @@ implements LangiumModelServerFacade<SM> {
             return Promise.resolve(false)
         }
         const uri = lmsDocument.textDocument.uri
-        lmsDocument.semanticDomain.persistedExternally = true
         return this.connection.sendRequest<boolean>('lms/persistModel', uri).then((result) => {
-            if (result) {
-                console.log(`Document saved from Language Server: ${uri}`)
-            } else {
-                lmsDocument.semanticDomain.persistedExternally = false
-                console.warn('Document', uri, 'NOT saved!')
-            }
+            result ? console.log(`Document saved from Language Server: ${uri}`) : console.warn('Document', uri, 'NOT saved!')
             return result
         }, (error) => {
-            lmsDocument.semanticDomain.persistedExternally = false
             console.error(`Error saving document from Language Server: ${error}`)
             return false
         })

@@ -47,7 +47,6 @@ export namespace TaskListSemanticDomain {
 class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
 
     public readonly rootId: string
-    public persistedExternally: boolean = false
 
     protected invalidTasks: Set<ast.Task>
     protected invalidReferences: Map<ast.Task, Set<number>>
