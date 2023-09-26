@@ -56,6 +56,7 @@ export class DefaultLangiumSourceModelServer<SM extends SemanticIdentity, II ext
     }
 
     public shutDown(callback?: (err?: Error | undefined) => void): void {
+        console.debug('Shutting Down LMS server...')
         this.http2Server.close(callback)
     }
 }
