@@ -1,5 +1,5 @@
 import type { AstNodeLocator, References } from 'langium'
-import { findNodeForProperty, getContainerOfType, getPreviousNode, type MaybePromise } from 'langium'
+import { findNodeForProperty, getContainerOfType, getDocument, getPreviousNode, type MaybePromise } from 'langium'
 import type { Position, WorkspaceEdit } from 'vscode-languageserver'
 import { ApplyWorkspaceEditRequest, TextEdit } from 'vscode-languageserver'
 import { AbstractLangiumModelServerFacade } from '../../../langium-model-server/lms/facade'
@@ -7,6 +7,7 @@ import type { Creation, CreationParams, Modification } from '../../../langium-mo
 import * as lms from '../../../langium-model-server/lms/model'
 import { ModificationResult } from '../../../langium-model-server/lms/model'
 import type { LmsSubscriptions } from '../../../langium-model-server/lms/subscriptions'
+import type { TextEditService } from '../../../langium-model-server/lms/text-edit-service'
 import * as id from '../../../langium-model-server/semantic/model'
 import type { LangiumModelServerServices } from '../../../langium-model-server/services'
 import { LmsDocument } from '../../../langium-model-server/workspace/documents'
@@ -23,12 +24,14 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
     private readonly references: References
     private readonly astNodeLocator: AstNodeLocator
     private readonly lmsSubscriptions: LmsSubscriptions<Model>
+    private readonly textEditService: TextEditService
 
     constructor(services: LangiumModelServerServices<Model, TaskListIdentityIndex, TaskListDocument>) {
         super(services)
         this.references = services.references.References
         this.astNodeLocator = services.workspace.AstNodeLocator
         this.lmsSubscriptions = services.lms.LmsSubscriptions
+        this.textEditService = services.lms.TextEditService
 
         this.addModelHandlersByPathSegment.set('tasks', {
             isApplicable: Task.isNew,
@@ -104,13 +107,14 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             return ModificationResult.failedValidation('Unable to resolve task by id ' + modelId)
         }
 
-        const textEdit = this.computeTaskUpdate(task, taskModification)
+        const edit = this.computeTaskUpdate(task, taskModification)
+        console.debug('Computed Task Update', edit)
 
-        if (textEdit) {
+        if (edit) {
             if (taskModification.name) {
                 task.identity.updateName(taskModification.name)
             }
-            return this.applyTextEdit(lmsDocument, textEdit, 'Updated task ' + task.name
+            return this.applyWorkspaceEdit(edit, 'Updated task ' + task.name
             ).then(editingResult => {
                 if (editingResult.successful) {
                     console.debug('Modified Task attributes:', taskModification)
@@ -275,8 +279,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return TextEdit.insert(position, serializedModel)
     }
 
-    private computeTaskUpdate(task: id.Identified<ast.Task>, taskModification: Modification<Task>): TextEdit | undefined {
-
+    private computeTaskUpdate(task: id.Identified<ast.Task>, taskModification: Modification<Task>): WorkspaceEdit | undefined {
         console.debug('Computing Update edit for Task with name', task.name)
         if (!task.$cstNode) {
             throw new Error('Cannot locate task ' + task.name + '(' + task.id + ') in text')
@@ -286,7 +289,17 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             const start = task.$cstNode.range.start
             const end = findNodeForProperty(task.$cstNode, 'content')?.range.end ?? task.$cstNode.range.end
 
-            return TextEdit.replace({ start, end }, serializedTask)
+            const taskTextEdit = TextEdit.replace({ start, end }, serializedTask)
+            const taskDocumentUri = getDocument(task).textDocument.uri
+            if (taskModification.name) {
+                const result = this.textEditService.computeAstNodeRename(task, taskModification.name, false)
+                if (!result.changes) {
+                    return { changes: { taskDocumentUri: [taskTextEdit] } }
+                }
+                result.changes[taskDocumentUri] ? result.changes[taskDocumentUri].push(taskTextEdit) : result.changes[taskDocumentUri] = [taskTextEdit]
+                return result
+            }
+            return { changes: { [taskDocumentUri]: [taskTextEdit] } }
         }
         return undefined
     }

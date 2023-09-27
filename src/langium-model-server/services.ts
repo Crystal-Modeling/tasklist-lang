@@ -1,15 +1,16 @@
 import type { DeepPartial, DocumentHighlightProvider, LangiumServices, LanguageServer, PartialLangiumServices, RenameProvider } from 'langium'
-import type { SemanticIdentity } from './identity/model'
 import type { IdentityIndex } from './identity'
 import type { IdentityManager } from './identity/manager'
-import type { IdentityReconciler } from './semantic/identity-reconciler'
+import type { SemanticIdentity } from './identity/model'
 import type { IdentityStorage } from './identity/storage'
-import type { SemanticDomainFactory } from './semantic/semantic-domain'
-import type { LangiumModelServer } from './lms/langium-model-server'
 import type { LangiumModelServerFacade } from './lms/facade'
-import type { LmsSubscriptions } from './lms/subscriptions'
-import type { ModelUpdateCombiner } from './lms/model-update-combiner'
+import type { LangiumModelServer } from './lms/langium-model-server'
 import type { ModelUpdateCalculators } from './lms/model-update-calculation'
+import type { ModelUpdateCombiner } from './lms/model-update-combiner'
+import type { LmsSubscriptions } from './lms/subscriptions'
+import type { TextEditService } from './lms/text-edit-service'
+import type { IdentityReconciler } from './semantic/identity-reconciler'
+import type { SemanticDomainFactory } from './semantic/semantic-domain'
 import type { TypeGuard } from './utils/types'
 import type { ExtendableLangiumDocument, LmsDocument } from './workspace/documents'
 import type { LmsDocumentBuilder } from './workspace/lms-document-builder'
@@ -28,7 +29,8 @@ export type LangiumModelServerDefaultServices<SM extends SemanticIdentity> = {
     },
     lms: {
         LangiumModelServer: LangiumModelServer,
-        LmsSubscriptions: LmsSubscriptions<SM>
+        LmsSubscriptions: LmsSubscriptions<SM>,
+        TextEditService: TextEditService,
     }
 }
 

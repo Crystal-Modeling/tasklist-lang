@@ -9,6 +9,7 @@ import { DefaultLangiumSourceModelServer } from './lms/langium-model-server'
 import { DefaultLmsSubscriptions } from './lms/subscriptions'
 import type { LmsDocument } from './workspace/documents'
 import { DefaultLmsDocumentBuilder } from './workspace/lms-document-builder'
+import { DefaultTextEditService } from './lms/text-edit-service'
 
 export function createLangiumModelServerDefaultModule
 <SM extends SemanticIdentity, II extends IdentityIndex<SM>, D extends LmsDocument>():
@@ -23,7 +24,8 @@ Module<LangiumModelServerServices<SM, II, D>, LangiumModelServerDefaultServices<
         },
         lms: {
             LangiumModelServer: (services) => new DefaultLangiumSourceModelServer(services),
-            LmsSubscriptions: (services) => new DefaultLmsSubscriptions(services.lms.ModelUpdateCombiner)
+            LmsSubscriptions: (services) => new DefaultLmsSubscriptions(services.lms.ModelUpdateCombiner),
+            TextEditService: (services) => new DefaultTextEditService(services)
         }
     }
 }
