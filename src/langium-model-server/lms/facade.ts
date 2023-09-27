@@ -10,7 +10,7 @@ import type { TypeGuard } from '../utils/types'
 import { UriConverter } from '../utils/uri-converter'
 import type { ExtendableLangiumDocument, Initialized } from '../workspace/documents'
 import { LmsDocument, LmsDocumentState } from '../workspace/documents'
-import type { Creation, CreationParams, EditingResult, Modification } from './model'
+import type { Creation, CreationParams, ModificationResult, Modification } from './model'
 import { HighlightResponse } from './model'
 
 export interface LangiumModelServerFacade<SM> {
@@ -35,13 +35,13 @@ export interface LangiumModelServerFacade<SM> {
 
 export interface AddModelHandler<T extends SemanticIdentity = SemanticIdentity> {
     isApplicable(modelCreation: unknown): boolean
-    addModel(rootModelId: string, newModel: Creation<T>, creationParams: CreationParams): MaybePromise<EditingResult> | undefined
+    addModel(rootModelId: string, newModel: Creation<T>, creationParams: CreationParams): MaybePromise<ModificationResult> | undefined
 }
 
 export type UpdateModelHandler<T extends SemanticIdentity = SemanticIdentity> =
-    (rootModelId: string, modelId: string, modelUpdate: Modification<T>) => MaybePromise<EditingResult> | undefined
+    (rootModelId: string, modelId: string, modelUpdate: Modification<T>) => MaybePromise<ModificationResult> | undefined
 
-export type DeleteModelHandler = (rootModelId: string, modelId: string) => MaybePromise<EditingResult> | undefined
+export type DeleteModelHandler = (rootModelId: string, modelId: string) => MaybePromise<ModificationResult> | undefined
 
 export abstract class AbstractLangiumModelServerFacade<SM extends SemanticIdentity, SemI extends IdentityIndex<SM>, D extends LmsDocument>
 implements LangiumModelServerFacade<SM> {

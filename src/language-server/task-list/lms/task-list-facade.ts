@@ -5,7 +5,7 @@ import { ApplyWorkspaceEditRequest, TextEdit } from 'vscode-languageserver'
 import { AbstractLangiumModelServerFacade } from '../../../langium-model-server/lms/facade'
 import type { Creation, CreationParams, Modification } from '../../../langium-model-server/lms/model'
 import * as lms from '../../../langium-model-server/lms/model'
-import { EditingResult } from '../../../langium-model-server/lms/model'
+import { ModificationResult } from '../../../langium-model-server/lms/model'
 import type { LmsSubscriptions } from '../../../langium-model-server/lms/subscriptions'
 import * as id from '../../../langium-model-server/semantic/model'
 import type { LangiumModelServerServices } from '../../../langium-model-server/services'
@@ -44,7 +44,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         this.deleteModelHandlersByPathSegment.set('transitions', this.deleteTransition.bind(this))
     }
 
-    public addTask(rootModelId: string, newTask: Creation<Task>, creationParams: CreationParams): MaybePromise<EditingResult> | undefined {
+    public addTask(rootModelId: string, newTask: Creation<Task>, creationParams: CreationParams): MaybePromise<ModificationResult> | undefined {
 
         const lmsDocument = this.getDocumentById(rootModelId)
         if (!lmsDocument) {
@@ -60,7 +60,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return this.applyTextEdit(lmsDocument, textEdit, 'Create new task ' + newTask.name)
     }
 
-    public addTransition(rootModelId: string, newModel: Creation<Transition>, creationParams: CreationParams = {}): MaybePromise<EditingResult> | undefined {
+    public addTransition(rootModelId: string, newModel: Creation<Transition>, creationParams: CreationParams = {}): MaybePromise<ModificationResult> | undefined {
 
         const lmsDocument = this.getDocumentById(rootModelId)
         if (!lmsDocument) {
@@ -76,14 +76,14 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         if (!targetTask)
             unresolvedTasks.push('target Task by id ' + newModel.targetTaskId)
         if (!sourceTask || !targetTask) {
-            return EditingResult.failedValidation('Unable to resolve: ' + unresolvedTasks.join(', '))
+            return ModificationResult.failedValidation('Unable to resolve: ' + unresolvedTasks.join(', '))
         }
 
         let anchorModel: id.Identified<semantic.Transition> | undefined
         if (creationParams.anchorModelId) {
             anchorModel = lmsDocument.semanticDomain.identifiedTransitions.get(creationParams.anchorModelId)
             if (anchorModel && anchorModel.sourceTask.id !== sourceTask.id) {
-                return EditingResult.failedValidation('Anchor model for Transition must be another Transition within the same sourceTask')
+                return ModificationResult.failedValidation('Anchor model for Transition must be another Transition within the same sourceTask')
             }
         }
         const newTransition = semantic.Transition.createNew(sourceTask, targetTask)
@@ -92,7 +92,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return this.applyTextEdit(lmsDocument, textEdit, 'Created new transition: ' + newTransition.name)
     }
 
-    public updateTask(rootModelId: string, modelId: string, taskModification: Modification<Task>): MaybePromise<EditingResult> | undefined {
+    public updateTask(rootModelId: string, modelId: string, taskModification: Modification<Task>): MaybePromise<ModificationResult> | undefined {
 
         console.debug('Updating task for rootModelId', rootModelId, 'modelId', modelId)
         const lmsDocument = this.getDocumentById(rootModelId)
@@ -101,7 +101,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         }
         const task = lmsDocument.semanticDomain.identifiedTasks.get(modelId)
         if (!task) {
-            return EditingResult.failedValidation('Unable to resolve task by id ' + modelId)
+            return ModificationResult.failedValidation('Unable to resolve task by id ' + modelId)
         }
 
         const textEdit = this.computeTaskUpdate(task, taskModification)
@@ -129,11 +129,11 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
                 return failure
             })
         } else {
-            return EditingResult.unmodified()
+            return ModificationResult.unmodified()
         }
     }
 
-    public updateTransition(rootModelId: string, modelId: string, transitionModification: Modification<Transition>): MaybePromise<EditingResult> | undefined {
+    public updateTransition(rootModelId: string, modelId: string, transitionModification: Modification<Transition>): MaybePromise<ModificationResult> | undefined {
 
         console.debug('Updating transition for rootModelId', rootModelId, 'modelId', modelId)
         const lmsDocument = this.getDocumentById(rootModelId)
@@ -142,7 +142,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         }
         const transition = lmsDocument.semanticDomain.identifiedTransitions.get(modelId)
         if (!transition) {
-            return EditingResult.failedValidation('Unable to resolve transition by id ' + modelId)
+            return ModificationResult.failedValidation('Unable to resolve transition by id ' + modelId)
         }
         let newSourceTask: id.Identified<ast.Task> | undefined
         let newTargetTask: id.Identified<ast.Task> | undefined
@@ -158,7 +158,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         if (transitionModification.targetTaskId && !newTargetTask)
             unresolvedTasks.push('new target Task by id ' + transitionModification.targetTaskId)
         if (unresolvedTasks.length > 0) {
-            return EditingResult.failedValidation('Unable to resolve: ' + unresolvedTasks.join(', '))
+            return ModificationResult.failedValidation('Unable to resolve: ' + unresolvedTasks.join(', '))
         }
 
         const newTransition = semantic.Transition.createNew(newSourceTask ?? transition.sourceTask, newTargetTask ?? transition.targetTask)
@@ -186,11 +186,11 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
                 return failure
             })
         } else {
-            return EditingResult.unmodified()
+            return ModificationResult.unmodified()
         }
     }
 
-    public deleteTask(rootModelId: string, taskId: string): MaybePromise<EditingResult> | undefined {
+    public deleteTask(rootModelId: string, taskId: string): MaybePromise<ModificationResult> | undefined {
 
         const lmsDocument = this.getDocumentById(rootModelId)
         if (!lmsDocument) {
@@ -198,7 +198,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         }
         const task = lmsDocument.semanticDomain.identifiedTasks.get(taskId)
         if (!task) {
-            return EditingResult.failedValidation('Unable to resolve model by id ' + taskId)
+            return ModificationResult.failedValidation('Unable to resolve model by id ' + taskId)
         }
 
         const workspaceEdit = this.computeTaskDeletion(lmsDocument, task)
@@ -206,7 +206,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return this.applyWorkspaceEdit(workspaceEdit, 'Deleted task ' + task.name)
     }
 
-    public deleteTransition(rootModelId: string, transitionId: string): MaybePromise<EditingResult> | undefined {
+    public deleteTransition(rootModelId: string, transitionId: string): MaybePromise<ModificationResult> | undefined {
 
         const lmsDocument = this.getDocumentById(rootModelId)
         if (!lmsDocument) {
@@ -379,16 +379,16 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return TextEdit.del({ start, end })
     }
 
-    private applyTextEdit(lmsDocument: LmsDocument, textEdit: TextEdit, label?: string): Promise<EditingResult> {
+    private applyTextEdit(lmsDocument: LmsDocument, textEdit: TextEdit, label?: string): Promise<ModificationResult> {
         return this.applyWorkspaceEdit({ changes: { [lmsDocument.textDocument.uri]: [textEdit] } }, label)
     }
 
-    private applyWorkspaceEdit(workspaceEdit: WorkspaceEdit, label?: string): Promise<EditingResult> {
+    private applyWorkspaceEdit(workspaceEdit: WorkspaceEdit, label?: string): Promise<ModificationResult> {
         return this.connection.sendRequest(ApplyWorkspaceEditRequest.type,
             { label, edit: workspaceEdit }
         ).then(editResult => editResult.applied
-            ? EditingResult.successful()
-            : EditingResult.failedTextEdit(editResult.failureReason)
+            ? ModificationResult.successful()
+            : ModificationResult.failedTextEdit(editResult.failureReason)
         )
     }
 

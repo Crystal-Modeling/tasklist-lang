@@ -1,4 +1,4 @@
 
 export * from './modification'
 export * from './creation'
-export * from './editing'
+export * from './modification-result'

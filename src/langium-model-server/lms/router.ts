@@ -4,7 +4,7 @@ import type { IdentityIndex } from '../identity'
 import type { SemanticIdentity } from '../identity/model'
 import type { LangiumModelServerAddedServices, LmsServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
-import type { CreationParams, EditingResult } from './model'
+import type { CreationParams, ModificationResult } from './model'
 import { EditingFailureReason, Modification, Response, SemanticIdResponse } from './model'
 import { PathContainer } from './utils/path-container'
 import { readRequestBody, respondWithJson, setUpStreamForSSE } from './utils/http2-util'
@@ -89,7 +89,7 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<SemanticIdent
                     respondWithJson(stream, Response.create(`Root model (document) for id '${id}' not found`, 404))
                     return
                 }
-                const handleResult = (res: EditingResult) => {
+                const handleResult = (res: ModificationResult) => {
                     if (res.successful) {
                         if (res.modified) respondWithJson(stream, res, 201)
                         else respondWithJson(stream, res, 200)
@@ -135,7 +135,7 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<SemanticIdent
                     respondWithJson(stream, Response.create(`Root model (document) for id '${id}' not found`, 404))
                     return
                 }
-                const handleResult = (res: EditingResult) => {
+                const handleResult = (res: ModificationResult) => {
                     if (res.successful) {
                         if (res.modified) respondWithJson(stream, res, 200)
                         else respondWithJson(stream, res, 200)
@@ -175,7 +175,7 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<SemanticIdent
                 respondWithJson(stream, Response.create(`Model for rootId '${id}' and id '${modelId}' not found`, 404))
                 return
             }
-            const handleResult = (res: EditingResult) => {
+            const handleResult = (res: ModificationResult) => {
                 console.debug('Handling Editing result on Deletion', res)
                 if (res.successful) {
                     if (res.modified) respondWithJson(stream, res, 200)
