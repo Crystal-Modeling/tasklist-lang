@@ -5,7 +5,7 @@ import { AbstractModelUpdateCalculators, deleteModels, type ModelUpdateCalculato
 import type * as sem from '../../../langium-model-server/semantic/model'
 import type { Initialized } from '../../../langium-model-server/workspace/documents'
 import * as ast from '../../generated/ast'
-import type * as identity from '../identity/model'
+import * as identity from '../identity/model'
 import type * as semantic from '../semantic/model'
 import type { QueriableTaskListSemanticDomain } from '../semantic/task-list-semantic-domain'
 import type { TaskListDocument } from '../workspace/documents'
@@ -74,26 +74,27 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
     private compareTaskWithExistingBefore(current: sem.Identified<ast.Task>): ReadonlyArrayUpdate<Task> {
         const semanticId = current.id
         const previous = this.semanticDomain.getPreviousIdentifiedTask(semanticId)
-        const previousDeletedFromAst = this._tasksMarkedForDeletion.get(semanticId)
+        const previousMarkedForDeletion = this._tasksMarkedForDeletion.get(semanticId)
         this._tasksMarkedForDeletion.delete(semanticId)
         if (!previous) {
-            if (!previousDeletedFromAst) {
+            if (!previousMarkedForDeletion) {
                 return ArrayUpdateCommand.addition(Task.create(current))
-            }// Existed in AST long before, was marked for deletion, now reappearing: comparing to be on a safe side
-            const reappearance: ElementUpdate<Task> = ElementUpdate.createStateUpdate(semanticId, 'REAPPEARED')
-            if (ast.isTask(previousDeletedFromAst)) {
-                // Can reappear different now (e.g., if copypasted from external source)
-                Update.assignIfUpdated(reappearance, 'content', previousDeletedFromAst.content, current.content, '')
-            } else { // RECHECK: A VERY edge case: when an element was marked for deletion, there was no previous Semantic Model for it. Is it at all possible?...
-                Update.assign(reappearance, 'content', current.content, '')
             }
+            // Existed in AST long before, was marked for deletion, now reappearing
+            const reappearance: ElementUpdate<Task> = ElementUpdate.createStateUpdate(semanticId, 'REAPPEARED')
+            if (!ast.isTask(previousMarkedForDeletion)) {/* NOTE: A VERY edge case: when an element was marked for deletion, there was no previous Semantic Model for it.
+                It is only possible, if identity model went out of sync with source language file, i.e.,
+                some identities were retained in JSON file, but corresponding source models had been deleted from the language file
+                */
+                console.warn(`Task '${semanticId}' with name=${current.name} reappearing now, but can't compare its attributes: it's only identity has been marked for deletion`)
+            }
+            // Though its name can hardly get changed (only if somehow reappeared using LMS Update API)
+            applyTaskChanges(reappearance, previousMarkedForDeletion, current)
             return ArrayUpdateCommand.modification(reappearance)
         } // Existed in AST before
         const update = ElementUpdate.createEmpty<Task>(semanticId)
-        // Not comparing the task.name, since it cannot be changed (existed in previous AST)
-        // (it plays a role in task Identity, hence with its change it is a different task)
-        Update.assignIfUpdated(update, 'content', previous.content, current.content, '')
-        if (previousDeletedFromAst) {// Why it was marked for deletion if it existed in the AST before?
+        applyTaskChanges(update, previous, current)
+        if (previousMarkedForDeletion) {// Why it was marked for deletion if it existed in the AST before?
             console.warn(`Task '${semanticId}' with name=${current.name} existed in previous AST, but was marked for deletion.`)
             update.__state = 'REAPPEARED'
         }
@@ -103,16 +104,39 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
     private compareTransitionWithExistingBefore(current: sem.Identified<semantic.Transition>): ReadonlyArrayUpdate<Transition> {
         const semanticId = current.id
         const previous = this.semanticDomain.getPreviousIdentifiedTransition(semanticId)
-        const previousDeletedFromAst = this._transitionsMarkedForDeletion.get(semanticId)
+        const previousMarkedForDeletion = this._transitionsMarkedForDeletion.get(semanticId)
         this._transitionsMarkedForDeletion.delete(semanticId)
         if (!previous) {
-            if (!previousDeletedFromAst) {
+            if (!previousMarkedForDeletion) {
                 return ArrayUpdateCommand.addition(Transition.create(current))
-            }// Existed in AST long before, was marked for deletion, now reappearing: won't compare, since no modifiable attributes
-            return ArrayUpdateCommand.modification(ElementUpdate.createStateUpdate<Transition>(semanticId, 'REAPPEARED'))
+            }
+            // Existed in AST long before, was marked for deletion, now reappearing
+            const reappearance = ElementUpdate.createStateUpdate<Transition>(semanticId, 'REAPPEARED')
+            applyTransitionChanges(reappearance, previousMarkedForDeletion, current)
+            return ArrayUpdateCommand.modification(reappearance)
         }
-        // Since source model for Transition doesn't have any modifiable attribute, it will only return Addition Update
-        return ArrayUpdateCommand.noUpdate()
+        const update = ElementUpdate.createEmpty<Transition>(semanticId)
+        applyTransitionChanges(update, previous, current)
+        if (previousMarkedForDeletion) {// Why it was marked for deletion if it existed in the AST before?
+            console.warn(`Transition '${semanticId}' with name=${current.name} existed in previous AST, but was marked for deletion.`)
+            update.__state = 'REAPPEARED'
+        }
+        return ArrayUpdateCommand.modification(update)
     }
 
+}
+
+function applyTaskChanges(update: ElementUpdate<Task>, previous: sem.Identified<ast.Task> | identity.TaskIdentity, current: sem.Identified<ast.Task>): void {
+    Update.assignIfUpdated(update, 'name', previous.name, current.name, '')
+    Update.assignIfUpdated(update, 'content', (previous as sem.Identified<ast.Task>)?.content, current.content, '')
+}
+
+function applyTransitionChanges(update: ElementUpdate<Transition>,
+    previous: sem.Identified<semantic.Transition> | identity.TransitionIdentity,
+    current: sem.Identified<semantic.Transition>
+): void {
+    const previousProperties = identity.TransitionDerivativeName.toProperties(previous.name)
+    const currentProperties = identity.TransitionDerivativeName.toProperties(current.name)
+    Update.assignIfUpdated(update, 'sourceTaskId', previousProperties.sourceTaskId, currentProperties.sourceTaskId)
+    Update.assignIfUpdated(update, 'targetTaskId', previousProperties.targetTaskId, currentProperties.targetTaskId)
 }
