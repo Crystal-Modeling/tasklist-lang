@@ -37,13 +37,12 @@ export interface ModelUpdateCalculator<SM extends id.SemanticIdentity> {
 
 export function compareModelWithExistingBefore<ID extends id.SemanticIdentity, SEM extends id.SemanticIdentity, SRC extends id.SemanticIdentity>(
     modelsMarkedForDeletion: Map<string, ID | SEM>,
-    getPreviousSemanticModel: (id: string) => SEM | undefined,
+    previous: SEM | undefined,
     current: SEM,
     sourceModelFactory: (semanticModel: SEM) => SRC,
     applyModelChanges: (update: ElementUpdate<SRC>, previous: SEM | ID, current: SEM) => void
 ): ReadonlyArrayUpdate<SRC> {
     const semanticId = current.id
-    const previous = getPreviousSemanticModel(semanticId)
     const previousMarkedForDeletion = modelsMarkedForDeletion.get(semanticId)
     modelsMarkedForDeletion.delete(semanticId)
     if (!previous) {

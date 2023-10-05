@@ -1,5 +1,5 @@
 import * as id from '../../../langium-model-server/identity/model'
-import type { ReadonlyArrayUpdate , ElementUpdate} from '../../../langium-model-server/lms/model'
+import type { ReadonlyArrayUpdate, ElementUpdate } from '../../../langium-model-server/lms/model'
 import { ArrayUpdate, ArrayUpdateCommand, RootUpdate, Update } from '../../../langium-model-server/lms/model'
 import { AbstractModelUpdateCalculators, compareModelWithExistingBefore, deleteModels, type ModelUpdateCalculator } from '../../../langium-model-server/lms/model-update-calculation'
 import type * as sem from '../../../langium-model-server/semantic/model'
@@ -39,7 +39,7 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
         const existingTasks = this.semanticDomain.identifiedTasks.values()
         const updates = Array.from(existingTasks, task => compareModelWithExistingBefore(
             this._tasksMarkedForDeletion,
-            this.semanticDomain.getPreviousIdentifiedTask.bind(this.semanticDomain),
+            this.semanticDomain.getPreviousIdentifiedTask(task.id),
             task,
             Task.create,
             applyTaskChanges,
@@ -57,7 +57,7 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
         const existingTransitions = this.semanticDomain.identifiedTransitions.values()
         const updates = Array.from(existingTransitions, transition => compareModelWithExistingBefore(
             this._transitionsMarkedForDeletion,
-            this.semanticDomain.getPreviousIdentifiedTransition.bind(this.semanticDomain),
+            this.semanticDomain.getPreviousIdentifiedTransition(transition.id),
             transition,
             Transition.create,
             applyTransitionChanges,
