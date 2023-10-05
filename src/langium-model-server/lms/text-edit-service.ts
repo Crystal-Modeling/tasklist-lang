@@ -14,10 +14,12 @@ export class DefaultTextEditService implements TextEditService {
     }
 
     public computeAstNodeRename(targetNode: AstNode, newName: string, includeDeclaration: boolean): WorkspaceEdit {
-        const changes: Record<string, TextEdit[]> = {}
         const references = this.references.findReferences(targetNode, { includeDeclaration, onlyLocal: false })
+        if (references.isEmpty()) {
+            return {}
+        }
         const newNameDefinder = this.getNewNameDefiner(targetNode, newName)
-
+        const changes: Record<string, TextEdit[]> = {}
         references.forEach(reference => {
             const newName = newNameDefinder.getNameForReference(reference)
             const nodeChange = TextEdit.replace(reference.segment.range, newName)
