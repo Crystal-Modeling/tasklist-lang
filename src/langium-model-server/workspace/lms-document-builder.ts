@@ -73,7 +73,8 @@ export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentity, II extend
         }
         newUpdatesForLmsDocuments.forEach((update, lmsDocument) => {
             lmsDocument.state = LmsDocumentState.Identified
-            this.lmsSubscriptions.getSubscription(update.id)?.pushModelUpdate(update, true)
+            this.lmsSubscriptions.getSubscription(update.id)?.pushModelUpdate(update, !lmsDocument.hasImmediateChanges)
+            delete lmsDocument.hasImmediateChanges
         })
     }
 }

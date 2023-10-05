@@ -1,11 +1,13 @@
 import type { AstNodeLocator, References } from 'langium'
 import { findNodeForProperty, getContainerOfType, getDocument, getPreviousNode, type MaybePromise } from 'langium'
-import type { Position, WorkspaceEdit } from 'vscode-languageserver'
+import type { Position } from 'vscode-languageserver'
 import { ApplyWorkspaceEditRequest, TextEdit } from 'vscode-languageserver'
+import type { URI } from 'vscode-uri'
 import { AbstractLangiumModelServerFacade } from '../../../langium-model-server/lms/facade'
 import type { Creation, CreationParams, Modification } from '../../../langium-model-server/lms/model'
 import { ModificationResult } from '../../../langium-model-server/lms/model'
 import type { TextEditService } from '../../../langium-model-server/lms/text-edit-service'
+import { SourceEdit } from '../../../langium-model-server/lms/text-edit-service'
 import * as id from '../../../langium-model-server/semantic/model'
 import type { LangiumModelServerServices } from '../../../langium-model-server/services'
 import { LmsDocument } from '../../../langium-model-server/workspace/documents'
@@ -108,7 +110,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             if (taskModification.name) {
                 task.identity.updateName(taskModification.name)
             }
-            return this.applyWorkspaceEdit(edit, 'Updated task ' + task.name
+            return this.applySourceEdit(edit, 'Updated task ' + task.name
             ).then(editingResult => {
                 if (editingResult.successful) {
                     console.debug('Modified Task attributes:', taskModification)
@@ -160,7 +162,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
 
         if (changes.length > 0) {
             transition.identity.updateName(newTransition.name)
-            return this.applyWorkspaceEdit({ changes: { [lmsDocument.textDocument.uri]: changes } },
+            return this.applySourceEdit(SourceEdit.of(lmsDocument.uri, changes),
                 'Updated transition: ' + transition.name + 'to ' + newTransition.name
             ).then(editingResult => {
                 if (editingResult.successful) {
@@ -192,7 +194,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
 
         const workspaceEdit = this.computeTaskDeletion(lmsDocument, task)
 
-        return this.applyWorkspaceEdit(workspaceEdit, 'Deleted task ' + task.name)
+        return this.applySourceEdit(workspaceEdit, 'Deleted task ' + task.name)
     }
 
     public deleteTransition(rootModelId: string, transitionId: string): MaybePromise<ModificationResult> | undefined {
@@ -264,7 +266,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return TextEdit.insert(position, serializedModel)
     }
 
-    private computeTaskUpdate(task: id.Identified<ast.Task>, taskModification: Modification<Task>): WorkspaceEdit | undefined {
+    private computeTaskUpdate(task: id.Identified<ast.Task>, taskModification: Modification<Task>): SourceEdit | undefined {
         console.debug('Computing Update edit for Task with name', task.name)
         if (!task.$cstNode) {
             throw new Error('Cannot locate task ' + task.name + '(' + task.id + ') in text')
@@ -275,16 +277,12 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             const end = findNodeForProperty(task.$cstNode, 'content')?.range.end ?? task.$cstNode.range.end
 
             const taskTextEdit = TextEdit.replace({ start, end }, serializedTask)
-            const taskDocumentUri = getDocument(task).textDocument.uri
-            if (taskModification.name) {
-                const result = this.textEditService.computeAstNodeRename(task, taskModification.name, false)
-                if (!result.changes) {
-                    return { changes: { taskDocumentUri: [taskTextEdit] } }
-                }
-                result.changes[taskDocumentUri] ? result.changes[taskDocumentUri].push(taskTextEdit) : result.changes[taskDocumentUri] = [taskTextEdit]
-                return result
-            }
-            return { changes: { [taskDocumentUri]: [taskTextEdit] } }
+            const taskDocumentUri = getDocument(task).uri
+            const result = taskModification.name
+                ? this.textEditService.computeAstNodeRename(task, taskModification.name, false)
+                : new SourceEdit()
+            result.add(taskDocumentUri, taskTextEdit)
+            return result
         }
         return undefined
     }
@@ -304,7 +302,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return changes
     }
 
-    private computeTaskDeletion(lmsDocument: LmsDocument, task: id.Identified<ast.Task>): WorkspaceEdit {
+    private computeTaskDeletion(lmsDocument: LmsDocument, task: id.Identified<ast.Task>): SourceEdit {
 
         console.debug('Computing Deletion edit for Task with name', task.name)
         if (!task.$cstNode) {
@@ -314,9 +312,9 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         const start = getPreviousNode(task.$cstNode, false)?.range?.end ?? { line: 0, character: 0 }
         const end = task.$cstNode.range.end
         const deleteTaskEdit = TextEdit.del({ start, end })
-        const changes: { [uri: string]: TextEdit[] } = { [lmsDocument.textDocument.uri]: [deleteTaskEdit] }
+        const sourceEdit = SourceEdit.ofSingleEdit(lmsDocument.uri, deleteTaskEdit)
         this.references.findReferences(task, { includeDeclaration: false })
-            .map((ref): [documentUri: string, transition: id.Identified<semantic.Transition>] | undefined => {
+            .map((ref): [documentUri: URI, transition: id.Identified<semantic.Transition>] | undefined => {
                 const doc = this.langiumDocuments.getOrCreateDocument(ref.sourceUri) as LmsDocument
                 const sourceTask = getContainerOfType(this.astNodeLocator.getAstNode(doc.parseResult.value, ref.sourcePath), ast.isTask)
                 if (!this.isLmsDocument(doc) || !sourceTask || !id.Identified.is(sourceTask)) {
@@ -335,16 +333,14 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
                     console.debug('Transition is not found in semantic domain')
                     return undefined
                 }
-                return [doc.textDocument.uri, transition]
+                return [doc.uri, transition]
             }).nonNullable()
             .forEach(([documentUri, transition]) => {
                 const transitionDeletionEdit = this.computeTransitionDeletion(transition)
-                changes[documentUri]
-                    ? changes[documentUri].push(transitionDeletionEdit)
-                    : changes[documentUri] = [transitionDeletionEdit]
+                sourceEdit.add(documentUri, transitionDeletionEdit)
             })
 
-        return { changes }
+        return sourceEdit
     }
 
     // TODO: Extract to separate component (that will be responsible for TextEdit computation)
@@ -378,12 +374,18 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
     }
 
     private applyTextEdit(lmsDocument: LmsDocument, textEdit: TextEdit, label?: string): Promise<ModificationResult> {
-        return this.applyWorkspaceEdit({ changes: { [lmsDocument.textDocument.uri]: [textEdit] } }, label)
+        return this.applySourceEdit(SourceEdit.ofSingleEdit(lmsDocument.uri, textEdit), label)
     }
 
-    private applyWorkspaceEdit(workspaceEdit: WorkspaceEdit, label?: string): Promise<ModificationResult> {
+    private applySourceEdit(sourceEdit: SourceEdit, label?: string): Promise<ModificationResult> {
+        for(const uri of sourceEdit.getAffectedURIs()) {
+            const lmsDocument = this.langiumDocuments.getOrCreateDocument(uri)
+            if (this.isLmsDocument(lmsDocument)) {
+                lmsDocument.hasImmediateChanges = true
+            }
+        }
         return this.connection.sendRequest(ApplyWorkspaceEditRequest.type,
-            { label, edit: workspaceEdit }
+            { label, edit: sourceEdit.toWorkspaceEdit() }
         ).then(editResult => editResult.applied
             ? ModificationResult.successful()
             : ModificationResult.failedTextEdit(editResult.failureReason)

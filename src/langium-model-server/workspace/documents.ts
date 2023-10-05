@@ -16,6 +16,7 @@ export type LmsDocument<T extends AstNode = AstNode> = ExtendableLangiumDocument
         // TODO: Suggest AstRootNode as a specific interface in Langium library
         value: sem.AstRootNode<T>
     }
+    hasImmediateChanges?: true
 }
 export namespace LmsDocument {
     export function isInitialized<T extends AstNode>(lmsDocument: LmsDocument<T>): lmsDocument is Initialized<LmsDocument<T>> {

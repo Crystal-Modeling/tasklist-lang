@@ -1,8 +1,10 @@
 import type { AstNode, LangiumServices, ReferenceDescription, References } from 'langium'
-import { TextEdit, type WorkspaceEdit } from 'vscode-languageserver'
+import type { WorkspaceEdit } from 'vscode-languageserver'
+import { TextEdit } from 'vscode-languageserver'
+import type { URI } from 'vscode-uri'
 
 export interface TextEditService {
-    computeAstNodeRename(targetNode: AstNode, newName: string, includeDeclaration: boolean): WorkspaceEdit
+    computeAstNodeRename(targetNode: AstNode, newName: string, includeDeclaration: boolean): SourceEdit
 }
 
 export class DefaultTextEditService implements TextEditService {
@@ -13,25 +15,21 @@ export class DefaultTextEditService implements TextEditService {
         this.references = services.references.References
     }
 
-    public computeAstNodeRename(targetNode: AstNode, newName: string, includeDeclaration: boolean): WorkspaceEdit {
+    public computeAstNodeRename(targetNode: AstNode, newName: string, includeDeclaration: boolean): SourceEdit {
         const references = this.references.findReferences(targetNode, { includeDeclaration, onlyLocal: false })
         if (references.isEmpty()) {
-            return {}
+            return new SourceEdit()
         }
         const newNameDefinder = this.getNewNameDefiner(targetNode, newName)
-        const changes: Record<string, TextEdit[]> = {}
+        const sourceEdit = new SourceEdit()
         references.forEach(reference => {
             const newName = newNameDefinder.getNameForReference(reference)
-            const nodeChange = TextEdit.replace(reference.segment.range, newName)
-            const uri = reference.sourceUri.toString()
-            if (changes[uri]) {
-                changes[uri].push(nodeChange)
-            } else {
-                changes[uri] = [nodeChange]
-            }
+            const textEdit = TextEdit.replace(reference.segment.range, newName)
+            const uri = reference.sourceUri
+            sourceEdit.add(uri, textEdit)
         })
 
-        return { changes }
+        return sourceEdit
     }
 
     /**
@@ -53,4 +51,44 @@ export class DefaultTextEditService implements TextEditService {
 export interface NewNameDefiner {
     getNameForReference: (referenceDescription: ReferenceDescription) => string
     readonly targetName: string
+}
+
+export class SourceEdit {
+
+    public static ofSingleEdit(uri: URI, textEdit: TextEdit): SourceEdit {
+        const sourceEdit = new SourceEdit()
+        sourceEdit.add(uri, textEdit)
+        return sourceEdit
+    }
+
+    public static of(uri: URI, textEdits: TextEdit[]): SourceEdit {
+        const sourceEdit = new SourceEdit()
+        sourceEdit.changes.set(uri, textEdits)
+        return sourceEdit
+    }
+
+    private readonly changes: Map<URI, TextEdit[]> = new Map()
+
+    public add(uri: URI, edit: TextEdit) {
+        const changesOnUri = this.changes.get(uri)
+        if (!changesOnUri) {
+            this.changes.set(uri, [edit])
+        } else {
+            changesOnUri.push(edit)
+        }
+    }
+
+    public toWorkspaceEdit(): WorkspaceEdit {
+        const changes: { [uri: string]: TextEdit[] } = {}
+        this.changes.forEach((value, key) => {
+            changes[key.toString()] = value
+        })
+        return {
+            changes
+        }
+    }
+
+    public getAffectedURIs(): IterableIterator<URI> {
+        return this.changes.keys()
+    }
 }

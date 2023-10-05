@@ -38,7 +38,7 @@ export class LmsRenameProvider<SM extends SemanticIdentity, II extends IdentityI
             }
         }
 
-        return result
+        return result.toWorkspaceEdit()
     }
 
 }
