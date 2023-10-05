@@ -85,16 +85,28 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
 }
 
 function applyTaskChanges(update: ElementUpdate<Task>, previous: sem.Identified<ast.Task> | identity.TaskIdentity, current: sem.Identified<ast.Task>): void {
-    Update.assignIfUpdated(update, 'name', previous.name, current.name, '')
-    Update.assignIfUpdated(update, 'content', (previous as sem.Identified<ast.Task>)?.content, current.content, '')
+    if (previous !== current.identity) {
+        Update.assignIfUpdated(update, 'name', previous.name, current.name, '')
+        Update.assignIfUpdated(update, 'content', (previous as sem.Identified<ast.Task>).content, current.content, '')
+    } else {
+        console.info(`Can't compare attributes of Task '${current.id}' with name=${current.name}: previous semantic Task is missing`)
+        Update.assign(update, 'name', current.name, '')
+        Update.assign(update, 'content', current.content, '')
+    }
 }
 
 function applyTransitionChanges(update: ElementUpdate<Transition>,
     previous: sem.Identified<semantic.Transition> | identity.TransitionIdentity,
     current: sem.Identified<semantic.Transition>
 ): void {
-    const previousProperties = identity.TransitionDerivativeName.toProperties(previous.name)
     const currentProperties = identity.TransitionDerivativeName.toProperties(current.name)
-    Update.assignIfUpdated(update, 'sourceTaskId', previousProperties.sourceTaskId, currentProperties.sourceTaskId)
-    Update.assignIfUpdated(update, 'targetTaskId', previousProperties.targetTaskId, currentProperties.targetTaskId)
+    if (previous !== current.identity) {
+        const previousProperties = identity.TransitionDerivativeName.toProperties(previous.name)
+        Update.assignIfUpdated(update, 'sourceTaskId', previousProperties.sourceTaskId, currentProperties.sourceTaskId)
+        Update.assignIfUpdated(update, 'targetTaskId', previousProperties.targetTaskId, currentProperties.targetTaskId)
+    } else {
+        console.info(`Can't compare attributes of Transition '${current.id}' with name=${current.name}: previous semantic Transition is missing`)
+        Update.assign(update, 'sourceTaskId', currentProperties.sourceTaskId)
+        Update.assign(update, 'targetTaskId', currentProperties.targetTaskId)
+    }
 }
