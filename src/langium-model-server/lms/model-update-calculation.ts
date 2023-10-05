@@ -35,6 +35,35 @@ export interface ModelUpdateCalculator<SM extends id.SemanticIdentity> {
 //     [P in KeysOfType<T, id.SemanticIdentity[]> as `calculate${Capitalize<string & P>}Update`]: T[P] extends id.SemanticIdentity[] ? (identitiesToDelete: Iterable<T[P][0]>) => ReadonlyArrayUpdate<T[P][0]> : never
 // }
 
+export function compareModelWithExistingBefore<ID extends id.SemanticIdentity, SEM extends id.SemanticIdentity, SRC extends id.SemanticIdentity>(
+    modelsMarkedForDeletion: Map<string, ID | SEM>,
+    getPreviousSemanticModel: (id: string) => SEM | undefined,
+    current: SEM,
+    sourceModelFactory: (semanticModel: SEM) => SRC,
+    applyModelChanges: (update: ElementUpdate<SRC>, previous: SEM | ID, current: SEM) => void
+): ReadonlyArrayUpdate<SRC> {
+    const semanticId = current.id
+    const previous = getPreviousSemanticModel(semanticId)
+    const previousMarkedForDeletion = modelsMarkedForDeletion.get(semanticId)
+    modelsMarkedForDeletion.delete(semanticId)
+    if (!previous) {
+        if (!previousMarkedForDeletion) {
+            return ArrayUpdateCommand.addition(sourceModelFactory(current))
+        }
+        // Existed in AST long before, was marked for deletion, now reappearing
+        const reappearance = ElementUpdate.createStateUpdate<SRC>(semanticId, 'REAPPEARED')
+        applyModelChanges(reappearance, previousMarkedForDeletion, current)
+        return ArrayUpdateCommand.modification(reappearance)
+    } // Existed in AST before
+    const update = ElementUpdate.createEmpty<SRC>(semanticId)
+    applyModelChanges(update, previous, current)
+    if (previousMarkedForDeletion) {// Why it was marked for deletion if it existed in the AST before?
+        console.warn(`Model '${semanticId}' existed in previous AST, but was marked for deletion.`)
+        update.__state = 'REAPPEARED'
+    }
+    return ArrayUpdateCommand.modification(update)
+}
+
 /**
  * Computes {@link ReadonlyArrayUpdate} for {@link identitiesToDelete} by comparing them with {@link modelsMarkedForDeletion}.
  *
@@ -49,8 +78,8 @@ export interface ModelUpdateCalculator<SM extends id.SemanticIdentity> {
  */
 export function deleteModels<ID extends id.SemanticIdentity, SEM extends id.SemanticIdentity, SRC extends id.SemanticIdentity>(
     modelsMarkedForDeletion: Map<string, ID | SEM>,
-    identitiesToDelete: Iterable<ID>,
-    getPreviousSemanticModel: (id: string) => SEM | undefined
+    getPreviousSemanticModel: (id: string) => SEM | undefined,
+    identitiesToDelete: Iterable<ID>
 ): ReadonlyArrayUpdate<SRC> {
     let deletion: ReadonlyArrayUpdate<SRC> | undefined = undefined
     let identitiesToBeMarkedForDeletion = stream(identitiesToDelete)
@@ -65,7 +94,15 @@ export function deleteModels<ID extends id.SemanticIdentity, SEM extends id.Sema
         // _Semantic Model_ with such semantic ID (which could exist in _previous_ AST state),
         // since Semantic Model stores all attributes and we will be able to do more precise comparison
         // if it reappears later
-        modelsMarkedForDeletion.set(identity.id, getPreviousSemanticModel(identity.id) ?? identity)
+        const previousSemanticModel = getPreviousSemanticModel(identity.id)
+        if (!previousSemanticModel) {
+            /* NOTE: A VERY edge case: There is no previous Semantic Model for currently missing in AST element (though identity is present).
+                It is only possible, if identity model went out of sync with source language file, i.e.,
+                some identities were retained in JSON file, but corresponding source models had been deleted from the language file
+            */
+            console.warn(`Model '${identity.id}' is to be marked for deletion, but it doesn't have a corresponding previous semantic model`)
+        }
+        modelsMarkedForDeletion.set(identity.id, previousSemanticModel ?? identity)
     })
     const dissappearances = ArrayUpdateCommand.modification(
         Array.from(modelsMarkedForDeletion.keys(), id => ElementUpdate.createStateUpdate<SRC>(id, 'DISAPPEARED')))
