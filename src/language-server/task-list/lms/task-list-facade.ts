@@ -4,9 +4,7 @@ import type { Position, WorkspaceEdit } from 'vscode-languageserver'
 import { ApplyWorkspaceEditRequest, TextEdit } from 'vscode-languageserver'
 import { AbstractLangiumModelServerFacade } from '../../../langium-model-server/lms/facade'
 import type { Creation, CreationParams, Modification } from '../../../langium-model-server/lms/model'
-import * as lms from '../../../langium-model-server/lms/model'
 import { ModificationResult } from '../../../langium-model-server/lms/model'
-import type { LmsSubscriptions } from '../../../langium-model-server/lms/subscriptions'
 import type { TextEditService } from '../../../langium-model-server/lms/text-edit-service'
 import * as id from '../../../langium-model-server/semantic/model'
 import type { LangiumModelServerServices } from '../../../langium-model-server/services'
@@ -23,14 +21,12 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
 
     private readonly references: References
     private readonly astNodeLocator: AstNodeLocator
-    private readonly lmsSubscriptions: LmsSubscriptions<Model>
     private readonly textEditService: TextEditService
 
     constructor(services: LangiumModelServerServices<Model, TaskListIdentityIndex, TaskListDocument>) {
         super(services)
         this.references = services.references.References
         this.astNodeLocator = services.workspace.AstNodeLocator
-        this.lmsSubscriptions = services.lms.LmsSubscriptions
         this.textEditService = services.lms.TextEditService
 
         this.addModelHandlersByPathSegment.set('tasks', {
@@ -108,8 +104,6 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         }
 
         const edit = this.computeTaskUpdate(task, taskModification)
-        console.debug('Computed Task Update', edit)
-
         if (edit) {
             if (taskModification.name) {
                 task.identity.updateName(taskModification.name)
@@ -118,11 +112,6 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             ).then(editingResult => {
                 if (editingResult.successful) {
                     console.debug('Modified Task attributes:', taskModification)
-                    if (taskModification.name) {
-                        const update = lms.RootUpdate.createEmpty<Task>(task.identity.id, task.identity.modelUri)
-                        lms.Update.assignIfUpdated(update, 'name', task.name, taskModification.name)
-                        this.lmsSubscriptions.getSubscription(rootModelId)?.pushUpdate(update)
-                    }
                 } else {
                     // Reverting modified identity on failure
                     task.identity.updateName(task.name)
@@ -176,10 +165,6 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             ).then(editingResult => {
                 if (editingResult.successful) {
                     console.debug('Modified Transition attributes. New transition', newTransition)
-                    const update = lms.RootUpdate.createEmpty<Transition>(transition.identity.id, transition.identity.modelUri)
-                    lms.Update.assignIfUpdated(update, 'sourceTaskId', transition.sourceTask.id, newTransition.sourceTask.id)
-                    lms.Update.assignIfUpdated(update, 'targetTaskId', transition.targetTask.id, newTransition.targetTask.id)
-                    this.lmsSubscriptions.getSubscription(rootModelId)?.pushUpdate(update)
                 } else {
                     // Reverting modified identity on failure
                     transition.identity.updateName(transition.name)
