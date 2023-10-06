@@ -203,14 +203,16 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
                 }
             })
 
+        const taskIds = new Set(resolvedTasks.keys())
         const sourceEditAndLabel = stream(resolvedTasks.values())
-            .map(task => this.computeTaskDeletion(lmsDocument, task))
+            .map(task => this.computeTaskDeletion(lmsDocument, task, taskIds))
             .concat(stream(resolvedTransitions.values())
                 .filter((transition) => !resolvedTasks.has(transition.sourceTask.id) && !resolvedTasks.has(transition.targetTask.id))
                 .map(transition => this.computeTransitionDeletion(lmsDocument, transition))
-            ).reduce(([sourceEdit, label], [nextSourceEdit, nextLabel]) => {
-                sourceEdit.apply(nextSourceEdit)
-                return [sourceEdit, `${label};${nextLabel}`]
+            ).reduce((sourceEditAndLabel, [nextSourceEdit, nextLabel]) => {
+                sourceEditAndLabel[0].apply(nextSourceEdit)
+                sourceEditAndLabel[1] = `${sourceEditAndLabel[1]};${nextLabel}`
+                return sourceEditAndLabel
             })
         if (!sourceEditAndLabel) {
             return unresolvedModelIds.length > 0
@@ -336,7 +338,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return sourceEdit
     }
 
-    private computeTaskDeletion(lmsDocument: LmsDocument, task: sem.Identified<ast.Task>): [SourceEdit, string] {
+    private computeTaskDeletion(lmsDocument: LmsDocument, task: sem.Identified<ast.Task>, ignoreReferencesFromTasks?: Set<string>): [SourceEdit, string] {
 
         console.debug('Computing Deletion edit for Task with name', task.name)
         if (!task.$cstNode) {
@@ -353,6 +355,10 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
                 const sourceTask = getContainerOfType(this.astNodeLocator.getAstNode(doc.parseResult.value, ref.sourcePath), ast.isTask)
                 if (!this.isLmsDocument(doc) || !sourceTask || !sem.Identified.is(sourceTask)) {
                     console.debug('Source document or source task are not LMS-compatible', doc, sourceTask)
+                    return undefined
+                }
+                if (ignoreReferencesFromTasks && ignoreReferencesFromTasks.has(sourceTask.id)) {
+                    console.debug(`Transition from source Task ${sourceTask.id} (${sourceTask.name}) ignored`)
                     return undefined
                 }
                 const transitionName = identity.TransitionDerivativeName.of(sourceTask.id, task.id)
