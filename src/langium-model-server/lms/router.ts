@@ -8,6 +8,7 @@ import type { CreationParams, ModificationResult } from './model'
 import { EditingFailureReason, Modification, Response, SemanticIdResponse } from './model'
 import { PathContainer } from './utils/path-container'
 import { readRequestBody, respondWithJson, setUpStreamForSSE } from './utils/http2-util'
+import { isArray } from '../utils/types'
 
 type Http2RequestHandler = (stream: http2.ServerHttp2Stream, unmatchedPath: PathContainer,
     headers: http2.IncomingHttpHeaders, flags: number) => Http2RequestHandler | void
@@ -157,24 +158,8 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<SemanticIdent
             })
             return
         }
+
         const deleteModelHandler: Http2RequestHandler = (stream, unmatchedPath) => {
-            const uriSegment = unmatchedPath.readPathSegment()
-            if (!uriSegment) {
-                return notFoundHandler
-            }
-            const deleteModel = langiumModelServerFacade.deleteModelHandlersByPathSegment.get(uriSegment)
-            if (!deleteModel) {
-                return notImplementedMethodHandler
-            }
-            const modelId = unmatchedPath.readPathSegment()
-            if (!modelId) {
-                return notFoundHandler
-            }
-            const result = deleteModel(id, modelId)
-            if (!result) {
-                respondWithJson(stream, Response.create(`Model for rootId '${id}' and id '${modelId}' not found`, 404))
-                return
-            }
             const handleResult = (res: ModificationResult) => {
                 console.debug('Handling Editing result on Deletion', res)
                 if (res.successful) {
@@ -188,6 +173,45 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<SemanticIdent
                         respondWithJson(stream, res, 500)
                         break
                 }
+            }
+
+            const deleteModelsHandler: Http2RequestHandler = (stream) => {
+                readRequestBody(stream).then(requestBody => {
+                    if (!isArray(requestBody, (obj): obj is string => typeof obj === 'string')) {
+                        respondWithJson(stream,
+                            Response.create(`${headers[':method']} ('${headers[':path']}') cannot be processed: incorrect request body`, 400))
+                        return
+                    }
+                    const result = langiumModelServerFacade.deleteModels(id, requestBody)
+                    if (!result) {
+                        respondWithJson(stream, Response.create(`Root model (document) for id '${id}' not found`, 404))
+                        return
+                    }
+                    if (isPromise(result)) {
+                        result.then(handleResult)
+                        return
+                    } else {
+                        handleResult(result)
+                    }
+                })
+            }
+
+            const uriSegment = unmatchedPath.readPathSegment()
+            if (!uriSegment) {
+                return deleteModelsHandler
+            }
+            const deleteModel = langiumModelServerFacade.deleteModelHandlersByPathSegment.get(uriSegment)
+            if (!deleteModel) {
+                return notImplementedMethodHandler
+            }
+            const modelId = unmatchedPath.readPathSegment()
+            if (!modelId) {
+                return notFoundHandler
+            }
+            const result = deleteModel(id, modelId)
+            if (!result) {
+                respondWithJson(stream, Response.create(`Model for rootId '${id}' and id '${modelId}' not found`, 404))
+                return
             }
             if (isPromise(result)) {
                 console.debug('Awaiting promise result...')

@@ -1,20 +1,21 @@
 import type { AstNodeLocator, References } from 'langium'
-import { findNodeForProperty, getContainerOfType, getDocument, getPreviousNode, type MaybePromise } from 'langium'
+import { findNodeForProperty, getContainerOfType, getDocument, getPreviousNode, stream, type MaybePromise } from 'langium'
 import type { Position } from 'vscode-languageserver'
 import { ApplyWorkspaceEditRequest, TextEdit } from 'vscode-languageserver'
-import type { URI } from 'vscode-uri'
+import type * as id from '../../../langium-model-server/identity/model'
 import { AbstractLangiumModelServerFacade } from '../../../langium-model-server/lms/facade'
 import type { Creation, CreationParams, Modification } from '../../../langium-model-server/lms/model'
 import { ModificationResult } from '../../../langium-model-server/lms/model'
 import type { TextEditService } from '../../../langium-model-server/lms/text-edit-service'
 import { SourceEdit } from '../../../langium-model-server/lms/text-edit-service'
-import * as id from '../../../langium-model-server/semantic/model'
+import * as sem from '../../../langium-model-server/semantic/model'
 import type { LangiumModelServerServices } from '../../../langium-model-server/services'
 import { LmsDocument } from '../../../langium-model-server/workspace/documents'
 import * as ast from '../../generated/ast'
 import type { TaskListIdentityIndex } from '../identity'
 import * as identity from '../identity/model'
 import * as semantic from '../semantic/model'
+import type { TaskListSemanticDomain } from '../semantic/task-list-semantic-domain'
 import type { TaskListDocument } from '../workspace/documents'
 import { isTaskListDocument } from '../workspace/documents'
 import { Model, Task, Transition } from './model'
@@ -51,7 +52,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         if (!lmsDocument) {
             return undefined
         }
-        let anchorModel: id.Identified<ast.Task> | undefined
+        let anchorModel: sem.Identified<ast.Task> | undefined
         if (creationParams.anchorModelId) {
             anchorModel = lmsDocument.semanticDomain.identifiedTasks.get(creationParams.anchorModelId)
         }
@@ -80,7 +81,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             return ModificationResult.failedValidation('Unable to resolve: ' + unresolvedTasks.join(', '))
         }
 
-        let anchorModel: id.Identified<semantic.Transition> | undefined
+        let anchorModel: sem.Identified<semantic.Transition> | undefined
         if (creationParams.anchorModelId) {
             anchorModel = lmsDocument.semanticDomain.identifiedTransitions.get(creationParams.anchorModelId)
             if (anchorModel && anchorModel.sourceTask.id !== sourceTask.id) {
@@ -139,8 +140,8 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         if (!transition) {
             return ModificationResult.failedValidation('Unable to resolve transition by id ' + modelId)
         }
-        let newSourceTask: id.Identified<ast.Task> | undefined
-        let newTargetTask: id.Identified<ast.Task> | undefined
+        let newSourceTask: sem.Identified<ast.Task> | undefined
+        let newTargetTask: sem.Identified<ast.Task> | undefined
 
         // You can only update transition for the source and target node, that are present in the *same* document
         if (transitionModification.sourceTaskId)
@@ -158,62 +159,96 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
 
         const newTransition = semantic.Transition.createNew(newSourceTask ?? transition.sourceTask, newTargetTask ?? transition.targetTask)
 
-        const changes = this.computeTransitionUpdate(transition, newTransition)
+        const sourceEdit = this.computeTransitionUpdate(lmsDocument, transition, newTransition)
 
-        if (changes.length > 0) {
+        if (sourceEdit.size > 0) {
             transition.identity.updateName(newTransition.name)
-            return this.applySourceEdit(SourceEdit.of(lmsDocument.uri, changes),
-                'Updated transition: ' + transition.name + 'to ' + newTransition.name
-            ).then(editingResult => {
-                if (editingResult.successful) {
-                    console.debug('Modified Transition attributes. New transition', newTransition)
-                } else {
-                    // Reverting modified identity on failure
+            return this.applySourceEdit(sourceEdit, 'Updated transition: ' + transition.name + 'to ' + newTransition.name)
+                .then(editingResult => {
+                    if (editingResult.successful) {
+                        console.debug('Modified Transition attributes. New transition', newTransition)
+                    } else {
+                        // Reverting modified identity on failure
+                        transition.identity.updateName(transition.name)
+                    }
+                    return editingResult
+                }, failure => {
                     transition.identity.updateName(transition.name)
-                }
-                return editingResult
-            }, failure => {
-                transition.identity.updateName(transition.name)
-                return failure
-            })
+                    return failure
+                })
         } else {
             return ModificationResult.unmodified()
         }
     }
 
-    public deleteTask(rootModelId: string, taskId: string): MaybePromise<ModificationResult> | undefined {
-
+    public override deleteModels(rootModelId: string, modelIds: string[]): MaybePromise<ModificationResult> | undefined {
         const lmsDocument = this.getDocumentById(rootModelId)
         if (!lmsDocument) {
             return undefined
         }
-        const task = lmsDocument.semanticDomain.identifiedTasks.get(taskId)
-        if (!task) {
-            return ModificationResult.failedValidation('Unable to resolve model by id ' + taskId)
+        const unresolvedModelIds = new Set(modelIds)
+        const taskIds = new Set<string>()
+        const transitionIds = new Set<string>()
+        unresolvedModelIds.forEach(taskId => {
+            if (lmsDocument.semanticDomain.identifiedTasks.has(taskId)) {
+                unresolvedModelIds.delete(taskId)
+                taskIds.add(taskId)
+            }
+        })
+        unresolvedModelIds.forEach(transitionId => {
+            const transition = lmsDocument.semanticDomain.identifiedTransitions.get(transitionId)
+            if (transition) {
+                unresolvedModelIds.delete(transitionId)
+                if (!taskIds.has(transition.sourceTask.id) && !taskIds.has(transition.targetTask.id)) {
+                    transitionIds.add(transitionId)
+                }
+            }
+        })
+
+        const sourceEditAndLabel = stream(taskIds)
+            .map(id => lmsDocument.semanticDomain.identifiedTasks.get(id)!)
+            .map(task => this.computeTaskDeletion(lmsDocument, task))
+            .concat(stream(transitionIds)
+                .map(id => lmsDocument.semanticDomain.identifiedTransitions.get(id)!)
+                .map(transition => this.computeTransitionDeletion(lmsDocument, transition))
+            ).reduce(([sourceEdit, label], [nextSourceEdit, nextLabel]) => {
+                sourceEdit.apply(nextSourceEdit)
+                return [sourceEdit, `${label};${nextLabel}`]
+            })
+        if (!sourceEditAndLabel) {
+            return ModificationResult.failedValidation('Unable to resolve models for ids ' + unresolvedModelIds)
         }
 
-        const workspaceEdit = this.computeTaskDeletion(lmsDocument, task)
+        return this.applySourceEdit(...sourceEditAndLabel)
+    }
 
-        return this.applySourceEdit(workspaceEdit, 'Deleted task ' + task.name)
+    public deleteTask(rootModelId: string, taskId: string): MaybePromise<ModificationResult> | undefined {
+        return this.deleteModel(rootModelId, taskId, (domain, id) => domain.identifiedTasks.get(id), this.computeTaskDeletion.bind(this))
     }
 
     public deleteTransition(rootModelId: string, transitionId: string): MaybePromise<ModificationResult> | undefined {
+        return this.deleteModel(rootModelId, transitionId, (domain, id) => domain.identifiedTransitions.get(id), this.computeTransitionDeletion.bind(this))
+    }
+
+    private deleteModel<SEM extends id.SemanticIdentity>(rootModelId: string, modelId: string,
+        resolveModel: (domain: TaskListSemanticDomain, id: string) => SEM | undefined, computeModelDeletion: (document: LmsDocument, model: SEM) => [SourceEdit, string]
+    ): MaybePromise<ModificationResult> | undefined {
 
         const lmsDocument = this.getDocumentById(rootModelId)
         if (!lmsDocument) {
             return undefined
         }
-        const transition = lmsDocument.semanticDomain.identifiedTransitions.get(transitionId)
-        if (!transition) {
-            return undefined
+        const model = resolveModel(lmsDocument.semanticDomain, modelId)
+        if (!model) {
+            return ModificationResult.failedValidation('Unable to resolve model by id ' + modelId)
         }
 
-        const textEdit = this.computeTransitionDeletion(transition)
+        const sourceEditAndLabel = computeModelDeletion(lmsDocument, model)
 
-        return this.applyTextEdit(lmsDocument, textEdit, 'Deleted transition ' + transition.name)
+        return this.applySourceEdit(...sourceEditAndLabel)
     }
 
-    private computeTaskCreation(lmsDocument: TaskListDocument, newTask: Creation<Task>, anchorModel?: id.Identified<ast.Task>): TextEdit {
+    private computeTaskCreation(lmsDocument: TaskListDocument, newTask: Creation<Task>, anchorModel?: sem.Identified<ast.Task>): TextEdit {
 
         let prefix = ''
         let suffix = ''
@@ -243,7 +278,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
     }
 
     private computeTransitionCreation({ sourceTask, targetTask }: semantic.NewTransition,
-        anchorModel?: id.Identified<semantic.Transition>): TextEdit {
+        anchorModel?: sem.Identified<semantic.Transition>): TextEdit {
 
         if (!sourceTask.$cstNode) {
             throw new Error('Cannot locate source task ' + sourceTask.name + '(' + sourceTask.id + ') in text')
@@ -266,7 +301,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return TextEdit.insert(position, serializedModel)
     }
 
-    private computeTaskUpdate(task: id.Identified<ast.Task>, taskModification: Modification<Task>): SourceEdit | undefined {
+    private computeTaskUpdate(task: sem.Identified<ast.Task>, taskModification: Modification<Task>): SourceEdit | undefined {
         console.debug('Computing Update edit for Task with name', task.name)
         if (!task.$cstNode) {
             throw new Error('Cannot locate task ' + task.name + '(' + task.id + ') in text')
@@ -287,22 +322,22 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return undefined
     }
 
-    private computeTransitionUpdate(transition: id.Identified<semantic.Transition>, newTransition: semantic.NewTransition): TextEdit[] {
+    private computeTransitionUpdate(lmsDocument: LmsDocument, transition: sem.Identified<semantic.Transition>, newTransition: semantic.NewTransition): SourceEdit {
         if (!transition.$cstNode) {
             throw new Error('Cannot locate model ' + transition.name + '(' + transition.id + ') in text')
         }
-        const changes: TextEdit[] = []
+        const sourceEdit = new SourceEdit()
         if (newTransition.sourceTask !== transition.sourceTask) {
-            changes.push(this.computeTransitionDeletion(transition))
-            changes.push(this.computeTransitionCreation(newTransition))
+            sourceEdit.apply(this.computeTransitionDeletion(lmsDocument, transition)[0])
+            sourceEdit.add(lmsDocument.uri, this.computeTransitionCreation(newTransition))
         } else if (newTransition.targetTask !== transition.targetTask) {
             const serializedModel = newTransition.targetTask.name
-            changes.push(TextEdit.replace(transition.$cstNode.range, serializedModel))
+            sourceEdit.add(lmsDocument.uri, TextEdit.replace(transition.$cstNode.range, serializedModel))
         }
-        return changes
+        return sourceEdit
     }
 
-    private computeTaskDeletion(lmsDocument: LmsDocument, task: id.Identified<ast.Task>): SourceEdit {
+    private computeTaskDeletion(lmsDocument: LmsDocument, task: sem.Identified<ast.Task>): [SourceEdit, string] {
 
         console.debug('Computing Deletion edit for Task with name', task.name)
         if (!task.$cstNode) {
@@ -314,10 +349,10 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         const deleteTaskEdit = TextEdit.del({ start, end })
         const sourceEdit = SourceEdit.ofSingleEdit(lmsDocument.uri, deleteTaskEdit)
         this.references.findReferences(task, { includeDeclaration: false })
-            .map((ref): [documentUri: URI, transition: id.Identified<semantic.Transition>] | undefined => {
+            .map((ref): [document: LmsDocument, transition: sem.Identified<semantic.Transition>] | undefined => {
                 const doc = this.langiumDocuments.getOrCreateDocument(ref.sourceUri) as LmsDocument
                 const sourceTask = getContainerOfType(this.astNodeLocator.getAstNode(doc.parseResult.value, ref.sourcePath), ast.isTask)
-                if (!this.isLmsDocument(doc) || !sourceTask || !id.Identified.is(sourceTask)) {
+                if (!this.isLmsDocument(doc) || !sourceTask || !sem.Identified.is(sourceTask)) {
                     console.debug('Source document or source task are not LMS-compatible', doc, sourceTask)
                     return undefined
                 }
@@ -333,18 +368,18 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
                     console.debug('Transition is not found in semantic domain')
                     return undefined
                 }
-                return [doc.uri, transition]
+                return [doc, transition]
             }).nonNullable()
-            .forEach(([documentUri, transition]) => {
-                const transitionDeletionEdit = this.computeTransitionDeletion(transition)
-                sourceEdit.add(documentUri, transitionDeletionEdit)
+            .forEach(([document, transition]) => {
+                const [transitionDeletionEdit] = this.computeTransitionDeletion(document, transition)
+                sourceEdit.apply(transitionDeletionEdit)
             })
 
-        return sourceEdit
+        return [sourceEdit, 'Deleted task ' + task.name]
     }
 
     // TODO: Extract to separate component (that will be responsible for TextEdit computation)
-    private computeTransitionDeletion(transition: id.Identified<semantic.Transition>): TextEdit {
+    private computeTransitionDeletion(lmsDocument: LmsDocument, transition: sem.Identified<semantic.Transition>): [SourceEdit, string] {
 
         console.debug('Computing Deletion edit for Transition with name', transition.name)
         const task = transition.sourceTask
@@ -369,8 +404,9 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             start = previousNode.range.end
             end = transition.$cstNode.range.end
         }
+        const sourceEdit = SourceEdit.ofSingleEdit(lmsDocument.uri, TextEdit.del({ start, end }))
 
-        return TextEdit.del({ start, end })
+        return [sourceEdit, 'Deleted transition ' + transition.name]
     }
 
     private applyTextEdit(lmsDocument: LmsDocument, textEdit: TextEdit, label?: string): Promise<ModificationResult> {
@@ -378,7 +414,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
     }
 
     private applySourceEdit(sourceEdit: SourceEdit, label?: string): Promise<ModificationResult> {
-        for(const uri of sourceEdit.getAffectedURIs()) {
+        for (const uri of sourceEdit.getAffectedURIs()) {
             const lmsDocument = this.langiumDocuments.getOrCreateDocument(uri)
             if (this.isLmsDocument(lmsDocument)) {
                 lmsDocument.hasImmediateChanges = true

@@ -63,11 +63,15 @@ export class SourceEdit {
 
     public static of(uri: URI, textEdits: TextEdit[]): SourceEdit {
         const sourceEdit = new SourceEdit()
-        sourceEdit.changes.set(uri, textEdits)
+        sourceEdit.addAll(uri, textEdits)
         return sourceEdit
     }
 
     private readonly changes: Map<URI, TextEdit[]> = new Map()
+
+    public get size(): number {
+        return this.changes.size
+    }
 
     public add(uri: URI, edit: TextEdit) {
         const changesOnUri = this.changes.get(uri)
@@ -76,6 +80,19 @@ export class SourceEdit {
         } else {
             changesOnUri.push(edit)
         }
+    }
+
+    public addAll(uri: URI, edits: TextEdit[]) {
+        const changesOnUri = this.changes.get(uri)
+        if (!changesOnUri) {
+            this.changes.set(uri, edits)
+        } else {
+            changesOnUri.push(...edits)
+        }
+    }
+
+    public apply(sourceEdit: SourceEdit) {
+        sourceEdit.changes.forEach((edits, uri) => this.addAll(uri, edits))
     }
 
     public toWorkspaceEdit(): WorkspaceEdit {

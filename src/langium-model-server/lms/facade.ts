@@ -25,6 +25,7 @@ export interface LangiumModelServerFacade<SM> {
      */
     highlight(rootModelId: string, id: string): MaybePromise<HighlightResponse>
     persist(rootModelId: string): MaybePromise<boolean>
+    deleteModels(rootModelId: string, modelIds: string[]): MaybePromise<ModificationResult> | undefined
     //HACK: I rely on LMS consumers having the file URI almost identical to Langium Document URI
     /**
      * @param sourceUri URI of some **other** file which is 'linked' to the source model file.
@@ -122,6 +123,8 @@ implements LangiumModelServerFacade<SM> {
             return false
         })
     }
+
+    public abstract deleteModels(rootModelId: string, modelIds: string[]): MaybePromise<ModificationResult> | undefined
 
     protected getSourceModelFileExtension(): string {
         return this.languageMetadata.fileExtensions[0]
