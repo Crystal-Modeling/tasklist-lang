@@ -53,7 +53,7 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<SemanticIdent
     const langiumModelServerFacade = sourceServices.LangiumModelServerFacade
     const lmsSubscriptions = sourceServices.LmsSubscriptions
 
-    const modelHandler: Http2RequestHandler = (_, unmatchedPath, headers) => {
+    const modelHandler: Http2RequestHandler = (stream, unmatchedPath, headers) => {
         const id = unmatchedPath.readPathSegment()
         if (!id) {
             return notFoundHandler
@@ -115,7 +115,7 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<SemanticIdent
         const updateModelHandler: Http2RequestHandler = (stream, unmatchedPath, headers) => {
             const uriSegment = unmatchedPath.readPathSegment()
             if (!uriSegment) {
-                return notFoundHandler
+                return deleteModelsHandler
             }
             const updateModel = langiumModelServerFacade.updateModelHandlersByPathSegment.get(uriSegment)
             if (!updateModel) {
@@ -159,46 +159,45 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<SemanticIdent
             return
         }
 
-        const deleteModelHandler: Http2RequestHandler = (stream, unmatchedPath) => {
-            const handleResult = (res: ModificationResult) => {
-                console.debug('Handling Editing result on Deletion', res)
-                if (res.successful) {
-                    if (res.modified) respondWithJson(stream, res, 200)
-                    else respondWithJson(stream, res, 404)
-                } else switch (res.failureReason) {
-                    case EditingFailureReason.VALIDATION:
-                        respondWithJson(stream, res, 400)
-                        break
-                    case EditingFailureReason.TEXT_EDIT:
-                        respondWithJson(stream, res, 500)
-                        break
+        const handleDeletionResult = (res: ModificationResult) => {
+            console.debug('Handling Editing result on Deletion', res)
+            if (res.successful) {
+                if (res.modified) respondWithJson(stream, res, 200)
+                else respondWithJson(stream, res, 404)
+            } else switch (res.failureReason) {
+                case EditingFailureReason.VALIDATION:
+                    respondWithJson(stream, res, 400)
+                    break
+                case EditingFailureReason.TEXT_EDIT:
+                    respondWithJson(stream, res, 500)
+                    break
+            }
+        }
+        const deleteModelsHandler: Http2RequestHandler = (stream) => {
+            readRequestBody(stream).then(requestBody => {
+                if (!isArray(requestBody, (obj): obj is string => typeof obj === 'string')) {
+                    respondWithJson(stream,
+                        Response.create(`${headers[':method']} ('${headers[':path']}') cannot be processed: incorrect request body`, 400))
+                    return
                 }
-            }
-
-            const deleteModelsHandler: Http2RequestHandler = (stream) => {
-                readRequestBody(stream).then(requestBody => {
-                    if (!isArray(requestBody, (obj): obj is string => typeof obj === 'string')) {
-                        respondWithJson(stream,
-                            Response.create(`${headers[':method']} ('${headers[':path']}') cannot be processed: incorrect request body`, 400))
-                        return
-                    }
-                    const result = langiumModelServerFacade.deleteModels(id, requestBody)
-                    if (!result) {
-                        respondWithJson(stream, Response.create(`Root model (document) for id '${id}' not found`, 404))
-                        return
-                    }
-                    if (isPromise(result)) {
-                        result.then(handleResult)
-                        return
-                    } else {
-                        handleResult(result)
-                    }
-                })
-            }
+                const result = langiumModelServerFacade.deleteModels(id, requestBody)
+                if (!result) {
+                    respondWithJson(stream, Response.create(`Root model (document) for id '${id}' not found`, 404))
+                    return
+                }
+                if (isPromise(result)) {
+                    result.then(handleDeletionResult)
+                    return
+                } else {
+                    handleDeletionResult(result)
+                }
+            })
+        }
+        const deleteModelHandler: Http2RequestHandler = (stream, unmatchedPath) => {
 
             const uriSegment = unmatchedPath.readPathSegment()
             if (!uriSegment) {
-                return deleteModelsHandler
+                return notFoundHandler
             }
             const deleteModel = langiumModelServerFacade.deleteModelHandlersByPathSegment.get(uriSegment)
             if (!deleteModel) {
@@ -215,10 +214,10 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<SemanticIdent
             }
             if (isPromise(result)) {
                 console.debug('Awaiting promise result...')
-                result.then(handleResult, (error) => console.error('GOT ERROR!!!', error))
+                result.then(handleDeletionResult, (error) => console.error('GOT ERROR!!!', error))
                 return
             } else {
-                handleResult(result)
+                handleDeletionResult(result)
             }
             return
         }
