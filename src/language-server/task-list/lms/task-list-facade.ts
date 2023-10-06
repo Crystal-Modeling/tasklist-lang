@@ -186,37 +186,36 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         if (!lmsDocument) {
             return undefined
         }
-        const unresolvedModelIds = new Set(modelIds)
-        const taskIds = new Set<string>()
-        const transitionIds = new Set<string>()
-        unresolvedModelIds.forEach(taskId => {
-            if (lmsDocument.semanticDomain.identifiedTasks.has(taskId)) {
-                unresolvedModelIds.delete(taskId)
-                taskIds.add(taskId)
-            }
-        })
-        unresolvedModelIds.forEach(transitionId => {
-            const transition = lmsDocument.semanticDomain.identifiedTransitions.get(transitionId)
-            if (transition) {
-                unresolvedModelIds.delete(transitionId)
-                if (!taskIds.has(transition.sourceTask.id) && !taskIds.has(transition.targetTask.id)) {
-                    transitionIds.add(transitionId)
-                }
-            }
-        })
+        const unresolvedModelIds: string[] = []
+        const resolvedTasks = new Map<string, sem.Identified<ast.Task>>()
+        const resolvedTransitions = new Map<string, sem.Identified<semantic.Transition>>()
 
-        const sourceEditAndLabel = stream(taskIds)
-            .map(id => lmsDocument.semanticDomain.identifiedTasks.get(id)!)
+        stream(modelIds)
+            .distinct()
+            .forEach(modelId => {
+                let resolvedModel
+                if ((resolvedModel = lmsDocument.semanticDomain.identifiedTasks.get(modelId))) {
+                    resolvedTasks.set(modelId, resolvedModel)
+                } else if ((resolvedModel = lmsDocument.semanticDomain.identifiedTransitions.get(modelId))) {
+                    resolvedTransitions.set(modelId, resolvedModel)
+                } else {
+                    unresolvedModelIds.push(modelId)
+                }
+            })
+
+        const sourceEditAndLabel = stream(resolvedTasks.values())
             .map(task => this.computeTaskDeletion(lmsDocument, task))
-            .concat(stream(transitionIds)
-                .map(id => lmsDocument.semanticDomain.identifiedTransitions.get(id)!)
+            .concat(stream(resolvedTransitions.values())
+                .filter((transition) => !resolvedTasks.has(transition.sourceTask.id) && !resolvedTasks.has(transition.targetTask.id))
                 .map(transition => this.computeTransitionDeletion(lmsDocument, transition))
             ).reduce(([sourceEdit, label], [nextSourceEdit, nextLabel]) => {
                 sourceEdit.apply(nextSourceEdit)
                 return [sourceEdit, `${label};${nextLabel}`]
             })
         if (!sourceEditAndLabel) {
-            return ModificationResult.failedValidation('Unable to resolve models for ids ' + unresolvedModelIds)
+            return unresolvedModelIds.length > 0
+                ? ModificationResult.failedValidation('Unable to resolve models for ids ' + unresolvedModelIds)
+                : ModificationResult.unmodified()
         }
 
         return this.applySourceEdit(...sourceEditAndLabel)
