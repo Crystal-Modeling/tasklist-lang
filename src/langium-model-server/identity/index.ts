@@ -1,19 +1,19 @@
 import type { RootUpdate } from '../lms/model'
 import type { AbstractMap } from '../utils/collections'
 import { ValueBasedMap, equal } from '../utils/collections'
-import type { Indexed, NamedSemanticIdentity, SemanticDerivativeName, SemanticName, SemanticPropertyName } from './model'
-import { SemanticIdentity } from './model'
+import type { Identity, DerivativeIdentityName, IdentityName, AstNodeIdentityName } from './model'
+import { SemanticIdentifier } from './model'
 
-export type IdentityIndex<SM extends SemanticIdentity> = {
+export type IdentityIndex<SM extends SemanticIdentifier> = {
     readonly id: string
     removeDeletedIdentities(modelUpdate: RootUpdate<SM>): void
 }
 
-export type ModelExposedIdentityIndex<SM extends SemanticIdentity, SemI extends IdentityIndex<SM>> = SemI & {
+export type ModelExposedIdentityIndex<SM extends SemanticIdentifier, SemI extends IdentityIndex<SM>> = SemI & {
     readonly model: object
 }
 
-export interface IndexedIdentities<NAME extends SemanticName, ID extends Indexed<NamedSemanticIdentity<NAME>>> {
+export interface IndexedIdentities<NAME extends IdentityName, ID extends Identity<NAME>> {
     getCopyByName(): AbstractMap<NAME, Readonly<ID>>
     values(): Iterable<Readonly<ID>>
     byName(name: NAME): Readonly<ID> | undefined
@@ -22,7 +22,7 @@ export interface IndexedIdentities<NAME extends SemanticName, ID extends Indexed
     delete(ids: Iterable<string>): void
 }
 
-export abstract class AbstractIndexedIdentities<NAME extends SemanticName, ID extends Indexed<NamedSemanticIdentity<NAME>>> implements IndexedIdentities<NAME, ID> {
+export abstract class AbstractIndexedIdentities<NAME extends IdentityName, ID extends Identity<NAME>> implements IndexedIdentities<NAME, ID> {
     protected readonly _byId: Map<string, ID> = new Map()
     protected abstract readonly _byName: AbstractMap<NAME, ID>
     protected readonly modelUriFactory: (id: string) => string
@@ -40,13 +40,13 @@ export abstract class AbstractIndexedIdentities<NAME extends SemanticName, ID ex
     }
 
     public addNew(name: NAME): ID {
-        return this.add(SemanticIdentity.generate(), name)
+        return this.add(SemanticIdentifier.generate(), name)
     }
 
     public add(id: string, name: NAME): ID {
         const index = this
         let identity: ID & { name: NAME }
-        const abstractIdentity: Indexed<NamedSemanticIdentity<NAME>> & { name: NAME } = {
+        const abstractIdentity: Identity<NAME> & { name: NAME } = {
             id,
             name,
             modelUri: this.modelUriFactory(id),
@@ -80,7 +80,7 @@ export abstract class AbstractIndexedIdentities<NAME extends SemanticName, ID ex
         }
     }
 
-    protected castToSpecificIdentity(untypedIdentity: Indexed<NamedSemanticIdentity<NAME>> & { name: NAME }): ID & { name: NAME } {
+    protected castToSpecificIdentity(untypedIdentity: Identity<NAME> & { name: NAME }): ID & { name: NAME } {
         return untypedIdentity as ID
     }
 
@@ -96,7 +96,7 @@ export abstract class AbstractIndexedIdentities<NAME extends SemanticName, ID ex
     protected abstract namesAreEqual(left: NAME, right: NAME): boolean
 }
 
-export class AstNodeIndexedIdentities<NAME extends SemanticPropertyName, ID extends Indexed<NamedSemanticIdentity<NAME>>> extends AbstractIndexedIdentities<NAME, ID> {
+export class AstNodeIndexedIdentities<NAME extends AstNodeIdentityName, ID extends Identity<NAME>> extends AbstractIndexedIdentities<NAME, ID> {
 
     protected override readonly _byName: Map<NAME, ID> = new Map()
 
@@ -109,7 +109,7 @@ export class AstNodeIndexedIdentities<NAME extends SemanticPropertyName, ID exte
     }
 }
 
-export class DerivativeIndexedIdentities<NAME extends SemanticDerivativeName, ID extends Indexed<NamedSemanticIdentity<NAME>>> extends AbstractIndexedIdentities<NAME, ID> {
+export class DerivativeIndexedIdentities<NAME extends DerivativeIdentityName, ID extends Identity<NAME>> extends AbstractIndexedIdentities<NAME, ID> {
 
     protected override readonly _byName: ValueBasedMap<NAME, ID> = new ValueBasedMap()
 

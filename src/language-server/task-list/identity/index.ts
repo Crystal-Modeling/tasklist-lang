@@ -1,5 +1,5 @@
 import { AstNodeIndexedIdentities, DerivativeIndexedIdentities, type IdentityIndex, type IndexedIdentities } from '../../../langium-model-server/identity'
-import type { SemanticPropertyName } from '../../../langium-model-server/identity/model'
+import type { AstNodeIdentityName } from '../../../langium-model-server/identity/model'
 import { ModelUri } from '../../../langium-model-server/identity/model'
 import type * as src from '../../../langium-model-server/lms/model'
 import type * as source from '../lms/model'
@@ -9,7 +9,7 @@ import { Task, Transition, type IdentityModel } from './storage'
 
 export abstract class TaskListIdentityIndex implements IdentityIndex<source.Model> {
     public readonly id: string
-    public readonly tasks: IndexedIdentities<SemanticPropertyName, TaskIdentity>
+    public readonly tasks: IndexedIdentities<AstNodeIdentityName, TaskIdentity>
     public readonly transitions: IndexedIdentities<TransitionDerivativeName, TransitionIdentity>
 
     public constructor(identityModel: IdentityModel) {

@@ -3,10 +3,10 @@ import type * as id from '../../../identity/model'
 import type { OmitProperties} from '../../../utils/types'
 import { isDefinedObject } from '../../../utils/types'
 
-export type Modification<T extends id.SemanticIdentity = id.SemanticIdentity> = Partial<OmitProperties<T, id.SemanticIdentity>>
+export type Modification<T extends id.SemanticIdentifier = id.SemanticIdentifier> = Partial<OmitProperties<T, id.SemanticIdentifier>>
 
 export namespace Modification {
-    export function is<T extends id.SemanticIdentity = id.SemanticIdentity>(obj: unknown): obj is Modification<T> {
+    export function is<T extends id.SemanticIdentifier = id.SemanticIdentifier>(obj: unknown): obj is Modification<T> {
         return isDefinedObject(obj)
     }
 }

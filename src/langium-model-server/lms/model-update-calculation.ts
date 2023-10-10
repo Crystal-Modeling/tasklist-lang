@@ -5,11 +5,11 @@ import type { LmsDocument } from '../workspace/documents'
 import type { ReadonlyArrayUpdate, RootUpdate } from './model'
 import { ArrayUpdateCommand, ElementUpdate } from './model'
 
-export interface ModelUpdateCalculators<SM extends id.SemanticIdentity> {
+export interface ModelUpdateCalculators<SM extends id.SemanticIdentifier> {
     getOrCreateCalculator(lmsDocument: Initialized<LmsDocument>): ModelUpdateCalculator<SM>
 }
 
-export abstract class AbstractModelUpdateCalculators<SM extends id.SemanticIdentity> implements ModelUpdateCalculators<SM> {
+export abstract class AbstractModelUpdateCalculators<SM extends id.SemanticIdentifier> implements ModelUpdateCalculators<SM> {
     protected updateCalculatorsByLangiumDocumentUri: Map<string, ModelUpdateCalculator<SM>> = new Map()
 
     public getOrCreateCalculator(lmsDocument: Initialized<LmsDocument>): ModelUpdateCalculator<SM> {
@@ -26,7 +26,7 @@ export abstract class AbstractModelUpdateCalculators<SM extends id.SemanticIdent
     protected abstract createCalculator(lmsDocument: Initialized<LmsDocument>): ModelUpdateCalculator<SM>
 }
 
-export interface ModelUpdateCalculator<SM extends id.SemanticIdentity> {
+export interface ModelUpdateCalculator<SM extends id.SemanticIdentifier> {
     clearModelsMarkedForDeletion(): RootUpdate<SM>
 }
 
@@ -35,7 +35,7 @@ export interface ModelUpdateCalculator<SM extends id.SemanticIdentity> {
 //     [P in KeysOfType<T, id.SemanticIdentity[]> as `calculate${Capitalize<string & P>}Update`]: T[P] extends id.SemanticIdentity[] ? (identitiesToDelete: Iterable<T[P][0]>) => ReadonlyArrayUpdate<T[P][0]> : never
 // }
 
-export function compareModelWithExistingBefore<ID extends id.SemanticIdentity, SEM extends id.SemanticIdentity, SRC extends id.SemanticIdentity>(
+export function compareModelWithExistingBefore<ID extends id.SemanticIdentifier, SEM extends id.SemanticIdentifier, SRC extends id.SemanticIdentifier>(
     modelsMarkedForDeletion: Map<string, ID | SEM>,
     previous: SEM | undefined,
     current: SEM,
@@ -75,7 +75,7 @@ export function compareModelWithExistingBefore<ID extends id.SemanticIdentity, S
  * @param getPreviousSemanticModel Fetches corresponding previous Semantic Model from SemanticDomain
  * @returns Semantic Model Update for this deletion request
  */
-export function deleteModels<ID extends id.SemanticIdentity, SEM extends id.SemanticIdentity, SRC extends id.SemanticIdentity>(
+export function deleteModels<ID extends id.SemanticIdentifier, SEM extends id.SemanticIdentifier, SRC extends id.SemanticIdentifier>(
     modelsMarkedForDeletion: Map<string, ID | SEM>,
     getPreviousSemanticModel: (id: string) => SEM | undefined,
     identitiesToDelete: Iterable<ID>

@@ -1,8 +1,8 @@
 import type * as id from '../../../langium-model-server/identity/model'
 
-export type TaskIdentity = id.Indexed<id.AstNodeSemanticIdentity>
+export type TaskIdentity = id.AstNodeIdentity
 
-export type TransitionDerivativeName = id.SemanticDerivativeName & [sourceTaskId: string, targetTaskId: string]
+export type TransitionDerivativeName = id.DerivativeIdentityName & [sourceTaskId: string, targetTaskId: string]
 export namespace TransitionDerivativeName {
 
     export function ofProperties({sourceTaskId, targetTaskId}: TransitionDerivativeNameProperties): TransitionDerivativeName {
@@ -21,4 +21,4 @@ export namespace TransitionDerivativeName {
     }
 }
 type TransitionDerivativeNameProperties = {sourceTaskId: string, targetTaskId: string}
-export type TransitionIdentity = id.Indexed<id.DerivativeSemanticIdentity<TransitionDerivativeName>>
+export type TransitionIdentity = id.DerivativeSemanticIdentity<TransitionDerivativeName>

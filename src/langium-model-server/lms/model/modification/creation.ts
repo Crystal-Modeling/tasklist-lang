@@ -6,5 +6,5 @@ export interface CreationParams {
     anchorModelId?: string
 }
 
-export type Creation<T extends id.SemanticIdentity = id.SemanticIdentity> = OmitProperties<T, id.SemanticIdentity>
+export type Creation<T extends id.SemanticIdentifier = id.SemanticIdentifier> = OmitProperties<T, id.SemanticIdentifier>
 

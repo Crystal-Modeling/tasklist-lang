@@ -1,7 +1,7 @@
 import type * as http2 from 'http2'
 import { isPromise } from 'util/types'
 import type { IdentityIndex } from '../identity'
-import type { SemanticIdentity } from '../identity/model'
+import type { SemanticIdentifier } from '../identity/model'
 import type { LangiumModelServerAddedServices, LmsServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
 import type { CreationParams, ModificationResult } from './model'
@@ -16,7 +16,7 @@ type Http2RequestHandlerProvider<T> = (parameter: T) => Http2RequestHandler
 
 type Http2ServerRouter = (stream: http2.ServerHttp2Stream, headers: http2.IncomingHttpHeaders, flags: number) => void
 
-export function LangiumModelServerRouter<SM extends SemanticIdentity, II extends IdentityIndex<SM>, D extends LmsDocument>(
+export function LangiumModelServerRouter<SM extends SemanticIdentifier, II extends IdentityIndex<SM>, D extends LmsDocument>(
     services: LangiumModelServerAddedServices<SM, II, D>
 ): Http2ServerRouter {
     return (stream, headers, flags) => {
@@ -48,7 +48,7 @@ export function LangiumModelServerRouter<SM extends SemanticIdentity, II extends
     }
 }
 
-const provideModelHandler: Http2RequestHandlerProvider<LmsServices<SemanticIdentity>> = (sourceServices) => {
+const provideModelHandler: Http2RequestHandlerProvider<LmsServices<SemanticIdentifier>> = (sourceServices) => {
 
     const langiumModelServerFacade = sourceServices.LangiumModelServerFacade
     const lmsSubscriptions = sourceServices.LmsSubscriptions

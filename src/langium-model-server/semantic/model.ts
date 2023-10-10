@@ -1,18 +1,18 @@
 import type { AstNode, CstNode, LangiumDocument, Reference } from 'langium'
-import type { AstNodeSemanticIdentity, DerivativeSemanticIdentity, Indexed, IndexedIdentity } from '../identity/model'
+import type { AstNodeIdentity, DerivativeSemanticIdentity, Identity } from '../identity/model'
 
 export type Valid<T> = T & { __semantic: 'valid' }
 
 export type IdentifiedNode = Identified<AstNode | ArtificialAstNode>
 export type Identified<T extends AstNode | ArtificialAstNode> = Valid<T> & {
     readonly id: string
-    identity: T extends AstNode ? Indexed<AstNodeSemanticIdentity> : Indexed<DerivativeSemanticIdentity>
+    identity: T extends AstNode ? AstNodeIdentity : DerivativeSemanticIdentity
 }
 
 export namespace Identified {
-    export function identify<T extends AstNode>(node: Valid<T>, identity: Indexed<AstNodeSemanticIdentity>): Identified<T>
-    export function identify<T extends ArtificialAstNode>(node: Valid<T>, identity: Indexed<DerivativeSemanticIdentity>): Identified<T>
-    export function identify<T extends AstNode | ArtificialAstNode>(node: Valid<T>, identity: IndexedIdentity): Identified<T> {
+    export function identify<T extends AstNode>(node: Valid<T>, identity: AstNodeIdentity): Identified<T>
+    export function identify<T extends ArtificialAstNode>(node: Valid<T>, identity: DerivativeSemanticIdentity): Identified<T>
+    export function identify<T extends AstNode | ArtificialAstNode>(node: Valid<T>, identity: Identity): Identified<T> {
         return Object.assign(node, { identity, id: identity.id }) as Identified<T>
     }
 

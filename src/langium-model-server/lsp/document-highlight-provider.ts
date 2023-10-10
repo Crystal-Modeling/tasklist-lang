@@ -13,7 +13,7 @@ import type { TypeGuard } from '../utils/types'
 import type { ExtendableLangiumDocument } from '../workspace/documents'
 import type { LmsDocument } from '../workspace/documents'
 
-export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, II extends IdentityIndex<SM>, D extends LmsDocument> extends DefaultDocumentHighlightProvider {
+export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentifier, II extends IdentityIndex<SM>, D extends LmsDocument> extends DefaultDocumentHighlightProvider {
 
     private lmsSubscriptions: LmsSubscriptions<SM>
     private identityManager: IdentityManager

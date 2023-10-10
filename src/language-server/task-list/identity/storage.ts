@@ -11,7 +11,7 @@ export class TaskListIdentityStorage extends AbstractIdentityStorage<source.Mode
 
     protected override createIdentityForEmptyFile(): IdentityModel {
         return {
-            id: id.SemanticIdentity.generate(),
+            id: id.SemanticIdentifier.generate(),
             tasks: [],
             transitions: []
         }
@@ -24,7 +24,7 @@ export interface Task {
 }
 
 export namespace Task {
-    export function of(taskIdentity: id.AstNodeSemanticIdentity): Task {
+    export function of(taskIdentity: id.AstNodeIdentity): Task {
         return {
             id: taskIdentity.id,
             name: taskIdentity.name

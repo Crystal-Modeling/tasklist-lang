@@ -231,7 +231,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return this.deleteModel(rootModelId, transitionId, (domain, id) => domain.identifiedTransitions.get(id), this.computeTransitionDeletion.bind(this))
     }
 
-    private deleteModel<SEM extends id.SemanticIdentity>(rootModelId: string, modelId: string,
+    private deleteModel<SEM extends id.SemanticIdentifier>(rootModelId: string, modelId: string,
         resolveModel: (domain: TaskListSemanticDomain, id: string) => SEM | undefined, computeModelDeletion: (document: LmsDocument, model: SEM) => [SourceEdit, string]
     ): MaybePromise<ModificationResult> | undefined {
 

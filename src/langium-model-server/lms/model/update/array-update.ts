@@ -7,13 +7,13 @@ import { Update } from './update'
 /**
  * Describes changes made to SourceModel element of type T
  */
-export type ArrayUpdate<T extends id.SemanticIdentity> = {
+export type ArrayUpdate<T extends id.SemanticIdentifier> = {
     added?: T[],
     removedIds?: string[],
     changed?: Array<ElementUpdate<T>>
 }
 
-export type ReadonlyArrayUpdate<T extends id.SemanticIdentity> = {
+export type ReadonlyArrayUpdate<T extends id.SemanticIdentifier> = {
     readonly added?: readonly T[],
     readonly removedIds?: readonly string[]
     readonly changed?: ReadonlyArray<ElementUpdate<T>>
@@ -21,22 +21,22 @@ export type ReadonlyArrayUpdate<T extends id.SemanticIdentity> = {
 
 export namespace ArrayUpdate {
 
-    export function isEmpty<T extends id.SemanticIdentity>(arrayUpdate: ReadonlyArrayUpdate<T>): boolean {
+    export function isEmpty<T extends id.SemanticIdentifier>(arrayUpdate: ReadonlyArrayUpdate<T>): boolean {
         return !arrayUpdate.added && !arrayUpdate.removedIds && !arrayUpdate.changed
     }
 
     // FIXME: A quick solution to ensure API contracts (object getters are not available during JSON.toString)
-    export function create<T extends id.SemanticIdentity>(readonlyUpdate: ReadonlyArrayUpdate<T>): ArrayUpdate<T> {
+    export function create<T extends id.SemanticIdentifier>(readonlyUpdate: ReadonlyArrayUpdate<T>): ArrayUpdate<T> {
         const result = createEmpty<T>()
         apply(result, readonlyUpdate)
         return result
     }
 
-    export function createEmpty<T extends id.SemanticIdentity>(): ArrayUpdate<T> {
+    export function createEmpty<T extends id.SemanticIdentifier>(): ArrayUpdate<T> {
         return {}
     }
 
-    export function apply<T extends id.SemanticIdentity>(arrayUpdate: ArrayUpdate<T>, arrayUpdateCommand: ReadonlyArrayUpdate<T>): void {
+    export function apply<T extends id.SemanticIdentifier>(arrayUpdate: ArrayUpdate<T>, arrayUpdateCommand: ReadonlyArrayUpdate<T>): void {
         if (arrayUpdateCommand.added) {
             arrayUpdate.added = addNew(arrayUpdate.added, arrayUpdateCommand.added)
         }
@@ -59,7 +59,7 @@ export namespace ArrayUpdate {
     }
 }
 
-export class ArrayUpdateCommand<T extends id.SemanticIdentity> implements ReadonlyArrayUpdate<T> {
+export class ArrayUpdateCommand<T extends id.SemanticIdentifier> implements ReadonlyArrayUpdate<T> {
 
     private static NO_UPDATE = Object.seal({})
 
@@ -67,9 +67,9 @@ export class ArrayUpdateCommand<T extends id.SemanticIdentity> implements Readon
     protected _idsToRemove?: string[]
     protected _updatesToAdd?: Array<ElementUpdate<T>>
 
-    public static addition<T extends id.SemanticIdentity>(element: T): ReadonlyArrayUpdate<T>
-    public static addition<T extends id.SemanticIdentity>(elements: T[]): ReadonlyArrayUpdate<T>
-    public static addition<T extends id.SemanticIdentity>(elements: T | T[]): ReadonlyArrayUpdate<T> {
+    public static addition<T extends id.SemanticIdentifier>(element: T): ReadonlyArrayUpdate<T>
+    public static addition<T extends id.SemanticIdentifier>(elements: T[]): ReadonlyArrayUpdate<T>
+    public static addition<T extends id.SemanticIdentifier>(elements: T | T[]): ReadonlyArrayUpdate<T> {
         const elementsToAdd = this.toNonEmptyArray(elements)
         if (elementsToAdd) {
             return new ArrayUpdateCommand(elementsToAdd)
@@ -77,7 +77,7 @@ export class ArrayUpdateCommand<T extends id.SemanticIdentity> implements Readon
         return this.NO_UPDATE
     }
 
-    public static deletion<T extends id.SemanticIdentity>(elements: Iterable<id.SemanticIdentity>): ReadonlyArrayUpdate<T> {
+    public static deletion<T extends id.SemanticIdentifier>(elements: Iterable<id.SemanticIdentifier>): ReadonlyArrayUpdate<T> {
         const idsToRemove = Array.from(elements, el => el.id)
         if (idsToRemove.length !== 0) {
             return new ArrayUpdateCommand(undefined, idsToRemove)
@@ -85,9 +85,9 @@ export class ArrayUpdateCommand<T extends id.SemanticIdentity> implements Readon
         return this.NO_UPDATE
     }
 
-    public static modification<T extends id.SemanticIdentity>(update: ElementUpdate<T>): ReadonlyArrayUpdate<T>
-    public static modification<T extends id.SemanticIdentity>(updates: Array<ElementUpdate<T>>): ReadonlyArrayUpdate<T>
-    public static modification<T extends id.SemanticIdentity>(updates: ElementUpdate<T> | Array<ElementUpdate<T>>): ReadonlyArrayUpdate<T> {
+    public static modification<T extends id.SemanticIdentifier>(update: ElementUpdate<T>): ReadonlyArrayUpdate<T>
+    public static modification<T extends id.SemanticIdentifier>(updates: Array<ElementUpdate<T>>): ReadonlyArrayUpdate<T>
+    public static modification<T extends id.SemanticIdentifier>(updates: ElementUpdate<T> | Array<ElementUpdate<T>>): ReadonlyArrayUpdate<T> {
         const updatesToAdd = this.toNonEmptyArray(updates, (upd) => !Update.isEmpty(upd))
         if (updatesToAdd) {
             return new ArrayUpdateCommand(undefined, undefined, updatesToAdd)
@@ -95,11 +95,11 @@ export class ArrayUpdateCommand<T extends id.SemanticIdentity> implements Readon
         return this.NO_UPDATE
     }
 
-    public static noUpdate<T extends id.SemanticIdentity>(): ReadonlyArrayUpdate<T> {
+    public static noUpdate<T extends id.SemanticIdentifier>(): ReadonlyArrayUpdate<T> {
         return this.NO_UPDATE
     }
 
-    public static all<T extends id.SemanticIdentity>(...updates: Array<ReadonlyArrayUpdate<T>>): ReadonlyArrayUpdate<T> {
+    public static all<T extends id.SemanticIdentifier>(...updates: Array<ReadonlyArrayUpdate<T>>): ReadonlyArrayUpdate<T> {
         const updatesStream = stream(updates)
         const elementsToAdd = this.concatNotEmpty(updatesStream.map(upd => upd.added))
         const idsToRemove = this.concatNotEmpty(updatesStream.map(upd => upd.removedIds))

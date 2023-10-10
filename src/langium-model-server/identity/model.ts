@@ -1,10 +1,10 @@
 import * as uuid from 'uuid'
 
-export type SemanticIdentity = {
+export type SemanticIdentifier = {
     id: string
 }
 
-export namespace SemanticIdentity {
+export namespace SemanticIdentifier {
     export function generate(): string {
         return uuid.v4()
     }
@@ -46,31 +46,18 @@ export namespace ModelUri {
     }
 }
 
-export type SemanticDerivativeName = string[]
-export type SemanticPropertyName = string
-export type SemanticName = SemanticPropertyName | SemanticDerivativeName
+export type DerivativeIdentityName = string[]
+export type AstNodeIdentityName = string
+export type IdentityName = AstNodeIdentityName | DerivativeIdentityName
 
-export interface NamedSemanticIdentity<NAME extends SemanticName = SemanticName> extends Readonly<SemanticIdentity>, Readonly<ModelUri> {
+export interface Identity<NAME extends IdentityName = IdentityName> extends Readonly<SemanticIdentifier>, Readonly<ModelUri> {
     readonly name: NAME
-}
-
-export interface AstNodeSemanticIdentity extends NamedSemanticIdentity {
-    readonly name: SemanticPropertyName
-}
-
-export interface DerivativeSemanticIdentity<NAME extends SemanticDerivativeName = SemanticDerivativeName> extends NamedSemanticIdentity {
-    readonly name: NAME
-}
-
-// FIXME: `Indexed` is not an ideal name, since an object can reach the state when it's no longer belong to `IdentityIndex` (i.e., when it was `delete`d)
-export type IndexedIdentity = Indexed<NamedSemanticIdentity>
-export type Indexed<ID extends NamedSemanticIdentity> = ID & {
     /**
      * Replaces the `name` value with supplied argument. Returns `true` if update was successful. Returns `true` if the name has changed.
      * @param newName New name to replace the `name` property of this identity.
      * @returns `true` if identity was successfully renamed, or `false` otherwise.
      */
-    updateName(newName: ID['name']): boolean
+    updateName(newName: NAME): boolean
     /**
      * Removes this identity from IdentityIndex it belongs to. Returns `true` if deletion was successful.
      * Subsequent attempts to modify `this` identity will always return false.
@@ -78,3 +65,6 @@ export type Indexed<ID extends NamedSemanticIdentity> = ID & {
      */
     delete(): boolean
 }
+
+export type AstNodeIdentity = Identity<AstNodeIdentityName>
+export type DerivativeSemanticIdentity<NAME extends DerivativeIdentityName = DerivativeIdentityName> = Identity<NAME>
