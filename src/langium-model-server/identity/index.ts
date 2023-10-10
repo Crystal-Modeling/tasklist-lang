@@ -1,7 +1,7 @@
 import type { RootUpdate } from '../lms/model'
 import type { AbstractMap } from '../utils/collections'
 import { ValueBasedMap, equal } from '../utils/collections'
-import type { Identity, DerivativeIdentityName, IdentityName, AstNodeIdentityName } from './model'
+import type { Identity, DerivativeIdentityName, IdentityName, AstNodeIdentityName, StateRollback } from './model'
 import { SemanticIdentifier } from './model'
 
 export type IdentityIndex<SM extends SemanticIdentifier> = {
@@ -24,6 +24,7 @@ export interface IndexedIdentities<NAME extends IdentityName, ID extends Identit
 
 export abstract class AbstractIndexedIdentities<NAME extends IdentityName, ID extends Identity<NAME>> implements IndexedIdentities<NAME, ID> {
     protected readonly _byId: Map<string, ID> = new Map()
+    protected readonly _softDeletedIds: Set<string> = new Set()
     protected abstract readonly _byName: AbstractMap<NAME, ID>
     protected readonly modelUriFactory: (id: string) => string
 
@@ -51,19 +52,31 @@ export abstract class AbstractIndexedIdentities<NAME extends IdentityName, ID ex
             name,
             modelUri: this.modelUriFactory(id),
 
-            updateName(newName: NAME): boolean {
-                if (!index.namesAreEqual(identity.name, newName)) {
-                    if (index._byName.delete(identity.name))
+            updateName(newName: NAME): StateRollback | undefined {
+                const oldName = identity.name
+                if (!index.namesAreEqual(oldName, newName) && !index._byName.has(newName)) {
+                    const wasIndexed = index._byName.delete(oldName)
+                    if (wasIndexed) {
                         index._byName.set(newName, identity)
+                    }
                     identity.name = newName
+                    return () => {
+                        identity.name = oldName
+                        if (wasIndexed) {
+                            index._byName.delete(newName)
+                            index._byName.set(oldName, identity)
+                        }
+                    }
+                }
+                return undefined
+            },
+
+            softDelete(): boolean {
+                if (!index._softDeletedIds.has(identity.id)) {
+                    index._softDeletedIds.add(identity.id)
                     return true
                 }
                 return false
-            },
-
-            delete(): boolean {
-                index._byName.delete(identity.name)
-                return index._byId.delete(identity.id)
             },
         }
 

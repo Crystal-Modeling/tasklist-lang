@@ -108,22 +108,24 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
 
         const edit = this.computeTaskUpdate(task, taskModification)
         if (edit) {
+            let rollback: id.StateRollback | undefined
             if (taskModification.name) {
-                task.identity.updateName(taskModification.name)
-            }
-            return this.applySourceEdit(edit, 'Updated task ' + task.name
-            ).then(editingResult => {
-                if (editingResult.successful) {
-                    console.debug('Modified Task attributes:', taskModification)
-                } else {
-                    // Reverting modified identity on failure
-                    task.identity.updateName(task.name)
+                if (!(rollback = task.identity.updateName(taskModification.name))) {
+                    return ModificationResult.failedValidation(`Unable to rename task to '${taskModification.name}'`)
                 }
-                return editingResult
-            }, failure => {
-                task.identity.updateName(task.name)
-                return failure
-            })
+            }
+            return this.applySourceEdit(edit, 'Updated task ' + task.name)
+                .then(editingResult => {
+                    if (editingResult.successful) {
+                        console.debug('Modified Task attributes:', taskModification)
+                    } else {
+                        !rollback || rollback()
+                    }
+                    return editingResult
+                }, failure => {
+                    !rollback || rollback()
+                    return failure
+                })
         } else {
             return ModificationResult.unmodified()
         }
@@ -162,18 +164,20 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         const sourceEdit = this.computeTransitionUpdate(lmsDocument, transition, newTransition)
 
         if (sourceEdit.size > 0) {
-            transition.identity.updateName(newTransition.name)
+            const rollback = transition.identity.updateName(newTransition.name)
+            if (!rollback) {
+                return ModificationResult.failedValidation(`Unable to rename transition to '${newTransition.name}'`)
+            }
             return this.applySourceEdit(sourceEdit, 'Updated transition: ' + transition.name + 'to ' + newTransition.name)
                 .then(editingResult => {
                     if (editingResult.successful) {
                         console.debug('Modified Transition attributes. New transition', newTransition)
                     } else {
-                        // Reverting modified identity on failure
-                        transition.identity.updateName(transition.name)
+                        rollback()
                     }
                     return editingResult
                 }, failure => {
-                    transition.identity.updateName(transition.name)
+                    rollback()
                     return failure
                 })
         } else {

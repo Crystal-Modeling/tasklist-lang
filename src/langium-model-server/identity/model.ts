@@ -50,20 +50,23 @@ export type DerivativeIdentityName = string[]
 export type AstNodeIdentityName = string
 export type IdentityName = AstNodeIdentityName | DerivativeIdentityName
 
+export type StateRollback = () => void
+
 export interface Identity<NAME extends IdentityName = IdentityName> extends Readonly<SemanticIdentifier>, Readonly<ModelUri> {
     readonly name: NAME
     /**
-     * Replaces the `name` value with supplied argument. Returns `true` if update was successful. Returns `true` if the name has changed.
+     * Replaces the `name` value with supplied argument. Returns {@link StateRollback} if the name has changed, which can be used to rollback the operation.
+     * If the renaming cannot be performed (e.g., there is already an indexed Identity with name = `newName`), returns `undefined`
      * @param newName New name to replace the `name` property of this identity.
-     * @returns `true` if identity was successfully renamed, or `false` otherwise.
+     * @returns {@link StateRollback} if identity was successfully renamed, or `undefined` otherwise.
      */
-    updateName(newName: NAME): boolean
+    updateName(newName: NAME): StateRollback | undefined
     /**
-     * Removes this identity from IdentityIndex it belongs to. Returns `true` if deletion was successful.
+     * Marks this identity as soft-deleted in IndexedIdentity it belongs to. Returns `true` if the state has been changed.
      * Subsequent attempts to modify `this` identity will always return false.
-     * @returns `true` if identity was successfully deleted, or `false` otherwise.
+     * @returns `true` if identity was not previously soft-deleted, or `false` otherwise.
      */
-    delete(): boolean
+    softDelete(): boolean
 }
 
 export type AstNodeIdentity = Identity<AstNodeIdentityName>
