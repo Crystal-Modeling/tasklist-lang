@@ -50,8 +50,8 @@ export type SemanticDerivativeName = string[]
 export type SemanticPropertyName = string
 export type SemanticName = SemanticPropertyName | SemanticDerivativeName
 
-export interface NamedSemanticIdentity extends Readonly<SemanticIdentity>, Readonly<ModelUri> {
-    readonly name: SemanticName
+export interface NamedSemanticIdentity<NAME extends SemanticName = SemanticName> extends Readonly<SemanticIdentity>, Readonly<ModelUri> {
+    readonly name: NAME
 }
 
 export interface AstNodeSemanticIdentity extends NamedSemanticIdentity {

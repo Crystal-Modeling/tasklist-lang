@@ -362,7 +362,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
                     return undefined
                 }
                 const transitionName = identity.TransitionDerivativeName.of(sourceTask.id, task.id)
-                const transitionId = this.identityManager.getIdentityIndex(doc).transitionsByName.get(transitionName)?.id
+                const transitionId = this.identityManager.getIdentityIndex(doc).transitions.byName(transitionName)?.id
                 if (!transitionId) {
                     console.debug('Cannot find transition identity with name', transitionName)
                     return undefined

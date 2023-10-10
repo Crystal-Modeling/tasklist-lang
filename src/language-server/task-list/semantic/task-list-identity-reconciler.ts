@@ -45,7 +45,7 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         const updateCalculator = this.modelUpdateCalculators.getOrCreateCalculator(document)
         const semanticDomain = document.semanticDomain
 
-        const existingUnmappedTasks = identityIndex.tasksByName
+        const existingUnmappedTasks = identityIndex.tasks.getCopyByName()
         // Actual mapping: marking semantic elements for deletion, and AST nodes to be added
         semanticDomain.getValidTasks(astModel)
             .forEach(task => {
@@ -53,14 +53,14 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
                 if (taskIdentity) {
                     existingUnmappedTasks.delete(task.name)
                 } else {
-                    taskIdentity = identityIndex.addNewTask(task.name)
+                    taskIdentity = identityIndex.tasks.addNew(task.name)
                 }
                 semanticDomain.identifyTask(task, taskIdentity)
             })
         // Deletion of not mapped tasks. Even though transitions (on the AST level) are composite children of source Task,
         // they still have to be deleted separately (**to simplify Updates creation**)
         const tasksUpdate = updateCalculator.calculateTasksUpdate(existingUnmappedTasks.values())
-        identityIndex.deleteTasks(tasksUpdate.removedIds ?? [])
+        identityIndex.tasks.delete(tasksUpdate.removedIds ?? [])
 
         if (!src.ArrayUpdate.isEmpty(tasksUpdate)) update.tasks = src.ArrayUpdate.create(tasksUpdate)
     }
@@ -72,19 +72,19 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         const updateCalculator = this.modelUpdateCalculators.getOrCreateCalculator(document)
         const semanticDomain = document.semanticDomain
 
-        const existingUnmappedTransitions = identityIndex.transitionsByName
+        const existingUnmappedTransitions = identityIndex.transitions.getCopyByName()
         semanticDomain.getValidTransitions()
             .forEach(transition => {
                 let transitionIdentity = existingUnmappedTransitions.get(transition.name)
                 if (transitionIdentity) {
                     existingUnmappedTransitions.delete(transition.name)
                 } else {
-                    transitionIdentity = identityIndex.addNewTransition(transition.name)
+                    transitionIdentity = identityIndex.transitions.addNew(transition.name)
                 }
                 semanticDomain.identifyTransition(transition, transitionIdentity)
             })
         const transitionsUpdate = updateCalculator.calculateTransitionsUpdate(existingUnmappedTransitions.values())
-        identityIndex.deleteTransitions(transitionsUpdate.removedIds ?? [])
+        identityIndex.transitions.delete(transitionsUpdate.removedIds ?? [])
 
         if (!src.ArrayUpdate.isEmpty(transitionsUpdate)) update.transitions = src.ArrayUpdate.create(transitionsUpdate)
     }
