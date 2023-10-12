@@ -40,13 +40,13 @@ export type LangiumModelServerDefaultSharedServices = {
     }
 }
 
-export type LangiumModelServerAbstractServices<SM extends SemanticIdentifier, II extends IdentityIndex<SM>, D extends LmsDocument> = {
+export type LangiumModelServerAbstractServices<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument> = {
     workspace: {
         LmsDocumentGuard: TypeGuard<D, ExtendableLangiumDocument>
     },
     identity: {
         IdentityStorage: IdentityStorage,
-        IdentityManager: IdentityManager<SM, II>,
+        IdentityManager: IdentityManager<II>,
     }
     semantic: {
         IdentityReconciler: IdentityReconciler<SM, D>,
@@ -60,13 +60,13 @@ export type LangiumModelServerAbstractServices<SM extends SemanticIdentifier, II
 }
 
 export type LmsServices<SM extends SemanticIdentifier>
-    = Pick<LangiumModelServerAddedServices<SM, IdentityIndex<SM>, LmsDocument>, 'lms'>['lms']
+    = Pick<LangiumModelServerAddedServices<SM, IdentityIndex, LmsDocument>, 'lms'>['lms']
 
-export type LangiumModelServerAddedServices<SM extends SemanticIdentifier, II extends IdentityIndex<SM>, D extends LmsDocument>
+export type LangiumModelServerAddedServices<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument>
     = LangiumModelServerDefaultServices<SM> & LangiumModelServerAbstractServices<SM, II, D>
 
-export type LangiumModelServerServices<SM extends SemanticIdentifier, II extends IdentityIndex<SM>, D extends LmsDocument>
+export type LangiumModelServerServices<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument>
     = LangiumServices & LangiumModelServerAddedServices<SM, II, D>
 
-export type PartialLangiumModelServerServices<SM extends SemanticIdentifier, II extends IdentityIndex<SM>, D extends LmsDocument>
+export type PartialLangiumModelServerServices<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument>
     = LangiumModelServerAbstractServices<SM, II, D> & PartialLangiumServices & DeepPartial<LangiumModelServerDefaultServices<SM>>

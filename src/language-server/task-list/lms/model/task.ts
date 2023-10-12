@@ -1,5 +1,4 @@
-import type * as ast from '../../../generated/ast'
-import type * as sem from '../../../../langium-model-server/semantic/model'
+import type * as semantic from '../../semantic/model'
 import type { Creation } from '../../../../langium-model-server/lms/model'
 import { isDefinedObject } from '../../../../langium-model-server/utils/types'
 
@@ -11,7 +10,7 @@ export interface Task {
 
 export namespace Task {
 
-    export function create(task: sem.Identified<ast.Task>): Task {
+    export function create(task: semantic.IdentifiedTask): Task {
         return {
             id: task.id,
             name: task.name,

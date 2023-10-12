@@ -5,13 +5,14 @@ import { Identified } from '../../../langium-model-server/semantic/model'
 import type { QueriableSemanticDomain, SemanticDomain } from '../../../langium-model-server/semantic/semantic-domain'
 import type * as ast from '../../generated/ast'
 import type * as id from '../identity/model'
+import type { IdentifiedTask, IdentifiedTransition} from './model'
 import { Transition } from './model'
 
 export interface QueriableTaskListSemanticDomain extends QueriableSemanticDomain {
-    readonly identifiedTasks: ReadonlyMap<string, Identified<ast.Task>>
-    readonly identifiedTransitions: ReadonlyMap<string, Identified<Transition>>
-    getPreviousIdentifiedTask(id: string): Identified<ast.Task> | undefined
-    getPreviousIdentifiedTransition(id: string): Identified<Transition> | undefined
+    readonly identifiedTasks: ReadonlyMap<string, IdentifiedTask>
+    readonly identifiedTransitions: ReadonlyMap<string, IdentifiedTransition>
+    getPreviousIdentifiedTask(id: string): IdentifiedTask | undefined
+    getPreviousIdentifiedTransition(id: string): IdentifiedTransition | undefined
 }
 export interface TaskListSemanticDomain extends SemanticDomain, QueriableTaskListSemanticDomain {
     clear(): void
@@ -22,19 +23,19 @@ export interface TaskListSemanticDomain extends SemanticDomain, QueriableTaskLis
     getValidTasks(model: ast.Model): Stream<Valid<ast.Task>>
     // "Mixed" operation: is called after tasks are already identified, but serve for Transition identification
     getValidTransitions(): Stream<Transition>
-    // NOTE: 👇 This is considered as part of manipulation with Semantic Model (Identified<ast.Task> and IdentifiedTransition)
+    // NOTE: 👇 This is considered as part of manipulation with Semantic Model (IdentifiedTask and IdentifiedTransition)
     /**
      * Maps Valid Task node with semantic identity.
      * @param task Valid AST Task node
      * @param identity Semantic identity, which {@link task} is identified with
     */
-    identifyTask(task: Valid<ast.Task>, identity: id.TaskIdentity): Identified<ast.Task>
+    identifyTask(task: Valid<ast.Task>, identity: id.TaskIdentity): IdentifiedTask
     /**
      * Maps Transition *artificial* node with semantic identity
      * @param transition Artificial Transition node (they are created being already validated)
      * @param identity Semantic identity, which {@link transition} is identified with
      */
-    identifyTransition(transition: Transition, identity: id.TransitionIdentity): Identified<Transition>
+    identifyTransition(transition: Transition, identity: id.TransitionIdentity): IdentifiedTransition
 }
 
 export namespace TaskListSemanticDomain {
@@ -51,11 +52,11 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
     protected invalidTasks: Set<ast.Task>
     protected invalidReferences: Map<ast.Task, Set<number>>
 
-    private _identifiedTasksById: Map<string, Identified<ast.Task>>
-    private _previousIdentifiedTaskById: Map<string, Identified<ast.Task>> | undefined
-    private _validTransitionsByIdentifiedTask: Map<Identified<ast.Task>, Transition[]>
-    private _identifiedTransitionsById: Map<string, Identified<Transition>>
-    private _previousIdentifiedTransitionsById: Map<string, Identified<Transition>> | undefined
+    private _identifiedTasksById: Map<string, IdentifiedTask>
+    private _previousIdentifiedTaskById: Map<string, IdentifiedTask> | undefined
+    private _validTransitionsByIdentifiedTask: Map<IdentifiedTask, Transition[]>
+    private _identifiedTransitionsById: Map<string, IdentifiedTransition>
+    private _previousIdentifiedTransitionsById: Map<string, IdentifiedTransition> | undefined
 
     constructor(rootId: string) {
         this.rootId = rootId
@@ -86,7 +87,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
     }
 
     // NOTE: Rather defensive function, to ensure synthetic Transition domain objects uniqueness (per AST Task.reference)
-    protected getValidTransitionsForSourceTask(sourceTask: Identified<ast.Task>): Transition[] {
+    protected getValidTransitionsForSourceTask(sourceTask: IdentifiedTask): Transition[] {
         let validTransitions = this._validTransitionsByIdentifiedTask.get(sourceTask)
         if (!validTransitions) {
             validTransitions = Transition.create(sourceTask, this.isTaskReferenceValid.bind(this))
@@ -105,31 +106,31 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
             .flatMap(this.getValidTransitionsForSourceTask.bind(this))
     }
 
-    public identifyTask(task: Valid<ast.Task>, identity: id.TaskIdentity): Identified<ast.Task> {
+    public identifyTask(task: Valid<ast.Task>, identity: id.TaskIdentity): IdentifiedTask {
         const identifiedTask = Identified.identify(task, identity)
         this._identifiedTasksById.set(identifiedTask.id, identifiedTask)
         return identifiedTask
     }
 
-    public identifyTransition(transition: Transition, identity: id.TransitionIdentity): Identified<Transition> {
+    public identifyTransition(transition: Transition, identity: id.TransitionIdentity): IdentifiedTransition {
         const identifiedTransition = Identified.identify(transition, identity)
         this._identifiedTransitionsById.set(identifiedTransition.id, identifiedTransition)
         return identifiedTransition
     }
 
-    public get identifiedTasks(): ReadonlyMap<string, Identified<ast.Task>> {
+    public get identifiedTasks(): ReadonlyMap<string, IdentifiedTask> {
         return this._identifiedTasksById
     }
 
-    public get identifiedTransitions(): ReadonlyMap<string, Identified<Transition>> {
+    public get identifiedTransitions(): ReadonlyMap<string, IdentifiedTransition> {
         return this._identifiedTransitionsById
     }
 
-    public getPreviousIdentifiedTask(id: string): Identified<ast.Task> | undefined {
+    public getPreviousIdentifiedTask(id: string): IdentifiedTask | undefined {
         return this._previousIdentifiedTaskById?.get(id)
     }
 
-    public getPreviousIdentifiedTransition(id: string): Identified<Transition> | undefined {
+    public getPreviousIdentifiedTransition(id: string): IdentifiedTransition | undefined {
         return this._previousIdentifiedTransitionsById?.get(id)
     }
 

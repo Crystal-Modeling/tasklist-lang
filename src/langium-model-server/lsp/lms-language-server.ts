@@ -32,7 +32,7 @@ export class LmsLanguageServer extends DefaultLanguageServer {
  * @param lmsServices Additional {@link LangiumModelServerAddedServices} introduced by langium-model-server module
  */
 //TODO: When elaborating into a library, make sure LMS is compatible with multiple Langium languages in one server
-export function startLMSLanguageServer<SM extends SemanticIdentifier, II extends IdentityIndex<SM>, D extends LmsDocument>(
+export function startLMSLanguageServer<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument>(
     services: LangiumSharedServices,
     lmsServices: LangiumModelServerAddedServices<SM, II, D>
 ): void {
@@ -40,7 +40,7 @@ export function startLMSLanguageServer<SM extends SemanticIdentifier, II extends
     addIdentityProcessingHandlers(services.lsp.Connection!, lmsServices, services)
 }
 
-function addIdentityProcessingHandlers<SM extends SemanticIdentifier, II extends IdentityIndex<SM>, D extends LmsDocument>(
+function addIdentityProcessingHandlers<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument>(
     connection: Connection,
     lmsServices: LangiumModelServerAddedServices<SM, II, D>,
     services: LangiumSharedServices
@@ -57,10 +57,8 @@ function addIdentityProcessingHandlers<SM extends SemanticIdentifier, II extends
         if (langiumDocuments.hasDocument(lmsUri)) {
             const document = langiumDocuments.getOrCreateDocument(lmsUri)
             if (isLmsDocument(document) && LmsDocument.isInitialized(document)) {
-                const identityIndex = identityManager.getIdentityIndex(document)
                 const rootId = document.semanticDomain.rootId
-                const modelsPermanentDeletion = modelUpdateCalculators.getOrCreateCalculator(document).clearModelsMarkedForDeletion()
-                identityIndex.removeDeletedIdentities(modelsPermanentDeletion)
+                const modelsPermanentDeletion = modelUpdateCalculators.getOrCreateCalculator(document).clearSoftDeletedIdentities()
                 lmsSubscriptions.getSubscription(rootId)?.pushModelUpdate(modelsPermanentDeletion)
                 identityManager.saveIdentity(params.textDocument.uri)
                 lmsSubscriptions.getSubscription(rootId)?.pushAction(Save.create(rootId))

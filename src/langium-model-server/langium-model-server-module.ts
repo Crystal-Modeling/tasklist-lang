@@ -12,7 +12,7 @@ import { DefaultLmsDocumentBuilder } from './workspace/lms-document-builder'
 import { DefaultTextEditService } from './lms/text-edit-service'
 
 export function createLangiumModelServerDefaultModule
-<SM extends SemanticIdentifier, II extends IdentityIndex<SM>, D extends LmsDocument>():
+<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument>():
 Module<LangiumModelServerServices<SM, II, D>, LangiumModelServerDefaultServices<SM>> {
     return {
         lsp: {

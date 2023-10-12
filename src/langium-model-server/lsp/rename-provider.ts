@@ -9,7 +9,7 @@ import * as sem from '../semantic/model'
 import type { LangiumModelServerServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
 
-export class LmsRenameProvider<SM extends SemanticIdentifier, II extends IdentityIndex<SM>, D extends LmsDocument> extends DefaultRenameProvider {
+export class LmsRenameProvider<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument> extends DefaultRenameProvider {
 
     protected identityManager: IdentityManager
     protected textEditService: TextEditService

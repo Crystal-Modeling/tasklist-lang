@@ -3,18 +3,19 @@ import * as sem from '../../../../langium-model-server/semantic/model'
 import { isDefined } from '../../../../langium-model-server/utils/predicates'
 import type * as ast from '../../../generated/ast'
 import * as identity from '../../identity/model'
+import type { IdentifiedTask } from './task'
 
 export type NewTransition = {
     name: identity.TransitionDerivativeName
-    sourceTask: sem.Identified<ast.Task>,
-    targetTask: sem.Identified<ast.Task>
+    sourceTask: IdentifiedTask,
+    targetTask: IdentifiedTask
 }
 
 export type Transition = sem.ArtificialIndexedAstNode & sem.Valid<NewTransition>
 
 export namespace Transition {
 
-    export function create(sourceTask: sem.Identified<ast.Task>,
+    export function create(sourceTask: IdentifiedTask,
         isTaskReferenceValid: (task: sem.Valid<ast.Task>, referenceIndex: number) => boolean
     ): Transition[] {
         return TransitionData.create(sourceTask)
@@ -22,7 +23,7 @@ export namespace Transition {
             .filter(isDefined)
     }
 
-    export function createNew(sourceTask: sem.Identified<ast.Task>, targetTask: sem.Identified<ast.Task>): NewTransition {
+    export function createNew(sourceTask: IdentifiedTask, targetTask: IdentifiedTask): NewTransition {
         return {
             sourceTask,
             targetTask,
@@ -56,13 +57,15 @@ export namespace Transition {
     }
 }
 
+export type IdentifiedTransition = sem.Identified<Transition, identity.TransitionDerivativeName>
+
 type TransitionData = {
-    sourceTask: sem.Identified<ast.Task>,
+    sourceTask: IdentifiedTask,
     referenceIndex: number
 }
 
 namespace TransitionData {
-    export function create(sourceTask: sem.Identified<ast.Task>): TransitionData[] {
+    export function create(sourceTask: IdentifiedTask): TransitionData[] {
         return sourceTask.references.map((_, referenceIndex) => ({ sourceTask, referenceIndex }))
     }
 }

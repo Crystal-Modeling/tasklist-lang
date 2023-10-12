@@ -16,7 +16,7 @@ type Http2RequestHandlerProvider<T> = (parameter: T) => Http2RequestHandler
 
 type Http2ServerRouter = (stream: http2.ServerHttp2Stream, headers: http2.IncomingHttpHeaders, flags: number) => void
 
-export function LangiumModelServerRouter<SM extends SemanticIdentifier, II extends IdentityIndex<SM>, D extends LmsDocument>(
+export function LangiumModelServerRouter<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument>(
     services: LangiumModelServerAddedServices<SM, II, D>
 ): Http2ServerRouter {
     return (stream, headers, flags) => {

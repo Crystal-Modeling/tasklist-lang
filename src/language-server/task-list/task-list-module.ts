@@ -58,7 +58,7 @@ export const TaskListModule: Module<TaskListServices, PartialLangiumModelServerS
     },
     lms: {
         LangiumModelServerFacade: (services) => new TaskListLangiumModelServerFacade(services),
-        ModelUpdateCalculators: () => new TaskListModelUpdateCalculators(),
+        ModelUpdateCalculators: (services) => new TaskListModelUpdateCalculators(services),
         ModelUpdateCombiner: () => new TaskListModelUpdateCombiner(),
     },
 }

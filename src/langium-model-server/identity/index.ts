@@ -1,30 +1,30 @@
-import type { RootUpdate } from '../lms/model'
+import type { AstNode } from 'langium'
+import type * as sem from '../semantic/model'
 import type { AbstractMap } from '../utils/collections'
 import { ValueBasedMap, equal } from '../utils/collections'
-import type { Identity, DerivativeIdentityName, IdentityName, AstNodeIdentityName, StateRollback } from './model'
+import type { AstNodeIdentityName, DerivativeIdentityName, EditableIdentity, Identity, IdentityName, StateRollback } from './model'
 import { SemanticIdentifier } from './model'
 
-export type IdentityIndex<SM extends SemanticIdentifier> = {
+export type IdentityIndex = {
     readonly id: string
-    removeDeletedIdentities(modelUpdate: RootUpdate<SM>): void
 }
 
-export type ModelExposedIdentityIndex<SM extends SemanticIdentifier, SemI extends IdentityIndex<SM>> = SemI & {
+export type ModelExposedIdentityIndex<SemI extends IdentityIndex> = SemI & {
     readonly model: object
 }
 
-export interface IndexedIdentities<NAME extends IdentityName, ID extends Identity<NAME>> {
-    getCopyByName(): AbstractMap<NAME, Readonly<ID>>
-    values(): Iterable<Readonly<ID>>
-    byName(name: NAME): Readonly<ID> | undefined
+export interface IndexedIdentities<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName, ID extends Identity<T, NAME>> {
+    getCopyByName(): AbstractMap<NAME, ID>
+    getSoftDeleted(): Iterable<ID>
+    values(): Iterable<ID>
+    byName(name: NAME): ID | undefined
     addNew(name: NAME): ID
     add(id: string, name: NAME): ID
-    delete(ids: Iterable<string>): void
 }
 
-export abstract class AbstractIndexedIdentities<NAME extends IdentityName, ID extends Identity<NAME>> implements IndexedIdentities<NAME, ID> {
+export abstract class AbstractIndexedIdentities<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName, ID extends Identity<T, NAME>> implements IndexedIdentities<T, NAME, ID> {
     protected readonly _byId: Map<string, ID> = new Map()
-    protected readonly _softDeletedIds: Set<string> = new Set()
+    protected readonly _softDeleted: Map<string, ID> = new Map()
     protected abstract readonly _byName: AbstractMap<NAME, ID>
     protected readonly modelUriFactory: (id: string) => string
 
@@ -32,11 +32,15 @@ export abstract class AbstractIndexedIdentities<NAME extends IdentityName, ID ex
         this.modelUriFactory = modelUriFactory
     }
 
-    public values(): Iterable<Readonly<ID>> {
+    getSoftDeleted(): Iterable<ID> {
+        return this._softDeleted.values()
+    }
+
+    public values(): Iterable<ID> {
         return this._byId.values()
     }
 
-    public byName(name: NAME): Readonly<ID> | undefined {
+    public byName(name: NAME): ID | undefined {
         return this._byName.get(name)
     }
 
@@ -46,8 +50,8 @@ export abstract class AbstractIndexedIdentities<NAME extends IdentityName, ID ex
 
     public add(id: string, name: NAME): ID {
         const index = this
-        let identity: ID & { name: NAME }
-        const abstractIdentity: Identity<NAME> & { name: NAME } = {
+        let identity: ID & EditableIdentity<T, NAME>
+        const abstractIdentity: EditableIdentity<T, NAME> = {
             id,
             name,
             modelUri: this.modelUriFactory(id),
@@ -71,13 +75,50 @@ export abstract class AbstractIndexedIdentities<NAME extends IdentityName, ID ex
                 return undefined
             },
 
-            softDelete(): boolean {
-                if (!index._softDeletedIds.has(identity.id)) {
-                    index._softDeletedIds.add(identity.id)
+            delete(deletedSemanticModel?: sem.Identified<T, NAME>): boolean | undefined {
+                // When we receive Semantic Identity of the model to be deleted, we first try to use
+                // _Semantic Model_ with such semantic ID (which could exist in _previous_ AST state),
+                // since Semantic Model stores all attributes and we will be able to do more precise comparison
+                // if it reappears later
+                if (index._byId.has(identity.id)) {
+                    if (identity.isSoftDeleted) {
+                        index._byId.delete(identity.id)
+                        index._byName.delete(identity.name)
+                        return true
+                    }
+                    if (!deletedSemanticModel) {
+                        /* NOTE: A VERY edge case: There is no previous Semantic Model for currently missing in AST element (though identity is present).
+                            It is only possible, if identity model went out of sync with source language file, i.e.,
+                            some identities were retained in JSON file, but corresponding source models had been deleted from the language file
+                        */
+                        console.warn(`Model '${identity.id}' is to be marked for deletion, but it doesn't have a corresponding previous semantic model`)
+                    }
+                    identity.isSoftDeleted = true
+                    identity.deletedSemanticModel = deletedSemanticModel
+                    return false
+
+                }
+                return undefined
+            },
+            restore(): boolean {
+                if (index._byId.has(identity.id)) {
+                    identity.isSoftDeleted = false
+                    identity.deletedSemanticModel = undefined
                     return true
                 }
                 return false
             },
+            get isSoftDeleted(): boolean {
+                return index._softDeleted.has(identity.id)
+            },
+            set isSoftDeleted(softDeleted: boolean) {
+                if (softDeleted) {
+                    index._softDeleted.set(identity.id, identity)
+                } else {
+                    index._softDeleted.delete(identity.id)
+                }
+            },
+            deletedSemanticModel: undefined,
         }
 
         identity = this.castToSpecificIdentity(abstractIdentity)
@@ -87,29 +128,15 @@ export abstract class AbstractIndexedIdentities<NAME extends IdentityName, ID ex
         return identity
     }
 
-    public delete(ids: Iterable<string>) {
-        for (const id of ids) {
-            this.deleteById(id)
-        }
-    }
-
-    protected castToSpecificIdentity(untypedIdentity: Identity<NAME> & { name: NAME }): ID & { name: NAME } {
+    protected castToSpecificIdentity(untypedIdentity: EditableIdentity<T, NAME>): ID & EditableIdentity<T, NAME> {
         return untypedIdentity as ID
-    }
-
-    protected deleteById(id: string) {
-        const identity = this._byId.get(id)
-        if (identity) {
-            this._byId.delete(identity.id)
-            this._byName.delete(identity.name)
-        }
     }
 
     public abstract getCopyByName(): AbstractMap<NAME, Readonly<ID>>
     protected abstract namesAreEqual(left: NAME, right: NAME): boolean
 }
 
-export class AstNodeIndexedIdentities<NAME extends AstNodeIdentityName, ID extends Identity<NAME>> extends AbstractIndexedIdentities<NAME, ID> {
+export class AstNodeIndexedIdentities<T extends AstNode | sem.ArtificialAstNode, NAME extends AstNodeIdentityName, ID extends Identity<T, NAME>> extends AbstractIndexedIdentities<T, NAME, ID> {
 
     protected override readonly _byName: Map<NAME, ID> = new Map()
 
@@ -122,7 +149,7 @@ export class AstNodeIndexedIdentities<NAME extends AstNodeIdentityName, ID exten
     }
 }
 
-export class DerivativeIndexedIdentities<NAME extends DerivativeIdentityName, ID extends Identity<NAME>> extends AbstractIndexedIdentities<NAME, ID> {
+export class DerivativeIndexedIdentities<T extends AstNode | sem.ArtificialAstNode, NAME extends DerivativeIdentityName, ID extends Identity<T, NAME>> extends AbstractIndexedIdentities<T, NAME, ID> {
 
     protected override readonly _byName: ValueBasedMap<NAME, ID> = new ValueBasedMap()
 

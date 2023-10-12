@@ -11,7 +11,7 @@ import { TaskListIdentityIndex } from '.'
  */
 export class TaskListIdentityManager extends AbstractIdentityManager<source.Model, TaskListIdentityIndex, TaskListDocument> {
 
-    protected override loadIdentityToIndex(languageDocumentUri: string): ModelExposedIdentityIndex<source.Model, TaskListIdentityIndex> {
+    protected override loadIdentityToIndex(languageDocumentUri: string): ModelExposedIdentityIndex<TaskListIdentityIndex> {
         const identityModel = this.identityStorage.loadIdentityFromFile(languageDocumentUri, IdentityModel.is)
         return new AccessibleTaskListIdentityIndex(identityModel)
     }

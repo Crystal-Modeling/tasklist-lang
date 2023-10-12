@@ -77,8 +77,7 @@ export class ArrayUpdateCommand<T extends id.SemanticIdentifier> implements Read
         return this.NO_UPDATE
     }
 
-    public static deletion<T extends id.SemanticIdentifier>(elements: Iterable<id.SemanticIdentifier>): ReadonlyArrayUpdate<T> {
-        const idsToRemove = Array.from(elements, el => el.id)
+    public static deletion<T extends id.SemanticIdentifier>(idsToRemove: string[]): ReadonlyArrayUpdate<T> {
         if (idsToRemove.length !== 0) {
             return new ArrayUpdateCommand(undefined, idsToRemove)
         }
@@ -100,7 +99,7 @@ export class ArrayUpdateCommand<T extends id.SemanticIdentifier> implements Read
     }
 
     public static all<T extends id.SemanticIdentifier>(...updates: Array<ReadonlyArrayUpdate<T>>): ReadonlyArrayUpdate<T> {
-        const updatesStream = stream(updates)
+        const updatesStream = stream(updates).filter(upd => upd !== this.NO_UPDATE)
         const elementsToAdd = this.concatNotEmpty(updatesStream.map(upd => upd.added))
         const idsToRemove = this.concatNotEmpty(updatesStream.map(upd => upd.removedIds))
         const updatesToAdd = this.concatNotEmpty(updatesStream.map(upd => upd.changed))

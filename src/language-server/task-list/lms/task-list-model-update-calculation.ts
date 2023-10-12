@@ -1,51 +1,60 @@
 import * as id from '../../../langium-model-server/identity/model'
-import type { ReadonlyArrayUpdate, ElementUpdate } from '../../../langium-model-server/lms/model'
+import type { ElementUpdate, ReadonlyArrayUpdate } from '../../../langium-model-server/lms/model'
 import { ArrayUpdate, ArrayUpdateCommand, RootUpdate, Update } from '../../../langium-model-server/lms/model'
-import { AbstractModelUpdateCalculators, compareModelWithExistingBefore, deleteModels, type ModelUpdateCalculator } from '../../../langium-model-server/lms/model-update-calculation'
-import type * as sem from '../../../langium-model-server/semantic/model'
+import { AbstractModelUpdateCalculators, compareModelWithExistingBefore, deleteIdentity, deleteModels, type ModelUpdateCalculator } from '../../../langium-model-server/lms/model-update-calculation'
 import type { Initialized } from '../../../langium-model-server/workspace/documents'
-import type * as ast from '../../generated/ast'
+import type { TaskListIdentityIndex } from '../identity'
+import type { TaskListIdentityManager } from '../identity/manager'
 import * as identity from '../identity/model'
 import type * as semantic from '../semantic/model'
 import type { QueriableTaskListSemanticDomain } from '../semantic/task-list-semantic-domain'
+import type { TaskListServices } from '../task-list-module'
 import type { TaskListDocument } from '../workspace/documents'
 import type { Model } from './model'
 import { Task, Transition } from './model'
 
 export class TaskListModelUpdateCalculators extends AbstractModelUpdateCalculators<Model> {
 
+    private identityManager: TaskListIdentityManager
+
+    public constructor(services: TaskListServices) {
+        super()
+        this.identityManager = services.identity.IdentityManager
+    }
+
     public override getOrCreateCalculator(lmsDocument: Initialized<TaskListDocument>): TaskListModelUpdateCalculator {
         return super.getOrCreateCalculator(lmsDocument) as TaskListModelUpdateCalculator
     }
 
-    protected override createCalculator(langiumDocument: Initialized<TaskListDocument>): TaskListModelUpdateCalculator {
-        return new TaskListModelUpdateCalculator(langiumDocument.semanticDomain)
+    protected override createCalculator(lmsDocument: Initialized<TaskListDocument>): TaskListModelUpdateCalculator {
+        return new TaskListModelUpdateCalculator(lmsDocument.semanticDomain, this.identityManager.getIdentityIndex(lmsDocument))
     }
 
 }
 
 export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Model> {
 
-    protected semanticDomain: QueriableTaskListSemanticDomain
+    private semanticDomain: QueriableTaskListSemanticDomain
+    private identityIndex: TaskListIdentityIndex
 
-    public constructor(taskListSemanticDomain: QueriableTaskListSemanticDomain) {
+    public constructor(taskListSemanticDomain: QueriableTaskListSemanticDomain, identityIndex: TaskListIdentityIndex) {
         this.semanticDomain = taskListSemanticDomain
+        this.identityIndex = identityIndex
     }
 
-    private readonly _tasksMarkedForDeletion: Map<string, sem.Identified<ast.Task> | identity.TaskIdentity> = new Map()
-    private readonly _transitionsMarkedForDeletion: Map<string, sem.Identified<semantic.Transition> | identity.TransitionIdentity> = new Map()
-
-    public calculateTasksUpdate(identitiesToDelete: Iterable<identity.TaskIdentity>): ReadonlyArrayUpdate<Task> {
+    /**
+     * Calculates tasks update and applies identities deletion / restoration to embedded identity index
+     */
+    public applyTasksUpdate(identitiesToDelete: Iterable<identity.TaskIdentity>): ReadonlyArrayUpdate<Task> {
         const existingTasks = this.semanticDomain.identifiedTasks.values()
         const updates = Array.from(existingTasks, task => compareModelWithExistingBefore(
-            this._tasksMarkedForDeletion,
             this.semanticDomain.getPreviousIdentifiedTask(task.id),
             task,
             Task.create,
             applyTaskChanges,
         ))
         const deletion: ReadonlyArrayUpdate<Task> = deleteModels(
-            this._tasksMarkedForDeletion,
+            this.identityIndex.tasks.getSoftDeleted.bind(this.identityIndex.tasks),
             this.semanticDomain.getPreviousIdentifiedTask.bind(this.semanticDomain),
             identitiesToDelete,
         )
@@ -53,17 +62,19 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
         return ArrayUpdateCommand.all(...updates, deletion)
     }
 
+    /**
+     * Calculates transitions update and applies identities deletion / restoration to embedded identity index
+     */
     public calculateTransitionsUpdate(identitiesToDelete: Iterable<identity.TransitionIdentity>): ReadonlyArrayUpdate<Transition> {
         const existingTransitions = this.semanticDomain.identifiedTransitions.values()
         const updates = Array.from(existingTransitions, transition => compareModelWithExistingBefore(
-            this._transitionsMarkedForDeletion,
             this.semanticDomain.getPreviousIdentifiedTransition(transition.id),
             transition,
             Transition.create,
             applyTransitionChanges,
         ))
         const deletion: ReadonlyArrayUpdate<Transition> = deleteModels(
-            this._transitionsMarkedForDeletion,
+            this.identityIndex.transitions.getSoftDeleted.bind(this.identityIndex.transitions),
             this.semanticDomain.getPreviousIdentifiedTransition.bind(this.semanticDomain),
             identitiesToDelete,
         )
@@ -71,11 +82,9 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
         return ArrayUpdateCommand.all(...updates, deletion)
     }
 
-    public clearModelsMarkedForDeletion(): RootUpdate<Model> {
-        const tasksDeletion = ArrayUpdateCommand.deletion<Task>(this._tasksMarkedForDeletion.values())
-        this._tasksMarkedForDeletion.clear()
-        const transitionsDeletion = ArrayUpdateCommand.deletion<Transition>(this._transitionsMarkedForDeletion.values())
-        this._transitionsMarkedForDeletion.clear()
+    public clearSoftDeletedIdentities(): RootUpdate<Model> {
+        const tasksDeletion = ArrayUpdateCommand.deletion<Task>(Array.from(this.identityIndex.tasks.getSoftDeleted(), deleteIdentity))
+        const transitionsDeletion = ArrayUpdateCommand.deletion<Transition>(Array.from(this.identityIndex.transitions.getSoftDeleted(), deleteIdentity))
 
         const rootUpdate = RootUpdate.createEmpty<Model>(this.semanticDomain.rootId, id.ModelUri.root)
         if (!ArrayUpdate.isEmpty(tasksDeletion)) rootUpdate.tasks = ArrayUpdate.create(tasksDeletion)
@@ -84,10 +93,10 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
     }
 }
 
-function applyTaskChanges(update: ElementUpdate<Task>, previous: sem.Identified<ast.Task> | identity.TaskIdentity, current: sem.Identified<ast.Task>): void {
+function applyTaskChanges(update: ElementUpdate<Task>, previous: semantic.IdentifiedTask | identity.TaskIdentity, current: semantic.IdentifiedTask): void {
     if (previous !== current.identity) {
         Update.assignIfUpdated(update, 'name', previous.name, current.name, '')
-        Update.assignIfUpdated(update, 'content', (previous as sem.Identified<ast.Task>).content, current.content, '')
+        Update.assignIfUpdated(update, 'content', (previous as semantic.IdentifiedTask).content, current.content, '')
     } else {
         console.info(`Can't compare attributes of Task '${current.id}' with name=${current.name}: previous semantic Task is missing`)
         Update.assign(update, 'name', current.name, '')
@@ -96,8 +105,8 @@ function applyTaskChanges(update: ElementUpdate<Task>, previous: sem.Identified<
 }
 
 function applyTransitionChanges(update: ElementUpdate<Transition>,
-    previous: sem.Identified<semantic.Transition> | identity.TransitionIdentity,
-    current: sem.Identified<semantic.Transition>
+    previous: semantic.IdentifiedTransition | identity.TransitionIdentity,
+    current: semantic.IdentifiedTransition
 ): void {
     const currentProperties = identity.TransitionDerivativeName.toProperties(current.name)
     if (previous !== current.identity) {

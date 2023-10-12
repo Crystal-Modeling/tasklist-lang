@@ -59,8 +59,7 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
             })
         // Deletion of not mapped tasks. Even though transitions (on the AST level) are composite children of source Task,
         // they still have to be deleted separately (**to simplify Updates creation**)
-        const tasksUpdate = updateCalculator.calculateTasksUpdate(existingUnmappedTasks.values())
-        identityIndex.tasks.delete(tasksUpdate.removedIds ?? [])
+        const tasksUpdate = updateCalculator.applyTasksUpdate(existingUnmappedTasks.values())
 
         if (!src.ArrayUpdate.isEmpty(tasksUpdate)) update.tasks = src.ArrayUpdate.create(tasksUpdate)
     }
@@ -84,7 +83,6 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
                 semanticDomain.identifyTransition(transition, transitionIdentity)
             })
         const transitionsUpdate = updateCalculator.calculateTransitionsUpdate(existingUnmappedTransitions.values())
-        identityIndex.transitions.delete(transitionsUpdate.removedIds ?? [])
 
         if (!src.ArrayUpdate.isEmpty(transitionsUpdate)) update.transitions = src.ArrayUpdate.create(transitionsUpdate)
     }

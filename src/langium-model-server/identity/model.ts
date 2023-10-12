@@ -1,4 +1,6 @@
 import * as uuid from 'uuid'
+import type * as sem from '../semantic/model'
+import type { AstNode } from 'langium'
 
 export type SemanticIdentifier = {
     id: string
@@ -52,8 +54,8 @@ export type IdentityName = AstNodeIdentityName | DerivativeIdentityName
 
 export type StateRollback = () => void
 
-export interface Identity<NAME extends IdentityName = IdentityName> extends Readonly<SemanticIdentifier>, Readonly<ModelUri> {
-    readonly name: NAME
+export interface EditableIdentity<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName = IdentityName> extends Readonly<SemanticIdentifier>, Readonly<ModelUri> {
+    name: NAME
     /**
      * Replaces the `name` value with supplied argument. Returns {@link StateRollback} if the name has changed, which can be used to rollback the operation.
      * If the renaming cannot be performed (e.g., there is already an indexed Identity with name = `newName`), returns `undefined`
@@ -62,12 +64,23 @@ export interface Identity<NAME extends IdentityName = IdentityName> extends Read
      */
     updateName(newName: NAME): StateRollback | undefined
     /**
-     * Marks this identity as soft-deleted in IndexedIdentity it belongs to. Returns `true` if the state has been changed.
-     * Subsequent attempts to modify `this` identity will always return false.
-     * @returns `true` if identity was not previously soft-deleted, or `false` otherwise.
+     * Binds this identity to a semantic model (previously available) and marks this identity as soft-deleted in IndexedIdentities it belongs to.
+     * If this identity is already soft-deleted, removes the identity from the IndexedIdentities it belongs to (performs hard delete)
+     * Subsequent attempts to modify `this` identity will always return `undefined`.
+     * @returns `true` if identity was hard-deleted during the invokation, `false` -- if the identity was soft-deleted, or `undefined` otherwise.
      */
-    softDelete(): boolean
+    delete(deletedSemanticModel?: sem.Identified<T, NAME>): boolean | undefined
+    /**
+     * Restores soft-deleted identity (if it has not been hard-deleted from the IndexedIdentity it belongs to).
+     * @returns `true` if identity was successfully restored or `false` if it has already been hard-deleted.
+     */
+    restore(): boolean
+
+    isSoftDeleted: boolean
+    deletedSemanticModel?: sem.Identified<T, NAME>
 }
 
-export type AstNodeIdentity = Identity<AstNodeIdentityName>
-export type DerivativeSemanticIdentity<NAME extends DerivativeIdentityName = DerivativeIdentityName> = Identity<NAME>
+export type Identity<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName = IdentityName> = Readonly<EditableIdentity<T, NAME>>
+
+export type AstNodeIdentity<T extends AstNode> = Identity<T, AstNodeIdentityName>
+export type DerivativeSemanticIdentity<T extends sem.ArtificialAstNode, NAME extends DerivativeIdentityName = DerivativeIdentityName> = Identity<T, NAME>

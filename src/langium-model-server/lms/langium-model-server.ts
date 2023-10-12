@@ -9,7 +9,7 @@ import { LangiumModelServerRouter } from './router'
 
 export function startLangiumModelServer<
     SM extends SemanticIdentifier,
-    II extends IdentityIndex<SM>,
+    II extends IdentityIndex,
     D extends LmsDocument
 >(lmsServices: LangiumModelServerServices<SM, II, D>): LangiumModelServer {
     const server = lmsServices.lms.LangiumModelServer
@@ -22,7 +22,7 @@ export interface LangiumModelServer {
     shutDown(callback?: (err?: Error | undefined) => void): void
 }
 
-export class DefaultLangiumSourceModelServer<SM extends SemanticIdentifier, II extends IdentityIndex<SM>, D extends LmsDocument> implements LangiumModelServer {
+export class DefaultLangiumSourceModelServer<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument> implements LangiumModelServer {
 
     protected readonly http2Server: http2.Http2SecureServer
 

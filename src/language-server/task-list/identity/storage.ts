@@ -6,6 +6,8 @@ import { isArray, isDefinedObject } from '../../../langium-model-server/utils/ty
 import type * as source from '../lms/model'
 import type { TaskListDocument } from '../workspace/documents'
 import { TransitionDerivativeName } from './model'
+import type * as ast from '../../generated/ast'
+import type * as semantic from '../semantic/model'
 
 export class TaskListIdentityStorage extends AbstractIdentityStorage<source.Model, TaskListIdentityIndex, TaskListDocument> implements IdentityStorage {
 
@@ -24,7 +26,7 @@ export interface Task {
 }
 
 export namespace Task {
-    export function of(taskIdentity: id.AstNodeIdentity): Task {
+    export function of(taskIdentity: id.AstNodeIdentity<ast.Task>): Task {
         return {
             id: taskIdentity.id,
             name: taskIdentity.name
@@ -39,7 +41,7 @@ export interface Transition {
 }
 
 export namespace Transition {
-    export function of(transitionIdentity: id.DerivativeSemanticIdentity<TransitionDerivativeName>): Transition {
+    export function of(transitionIdentity: id.DerivativeSemanticIdentity<semantic.Transition, TransitionDerivativeName>): Transition {
         return {
             id: transitionIdentity.id,
             ...TransitionDerivativeName.toProperties(transitionIdentity.name)

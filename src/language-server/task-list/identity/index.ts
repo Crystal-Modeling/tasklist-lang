@@ -1,16 +1,16 @@
 import { AstNodeIndexedIdentities, DerivativeIndexedIdentities, type IdentityIndex, type IndexedIdentities } from '../../../langium-model-server/identity'
 import type { AstNodeIdentityName } from '../../../langium-model-server/identity/model'
 import { ModelUri } from '../../../langium-model-server/identity/model'
-import type * as src from '../../../langium-model-server/lms/model'
-import type * as source from '../lms/model'
+import type * as ast from '../../generated/ast'
+import type * as semantic from '../semantic/model'
 import type { TaskIdentity, TransitionIdentity } from './model'
 import { TransitionDerivativeName } from './model'
 import { Task, Transition, type IdentityModel } from './storage'
 
-export abstract class TaskListIdentityIndex implements IdentityIndex<source.Model> {
+export abstract class TaskListIdentityIndex implements IdentityIndex {
     public readonly id: string
-    public readonly tasks: IndexedIdentities<AstNodeIdentityName, TaskIdentity>
-    public readonly transitions: IndexedIdentities<TransitionDerivativeName, TransitionIdentity>
+    public readonly tasks: IndexedIdentities<ast.Task, AstNodeIdentityName, TaskIdentity>
+    public readonly transitions: IndexedIdentities<semantic.Transition, TransitionDerivativeName, TransitionIdentity>
 
     public constructor(identityModel: IdentityModel) {
         this.id = identityModel.id
@@ -36,11 +36,6 @@ export abstract class TaskListIdentityIndex implements IdentityIndex<source.Mode
             tasks: Array.from(this.tasks.values(), Task.of),
             transitions: Array.from(this.transitions.values(), Transition.of)
         }
-    }
-
-    public removeDeletedIdentities(modelUpdate: src.RootUpdate<source.Model>): void {
-        this.tasks.delete(modelUpdate.tasks?.removedIds ?? [])
-        this.transitions.delete(modelUpdate.transitions?.removedIds ?? [])
     }
 
 }
