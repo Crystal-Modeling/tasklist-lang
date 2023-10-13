@@ -50,8 +50,7 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
     }
 
     public fitNew(name: NAME): RollbackableResult<NAME> | undefined {
-        const existing = this._byName.get(name)
-        if (!existing || existing.isSoftDeleted) {
+        if (!this.hasNonDeletedNode(name)) {
             return {
                 result: name,
                 rollback: AbstractIndexedIdentities.NO_OP
@@ -148,7 +147,7 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
 
     protected rename(identity: ID & EditableIdentity<T, NAME>, newName: NAME): StateRollback | undefined {
         const oldName = identity.name
-        if (!this.namesAreEqual(oldName, newName) && !this._byName.has(newName)) {
+        if (!this.namesAreEqual(oldName, newName) && !this.hasNonDeletedNode(newName)) {
             const wasIndexed = this._byName.delete(oldName)
             if (wasIndexed) {
                 this._byName.set(newName, identity)
@@ -175,6 +174,11 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
         }
         identity.isSoftDeleted = true
         identity.deletedSemanticModel = deletedSemanticModel
+    }
+
+    protected hasNonDeletedNode(name: NAME): boolean {
+        const identity = this._byName.get(name)
+        return identity !== undefined && !identity.isSoftDeleted
     }
 
     protected hardDelete(identity: ID & EditableIdentity<T, NAME>) {
@@ -212,7 +216,7 @@ export class AstNodeIndexedIdentities<T extends AstNode | sem.ArtificialAstNode,
 
     protected override rename(identity: ID & EditableIdentity<T, AstNodeIdentityName>, newName: AstNodeIdentityName): StateRollback | undefined {
         const oldName = identity.name
-        if (!this.namesAreEqual(oldName, newName) && !this._byName.has(newName)) {
+        if (!this.namesAreEqual(oldName, newName) && !this.hasNonDeletedNode(newName)) {
             const wasIndexed = this._byName.delete(oldName)
             let originalName: string | undefined
             if (wasIndexed) {
@@ -263,17 +267,15 @@ export class AstNodeIndexedIdentities<T extends AstNode | sem.ArtificialAstNode,
         const lastDuplicate = this._nameDuplicates.get(name).at(-1)
         let maxNumber: number
         if (lastDuplicate) {
-            maxNumber = Number.parseInt(lastDuplicate.substring(lastDuplicate.lastIndexOf(AstNodeIndexedIdentities.DUPLICATES_DELIM))) || 1
+            maxNumber = Number.parseInt(lastDuplicate.substring(lastDuplicate.lastIndexOf(AstNodeIndexedIdentities.DUPLICATES_DELIM) + 1)) || 1
         } else {
             maxNumber = 1
         }
         let newName: string
-        let existing: ID | undefined
         do {
             newName = name + '_' + ++maxNumber
             this._nameDuplicates.add(name, newName)
-            existing = this._byName.get(newName)
-        } while (existing && !existing.isSoftDeleted)
+        } while (this.hasNonDeletedNode(newName))
 
         return {
             result: newName,
