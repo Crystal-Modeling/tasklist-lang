@@ -29,16 +29,24 @@ export class LmsRenameProvider<SM extends SemanticIdentifier, II extends Identit
         const targetNode = this.references.findDeclaration(leafNode)
         if (!targetNode) return undefined
 
-        const result = this.textEditService.computeAstNodeRename(targetNode, params.newName, true)
+        let newName = params.newName
         if (sem.Identified.is(targetNode)) {
-            const targetNodeIdentity = targetNode.identity
-            console.debug('Found identity for the targetNode:', targetNodeIdentity)
-            if (targetNodeIdentity.updateName(params.newName)) {
-                console.debug('After updating semantic element, its name has changed')
+            console.debug('Identity for the targetNode:', targetNode.identity)
+            const validatedName = targetNode.identity.fitNewName(newName)
+            if (!validatedName) {
+                console.debug('Failed name validation')
+                return undefined
+            }
+            newName = validatedName.result
+            console.debug('After name validation, new name is', newName)
+            if (!targetNode.identity.updateName(newName)) {
+                console.debug('After updating semantic element, its name has NOT changed')
+                return undefined
             }
         }
 
-        return result.toWorkspaceEdit()
+        return this.textEditService.computeAstNodeRename(targetNode, newName, true)
+            .toWorkspaceEdit()
     }
 
 }

@@ -91,22 +91,7 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
             },
 
             updateName(newName: NAME): StateRollback | undefined {
-                const oldName = identity.name
-                if (!index.namesAreEqual(oldName, newName) && !index._byName.has(newName)) {
-                    const wasIndexed = index._byName.delete(oldName)
-                    if (wasIndexed) {
-                        index._byName.set(newName, identity)
-                    }
-                    identity.name = newName
-                    return () => {
-                        identity.name = oldName
-                        if (wasIndexed) {
-                            index._byName.delete(newName)
-                            index._byName.set(oldName, identity)
-                        }
-                    }
-                }
-                return undefined
+                return index.rename(identity, newName)
             },
 
             delete(deletedSemanticModel?: sem.Identified<T, NAME>): boolean | undefined {
@@ -161,6 +146,25 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
         this._byName.set(identity.name, identity)
     }
 
+    protected rename(identity: ID & EditableIdentity<T, NAME>, newName: NAME): StateRollback | undefined {
+        const oldName = identity.name
+        if (!this.namesAreEqual(oldName, newName) && !this._byName.has(newName)) {
+            const wasIndexed = this._byName.delete(oldName)
+            if (wasIndexed) {
+                this._byName.set(newName, identity)
+            }
+            identity.name = newName
+            return () => {
+                identity.name = oldName
+                if (wasIndexed) {
+                    this._byName.delete(newName)
+                    this._byName.set(oldName, identity)
+                }
+            }
+        }
+        return undefined
+    }
+
     protected softDelete(identity: ID & EditableIdentity<T, NAME>, deletedSemanticModel?: sem.Identified<T, NAME>) {
         if (!deletedSemanticModel) {
             /* NOTE: A VERY edge case: There is no previous Semantic Model for currently missing in AST element (though identity is present).
@@ -206,14 +210,49 @@ export class AstNodeIndexedIdentities<T extends AstNode | sem.ArtificialAstNode,
         return this.fitNew(newName)
     }
 
+    protected override rename(identity: ID & EditableIdentity<T, AstNodeIdentityName>, newName: AstNodeIdentityName): StateRollback | undefined {
+        const oldName = identity.name
+        if (!this.namesAreEqual(oldName, newName) && !this._byName.has(newName)) {
+            const wasIndexed = this._byName.delete(oldName)
+            let originalName: string | undefined
+            if (wasIndexed) {
+                originalName = this.removeNameDuplicate(identity.name)
+                this._byName.set(newName, identity)
+            }
+            identity.name = newName
+            return () => {
+                identity.name = oldName
+                if (wasIndexed) {
+                    this._byName.delete(newName)
+                    if (originalName) {
+                        this._nameDuplicates.add(originalName, oldName)
+                    }
+                    this._byName.set(oldName, identity)
+                }
+            }
+        }
+        return undefined
+    }
+
     public override fitNew(name: AstNodeIdentityName): RollbackableResult<AstNodeIdentityName> {
         return super.fitNew(name) || this.makeNameUnique(name)
     }
 
     protected override hardDelete(identity: ID & EditableIdentity<T, string>): void {
         super.hardDelete(identity)
-        const originalName = identity.name.substring(0, identity.name.lastIndexOf(AstNodeIndexedIdentities.DUPLICATES_DELIM))
-        this._nameDuplicates.delete(originalName, identity.name)
+        this.removeNameDuplicate(identity.name)
+    }
+
+    /**
+     * @param name identity name which should be removed from the duplicates list
+     * @returns `originalName` if it existed and [`originalName`, `name`] was removed from the duplicates multimap. Otherwise returns `undefined`
+     */
+    private removeNameDuplicate(name: AstNodeIdentityName): string | undefined {
+        const originalName = name.substring(0, name.lastIndexOf(AstNodeIndexedIdentities.DUPLICATES_DELIM))
+        if (this._nameDuplicates.delete(originalName, name)) {
+            return originalName
+        }
+        return undefined
     }
 
     protected override namesAreEqual(left: AstNodeIdentityName, right: AstNodeIdentityName): boolean {
