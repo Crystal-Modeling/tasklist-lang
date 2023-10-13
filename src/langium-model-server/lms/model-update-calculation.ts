@@ -47,7 +47,6 @@ export function compareModelWithExistingBefore<T extends AstNode | sem.Artificia
         if (!current.identity.isSoftDeleted) {
             return ArrayUpdateCommand.addition(sourceModelFactory(current))
         }
-        current.identity.deletedSemanticModel
         // Existed in AST long before, was marked for deletion, now reappearing
         const reappearance = ElementUpdate.createStateUpdate<SRC>(semanticId, 'REAPPEARED')
         applyModelChanges(reappearance, current.identity.deletedSemanticModel ?? current.identity, current)

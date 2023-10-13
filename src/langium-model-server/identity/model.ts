@@ -53,9 +53,14 @@ export type AstNodeIdentityName = string
 export type IdentityName = AstNodeIdentityName | DerivativeIdentityName
 
 export type StateRollback = () => void
+export type RollbackableResult<T> = {
+    result: T,
+    rollback: StateRollback
+}
 
 export interface EditableIdentity<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName = IdentityName> extends Readonly<SemanticIdentifier>, Readonly<ModelUri> {
     name: NAME
+    fitNewName(newName: NAME): RollbackableResult<NAME> | undefined
     /**
      * Replaces the `name` value with supplied argument. Returns {@link StateRollback} if the name has changed, which can be used to rollback the operation.
      * If the renaming cannot be performed (e.g., there is already an indexed Identity with name = `newName`), returns `undefined`
