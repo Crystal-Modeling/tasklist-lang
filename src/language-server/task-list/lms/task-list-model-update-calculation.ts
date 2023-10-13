@@ -65,7 +65,7 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
     /**
      * Calculates transitions update and applies identities deletion / restoration to embedded identity index
      */
-    public calculateTransitionsUpdate(identitiesToDelete: Iterable<identity.TransitionIdentity>): ReadonlyArrayUpdate<Transition> {
+    public applyTransitionsUpdate(identitiesToDelete: Iterable<identity.TransitionIdentity>): ReadonlyArrayUpdate<Transition> {
         const existingTransitions = this.semanticDomain.identifiedTransitions.values()
         const updates = Array.from(existingTransitions, transition => compareModelWithExistingBefore(
             this.semanticDomain.getPreviousIdentifiedTransition(transition.id),

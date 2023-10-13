@@ -82,7 +82,7 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
                 }
                 semanticDomain.identifyTransition(transition, transitionIdentity)
             })
-        const transitionsUpdate = updateCalculator.calculateTransitionsUpdate(existingUnmappedTransitions.values())
+        const transitionsUpdate = updateCalculator.applyTransitionsUpdate(existingUnmappedTransitions.values())
 
         if (!src.ArrayUpdate.isEmpty(transitionsUpdate)) update.transitions = src.ArrayUpdate.create(transitionsUpdate)
     }

@@ -76,14 +76,12 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
             },
 
             delete(deletedSemanticModel?: sem.Identified<T, NAME>): boolean | undefined {
-                // When we receive Semantic Identity of the model to be deleted, we first try to use
-                // _Semantic Model_ with such semantic ID (which could exist in _previous_ AST state),
-                // since Semantic Model stores all attributes and we will be able to do more precise comparison
-                // if it reappears later
                 if (index._byId.has(identity.id)) {
                     if (identity.isSoftDeleted) {
                         index._byId.delete(identity.id)
                         index._byName.delete(identity.name)
+                        identity.isSoftDeleted = false
+                        identity.deletedSemanticModel = undefined
                         return true
                     }
                     if (!deletedSemanticModel) {
