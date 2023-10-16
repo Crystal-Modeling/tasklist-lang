@@ -41,25 +41,25 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         // which would make it generally necessary to pass the parent model into the semantic domain when requesting some (valid/identified) models
         const astModel: ast.Model = document.parseResult.value
 
-        const identityIndex = this.identityManager.getIdentityIndex(document)
+        const taskIdentities = this.identityManager.getIdentityIndex(document).tasks
         const updateCalculator = this.modelUpdateCalculators.getOrCreateCalculator(document)
         const semanticDomain = document.semanticDomain
 
-        const existingUnmappedTasks = identityIndex.tasks.getCopyByName()
+        const existingUnmappedIdentities = new Set(taskIdentities.values())
         // Actual mapping: marking semantic elements for deletion, and AST nodes to be added
         semanticDomain.getValidTasks(astModel)
             .forEach(task => {
-                let taskIdentity = existingUnmappedTasks.get(task.name)
+                let taskIdentity = taskIdentities.byName(task.name)
                 if (taskIdentity) {
-                    existingUnmappedTasks.delete(task.name)
+                    existingUnmappedIdentities.delete(taskIdentity)
                 } else {
-                    taskIdentity = identityIndex.tasks.addNew(task.name)
+                    taskIdentity = taskIdentities.addNew(task.name)
                 }
                 semanticDomain.identifyTask(task, taskIdentity)
             })
         // Deletion of not mapped tasks. Even though transitions (on the AST level) are composite children of source Task,
         // they still have to be deleted separately (**to simplify Updates creation**)
-        const tasksUpdate = updateCalculator.applyTasksUpdate(existingUnmappedTasks.values())
+        const tasksUpdate = updateCalculator.applyTasksUpdate(existingUnmappedIdentities.values())
 
         if (!src.ArrayUpdate.isEmpty(tasksUpdate)) update.tasks = src.ArrayUpdate.create(tasksUpdate)
     }
@@ -67,22 +67,22 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
     // Example of how Identity of non Ast-based element is reconciled
     private reconcileTransitions(document: Initialized<TaskListDocument>, update: src.Update<source.Model>) {
 
-        const identityIndex = this.identityManager.getIdentityIndex(document)
+        const transitionIdentities = this.identityManager.getIdentityIndex(document).transitions
         const updateCalculator = this.modelUpdateCalculators.getOrCreateCalculator(document)
         const semanticDomain = document.semanticDomain
 
-        const existingUnmappedTransitions = identityIndex.transitions.getCopyByName()
+        const existingUnmappedIdentities = new Set(transitionIdentities.values())
         semanticDomain.getValidTransitions()
             .forEach(transition => {
-                let transitionIdentity = existingUnmappedTransitions.get(transition.name)
+                let transitionIdentity = transitionIdentities.byName(transition.name)
                 if (transitionIdentity) {
-                    existingUnmappedTransitions.delete(transition.name)
+                    existingUnmappedIdentities.delete(transitionIdentity)
                 } else {
-                    transitionIdentity = identityIndex.transitions.addNew(transition.name)
+                    transitionIdentity = transitionIdentities.addNew(transition.name)
                 }
                 semanticDomain.identifyTransition(transition, transitionIdentity)
             })
-        const transitionsUpdate = updateCalculator.applyTransitionsUpdate(existingUnmappedTransitions.values())
+        const transitionsUpdate = updateCalculator.applyTransitionsUpdate(existingUnmappedIdentities.values())
 
         if (!src.ArrayUpdate.isEmpty(transitionsUpdate)) update.transitions = src.ArrayUpdate.create(transitionsUpdate)
     }

@@ -1,4 +1,6 @@
-import { AstNodeIndexedIdentities, DerivativeIndexedIdentities, type IdentityIndex, type IndexedIdentities } from '../../../langium-model-server/identity'
+import { type IdentityIndex, type IndexedIdentities } from '../../../langium-model-server/identity'
+import { DerivativeIndexedIdentities } from '../../../langium-model-server/identity/derivative-indexed-identities'
+import { AstNodeIndexedIdentities } from '../../../langium-model-server/identity/ast-indexed-identities'
 import type { AstNodeIdentityName } from '../../../langium-model-server/identity/model'
 import { ModelUri } from '../../../langium-model-server/identity/model'
 import type * as ast from '../../generated/ast'

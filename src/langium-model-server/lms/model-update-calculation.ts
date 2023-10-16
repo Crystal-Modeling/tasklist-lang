@@ -84,7 +84,7 @@ export function deleteModels<T extends AstNode | sem.ArtificialAstNode, NAME ext
         .filter(identity => identity.delete(getPreviousSemanticModel(identity.id)))
         .map(identity => identity.id)
         .toArray()
-    const softDeletetionUpdates = Array.from(getSoftDeleted(), ({id}) => ElementUpdate.createStateUpdate<SRC>(id, 'DISAPPEARED'))
+    const softDeletetionUpdates = Array.from(getSoftDeleted(), ({ id }) => ElementUpdate.createStateUpdate<SRC>(id, 'DISAPPEARED'))
     const deletion = ArrayUpdateCommand.deletion<SRC>(deletedIds)
     const dissappearances = ArrayUpdateCommand.modification(softDeletetionUpdates)
     return ArrayUpdateCommand.all(deletion, dissappearances)

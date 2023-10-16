@@ -54,7 +54,7 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
             applyTaskChanges,
         ))
         const deletion: ReadonlyArrayUpdate<Task> = deleteModels(
-            this.identityIndex.tasks.getSoftDeleted.bind(this.identityIndex.tasks),
+            this.identityIndex.tasks.allSoftDeleted.bind(this.identityIndex.tasks),
             this.semanticDomain.getPreviousIdentifiedTask.bind(this.semanticDomain),
             identitiesToDelete,
         )
@@ -74,7 +74,7 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
             applyTransitionChanges,
         ))
         const deletion: ReadonlyArrayUpdate<Transition> = deleteModels(
-            this.identityIndex.transitions.getSoftDeleted.bind(this.identityIndex.transitions),
+            this.identityIndex.transitions.allSoftDeleted.bind(this.identityIndex.transitions),
             this.semanticDomain.getPreviousIdentifiedTransition.bind(this.semanticDomain),
             identitiesToDelete,
         )
@@ -83,8 +83,8 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
     }
 
     public clearSoftDeletedIdentities(): RootUpdate<Model> {
-        const tasksDeletion = ArrayUpdateCommand.deletion<Task>(Array.from(this.identityIndex.tasks.getSoftDeleted(), deleteIdentity))
-        const transitionsDeletion = ArrayUpdateCommand.deletion<Transition>(Array.from(this.identityIndex.transitions.getSoftDeleted(), deleteIdentity))
+        const tasksDeletion = ArrayUpdateCommand.deletion<Task>(Array.from(this.identityIndex.tasks.allSoftDeleted(), deleteIdentity))
+        const transitionsDeletion = ArrayUpdateCommand.deletion<Transition>(Array.from(this.identityIndex.transitions.allSoftDeleted(), deleteIdentity))
 
         const rootUpdate = RootUpdate.createEmpty<Model>(this.semanticDomain.rootId, id.ModelUri.root)
         if (!ArrayUpdate.isEmpty(tasksDeletion)) rootUpdate.tasks = ArrayUpdate.create(tasksDeletion)
