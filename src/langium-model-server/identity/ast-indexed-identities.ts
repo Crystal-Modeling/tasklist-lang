@@ -12,16 +12,10 @@ export class AstNodeIndexedIdentities<T extends AstNode | sem.ArtificialAstNode,
     protected override readonly _shadowedSoftDeletedByName: Map<AstNodeIdentityName, ID> = new Map()
     protected readonly _nameDuplicates: MultiMap<AstNodeIdentityName, AstNodeIdentityName> = new MultiMap()
 
-    protected override fitNameForIdentity(identity: ID & EditableIdentity<T, AstNodeIdentityName>, newName: AstNodeIdentityName): RollbackableResult<AstNodeIdentityName> | undefined {
-        // NOTE: Relying on the model (_nameDuplicates) consistency here
-        const oldNameIsLastDuplicateForNewName = this._nameDuplicates.get(newName).at(-1) === identity.name
-        if (this.namesAreEqual(identity.name, newName) || oldNameIsLastDuplicateForNewName) {
-            return {
-                result: identity.name,
-                rollback: AbstractIndexedIdentities.NO_OP
-            }
-        }
-        return this.fitName(newName)
+    protected override isNewNameFitForIdentity(identity: ID & EditableIdentity<T, AstNodeIdentityName>, newName: AstNodeIdentityName): boolean {
+        return this.namesAreEqual(identity.name, newName)
+            || this.isNameFit(newName)
+            || this._nameDuplicates.get(newName).at(-1) === identity.name // Old name is last duplicate for new name
     }
 
     protected override doRenameIdentity(identity: ID & EditableIdentity<T, AstNodeIdentityName>, newName: AstNodeIdentityName): StateRollback | undefined {
@@ -87,7 +81,7 @@ export class AstNodeIndexedIdentities<T extends AstNode | sem.ArtificialAstNode,
         do {
             newName = name + '_' + ++maxNumber
             this._nameDuplicates.add(name, newName)
-        } while (this.hasNonDeletedNode(newName))
+        } while (this.hasActiveNode(newName))
 
         return {
             result: newName,

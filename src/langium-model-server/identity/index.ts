@@ -14,6 +14,7 @@ export interface IndexedIdentities<T extends AstNode | sem.ArtificialAstNode, NA
     allSoftDeleted(): Iterable<ID>
     values(): Iterable<ID>
     byName(name: NAME): ID | undefined
+    isNameFit(name: NAME): boolean
     fitName(name: NAME): RollbackableResult<NAME> | undefined
     addNew(name: NAME): ID
     add(id: string, name: NAME): ID

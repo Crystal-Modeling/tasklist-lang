@@ -2,7 +2,7 @@ import type { AstNodeLocator, References } from 'langium'
 import { findNodeForProperty, getContainerOfType, getDocument, getPreviousNode, stream, type MaybePromise } from 'langium'
 import type { Position } from 'vscode-languageserver'
 import { ApplyWorkspaceEditRequest, TextEdit } from 'vscode-languageserver'
-import type * as id from '../../../langium-model-server/identity/model'
+import * as id from '../../../langium-model-server/identity/model'
 import { AbstractLangiumModelServerFacade } from '../../../langium-model-server/lms/facade'
 import type { Creation, CreationParams, Modification } from '../../../langium-model-server/lms/model'
 import { ModificationResult } from '../../../langium-model-server/lms/model'
@@ -54,7 +54,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         }
         const validatedName = this.identityManager.getIdentityIndex(lmsDocument).tasks.fitName(newTask.name)
         if (!validatedName) {
-            return ModificationResult.failedValidation('Unable to fit supplied task name: invalid value')
+            return ModificationResult.failedValidation(`Unable to fit supplied task name '${newTask.name}': invalid value`)
         }
         newTask.name = validatedName.result
         const rollback = validatedName.rollback
@@ -87,6 +87,11 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             return ModificationResult.failedValidation('Unable to resolve: ' + unresolvedTasks.join(', '))
         }
 
+        const newTransition = semantic.Transition.createNew(sourceTask, targetTask)
+        if (!this.identityManager.getIdentityIndex(lmsDocument).transitions.isNameFit(newTransition.name)) {
+            return ModificationResult.failedValidation(`Unable to fit supplied transition name ${newTransition.name}: invalid value`)
+        }
+
         let anchorModel: semantic.IdentifiedTransition | undefined
         if (creationParams.anchorModelId) {
             anchorModel = lmsDocument.semanticDomain.identifiedTransitions.get(creationParams.anchorModelId)
@@ -94,7 +99,6 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
                 return ModificationResult.failedValidation('Anchor model for Transition must be another Transition within the same sourceTask')
             }
         }
-        const newTransition = semantic.Transition.createNew(sourceTask, targetTask)
         const textEdit = this.computeTransitionCreation(newTransition, anchorModel)
 
         return this.applyTextEdit(lmsDocument, textEdit, 'Created new transition: ' + newTransition.name)
@@ -111,19 +115,30 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         if (!task) {
             return ModificationResult.failedValidation('Unable to resolve task by id ' + modelId)
         }
+        let rollback: id.StateRollback | undefined
+        if (taskModification.name) {
+            const validatedName = task.identity.fitNewName(taskModification.name)
+            if (!validatedName) {
+                return ModificationResult.failedValidation(`Unable to fit supplied task name '${taskModification.name}': invalid value`)
+            }
+            taskModification.name = validatedName.result
+            rollback = validatedName.rollback
+        }
 
         const edit = this.computeTaskUpdate(task, taskModification)
-        if (edit) {
-            let rollback: id.StateRollback | undefined
-            if (taskModification.name) {
-                if (!(rollback = task.identity.updateName(taskModification.name))) {
-                    return ModificationResult.failedValidation(`Unable to rename task to '${taskModification.name}'`)
-                }
-            }
-            return this.applySourceEdit(edit, 'Updated task ' + task.name, rollback)
-        } else {
+        if (!edit) {
             return ModificationResult.unmodified()
         }
+
+        if (taskModification.name) {
+            const renameRollback = task.identity.updateName(taskModification.name)
+            if (!renameRollback) {
+                return ModificationResult.failedValidation(`Unable to rename task to '${taskModification.name}'`)
+            }
+            rollback = id.StateRollback.add(rollback, renameRollback)
+        }
+        return this.applySourceEdit(edit, 'Updated task ' + task.name, rollback)
+
     }
 
     public updateTransition(rootModelId: string, modelId: string, transitionModification: Modification<Transition>): MaybePromise<ModificationResult> | undefined {
@@ -155,6 +170,9 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         }
 
         const newTransition = semantic.Transition.createNew(newSourceTask ?? transition.sourceTask, newTargetTask ?? transition.targetTask)
+        if (!transition.identity.isNewNameFit(newTransition.name)) {
+            return ModificationResult.failedValidation(`Unable to fit supplied transition name ${newTransition.name}: invalid value`)
+        }
 
         const sourceEdit = this.computeTransitionUpdate(lmsDocument, transition, newTransition)
 

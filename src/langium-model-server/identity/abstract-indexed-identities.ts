@@ -36,8 +36,13 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
         return this._activeByName.get(name) ?? this._shadowedSoftDeletedByName.get(name)
     }
 
+    public isNameFit(name: NAME): boolean {
+        return !this.hasActiveNode(name)
+    }
+
+    // HACK: This implementation seems to be rather non-unuseful?
     public fitName(name: NAME): RollbackableResult<NAME> | undefined {
-        if (!this.hasNonDeletedNode(name)) {
+        if (this.isNameFit(name)) {
             return {
                 result: name,
                 rollback: AbstractIndexedIdentities.NO_OP
@@ -61,6 +66,10 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
             id,
             name,
             modelUri: this.modelUriFactory(id),
+
+            isNewNameFit(newName: NAME): boolean {
+                return index.isNewNameFitForIdentity(identity, newName)
+            },
 
             fitNewName(newName: NAME): RollbackableResult<NAME> | undefined {
                 return index.fitNameForIdentity(identity, newName)
@@ -117,7 +126,7 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
         return untypedIdentity as ID
     }
 
-    protected hasNonDeletedNode(name: NAME): boolean {
+    protected hasActiveNode(name: NAME): boolean {
         const identity = this._activeByName.get(name)
         return identity !== undefined && !identity.isSoftDeleted
     }
@@ -127,10 +136,14 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
         this._activeByName.set(identity.name, identity)
     }
 
+    protected isNewNameFitForIdentity(identity: ID & EditableIdentity<T, NAME>, newName: NAME): boolean {
+        return this.namesAreEqual(identity.name, newName) || this.isNameFit(newName)
+    }
+
     protected fitNameForIdentity(identity: ID & EditableIdentity<T, NAME>, newName: NAME): RollbackableResult<NAME> | undefined {
-        if (this.namesAreEqual(identity.name, newName)) {
+        if (this.isNewNameFitForIdentity(identity, newName)) {
             return {
-                result: identity.name,
+                result: newName,
                 rollback: AbstractIndexedIdentities.NO_OP
             }
         }
@@ -147,7 +160,7 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
         }
 
         if (this.namesAreEqual(oldName, newName) // Renaming doesn't have any sense
-            || this.hasNonDeletedNode(newName) // Can't rename if there is an active non-soft-deleted identity with the name
+            || this.hasActiveNode(newName) // Can't rename if there is an active non-soft-deleted identity with the name
             || this._shadowedSoftDeletedByName.get(oldName) === identity) { // Can't rename shadowed identities: they are soft-deleted by design
             return undefined
         }

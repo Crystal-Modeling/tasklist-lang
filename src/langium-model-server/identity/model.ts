@@ -53,6 +53,15 @@ export type AstNodeIdentityName = string
 export type IdentityName = AstNodeIdentityName | DerivativeIdentityName
 
 export type StateRollback = () => void
+export namespace StateRollback {
+    export function add(r1: StateRollback | undefined, r2: StateRollback): StateRollback {
+        if (!r1) return r2
+        return () => {
+            r2()
+            r1()
+        }
+    }
+}
 export type RollbackableResult<T> = {
     result: T,
     rollback: StateRollback
@@ -60,6 +69,7 @@ export type RollbackableResult<T> = {
 
 export interface EditableIdentity<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName = IdentityName> extends Readonly<SemanticIdentifier>, Readonly<ModelUri> {
     name: NAME
+    isNewNameFit(newName: NAME): boolean
     fitNewName(newName: NAME): RollbackableResult<NAME> | undefined
     /**
      * Replaces the `name` value with supplied argument. Returns {@link StateRollback} if the name has changed, which can be used to rollback the operation.
