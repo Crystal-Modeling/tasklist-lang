@@ -65,17 +65,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
 
         const textEdit = this.computeTaskCreation(lmsDocument, newTask, anchorModel)
 
-        return this.applyTextEdit(lmsDocument, textEdit, 'Create new task ' + newTask.name).then(editingResult => {
-            if (editingResult.successful) {
-                console.debug('Created new task:', newTask)
-            } else {
-                rollback()
-            }
-            return editingResult
-        }, failure => {
-            rollback()
-            return failure
-        })
+        return this.applyTextEdit(lmsDocument, textEdit, 'Create new task ' + newTask.name, rollback)
     }
 
     public addTransition(rootModelId: string, newModel: Creation<Transition>, creationParams: CreationParams = {}): MaybePromise<ModificationResult> | undefined {
@@ -130,18 +120,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
                     return ModificationResult.failedValidation(`Unable to rename task to '${taskModification.name}'`)
                 }
             }
-            return this.applySourceEdit(edit, 'Updated task ' + task.name)
-                .then(editingResult => {
-                    if (editingResult.successful) {
-                        console.debug('Modified Task attributes:', taskModification)
-                    } else {
-                        !rollback || rollback()
-                    }
-                    return editingResult
-                }, failure => {
-                    !rollback || rollback()
-                    return failure
-                })
+            return this.applySourceEdit(edit, 'Updated task ' + task.name, rollback)
         } else {
             return ModificationResult.unmodified()
         }
@@ -184,18 +163,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             if (!rollback) {
                 return ModificationResult.failedValidation(`Unable to rename transition to '${newTransition.name}'`)
             }
-            return this.applySourceEdit(sourceEdit, 'Updated transition: ' + transition.name + 'to ' + newTransition.name)
-                .then(editingResult => {
-                    if (editingResult.successful) {
-                        console.debug('Modified Transition attributes. New transition', newTransition)
-                    } else {
-                        rollback()
-                    }
-                    return editingResult
-                }, failure => {
-                    rollback()
-                    return failure
-                })
+            return this.applySourceEdit(sourceEdit, 'Updated transition: ' + transition.name + 'to ' + newTransition.name, rollback)
         } else {
             return ModificationResult.unmodified()
         }
@@ -434,11 +402,11 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return [sourceEdit, 'Deleted transition ' + transition.name]
     }
 
-    private applyTextEdit(lmsDocument: LmsDocument, textEdit: TextEdit, label?: string): Promise<ModificationResult> {
-        return this.applySourceEdit(SourceEdit.ofSingleEdit(lmsDocument.uri, textEdit), label)
+    private applyTextEdit(lmsDocument: LmsDocument, textEdit: TextEdit, label: string, rollback?: id.StateRollback): Promise<ModificationResult> {
+        return this.applySourceEdit(SourceEdit.ofSingleEdit(lmsDocument.uri, textEdit), label, rollback)
     }
 
-    private applySourceEdit(sourceEdit: SourceEdit, label?: string): Promise<ModificationResult> {
+    private applySourceEdit(sourceEdit: SourceEdit, label: string, rollback?: id.StateRollback): Promise<ModificationResult> {
         for (const uri of sourceEdit.getAffectedURIs()) {
             const lmsDocument = this.langiumDocuments.getOrCreateDocument(uri)
             if (this.isLmsDocument(lmsDocument)) {
@@ -450,7 +418,17 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         ).then(editResult => editResult.applied
             ? ModificationResult.successful()
             : ModificationResult.failedTextEdit(editResult.failureReason)
-        )
+        ).then(editingResult => {
+            if (editingResult.successful) {
+                console.debug(label)
+            } else {
+                !rollback || rollback()
+            }
+            return editingResult
+        }, failure => {
+            !rollback || rollback()
+            return failure
+        })
     }
 
     protected override convertSemanticModelToSourceModel(lmsDocument: LmsDocument): Model | undefined {
