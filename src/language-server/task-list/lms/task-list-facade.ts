@@ -52,6 +52,12 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         if (!lmsDocument) {
             return undefined
         }
+        const validatedName = this.identityManager.getIdentityIndex(lmsDocument).tasks.fitName(newTask.name)
+        if (!validatedName) {
+            return ModificationResult.failedValidation('Unable to fit supplied task name: invalid value')
+        }
+        newTask.name = validatedName.result
+        const rollback = validatedName.rollback
         let anchorModel: semantic.IdentifiedTask | undefined
         if (creationParams.anchorModelId) {
             anchorModel = lmsDocument.semanticDomain.identifiedTasks.get(creationParams.anchorModelId)
@@ -59,7 +65,17 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
 
         const textEdit = this.computeTaskCreation(lmsDocument, newTask, anchorModel)
 
-        return this.applyTextEdit(lmsDocument, textEdit, 'Create new task ' + newTask.name)
+        return this.applyTextEdit(lmsDocument, textEdit, 'Create new task ' + newTask.name).then(editingResult => {
+            if (editingResult.successful) {
+                console.debug('Created new task:', newTask)
+            } else {
+                rollback()
+            }
+            return editingResult
+        }, failure => {
+            rollback()
+            return failure
+        })
     }
 
     public addTransition(rootModelId: string, newModel: Creation<Transition>, creationParams: CreationParams = {}): MaybePromise<ModificationResult> | undefined {
