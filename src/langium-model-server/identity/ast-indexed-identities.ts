@@ -54,8 +54,8 @@ export class AstNodeIndexedIdentities<T extends AstNode | sem.ArtificialAstNode,
         return super.fitName(name) || this.makeNameUnique(name)
     }
 
-    protected override softDeleteIdentity(identity: ID & EditableIdentity<T, string>): void {
-        super.softDeleteIdentity(identity)
+    protected override softDeleteIdentity(identity: ID & EditableIdentity<T, string>, deletedSemanticModel?: sem.Identified<T, AstNodeIdentityName>): void {
+        super.softDeleteIdentity(identity, deletedSemanticModel)
         this.removeDuplicateName(identity.name)
     }
 
