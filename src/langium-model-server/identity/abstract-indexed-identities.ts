@@ -48,7 +48,7 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
                 rollback: AbstractIndexedIdentities.NO_OP
             }
         }
-        return undefined
+        return this.fitUnfittedName(name)
     }
 
     /**
@@ -147,7 +147,16 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
                 rollback: AbstractIndexedIdentities.NO_OP
             }
         }
-        return this.fitName(newName)
+        return this.fitUnfittedName(newName)
+    }
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    protected fitUnfittedName(name: NAME): RollbackableResult<NAME> | undefined {
+        /**
+         * By default @{link AbstractIndexedIdentities} does not know, how to fit name, if it is unfitted already
+         *
+         * */
+        return undefined
     }
 
     protected renameIdentity(identity: ID & EditableIdentity<T, NAME>, newName: NAME): StateRollback | undefined {

@@ -6,7 +6,8 @@ import type { AstNodeIdentityName, EditableIdentity, Identity, RollbackableResul
 
 export class AstNodeIndexedIdentities<T extends AstNode | sem.ArtificialAstNode, ID extends Identity<T, AstNodeIdentityName>> extends AbstractIndexedIdentities<T, AstNodeIdentityName, ID> {
 
-    private static readonly DUPLICATE_NAME_DELIM = '_'
+    private static readonly ILLEGAL_NAME_CHAR = ' '
+    private static readonly SEPARATOR = '_'
 
     protected override readonly _activeByName: Map<AstNodeIdentityName, ID> = new Map()
     protected override readonly _shadowedSoftDeletedByName: Map<AstNodeIdentityName, ID> = new Map()
@@ -16,6 +17,11 @@ export class AstNodeIndexedIdentities<T extends AstNode | sem.ArtificialAstNode,
         return this.namesAreEqual(identity.name, newName)
             || this.isNameFit(newName)
             || this._nameDuplicates.get(newName).at(-1) === identity.name // Old name is last duplicate for new name
+    }
+
+    protected override fitNameForIdentity(identity: ID & EditableIdentity<T, string>, newName: string): RollbackableResult<string> | undefined {
+        const normalizedName = newName.replace(AstNodeIndexedIdentities.ILLEGAL_NAME_CHAR, AstNodeIndexedIdentities.SEPARATOR)
+        return super.fitNameForIdentity(identity, normalizedName)
     }
 
     protected override doRenameIdentity(identity: ID & EditableIdentity<T, AstNodeIdentityName>, newName: AstNodeIdentityName): StateRollback | undefined {
@@ -44,8 +50,17 @@ export class AstNodeIndexedIdentities<T extends AstNode | sem.ArtificialAstNode,
         }
     }
 
-    public override fitName(name: AstNodeIdentityName): RollbackableResult<AstNodeIdentityName> {
-        return super.fitName(name) || this.makeNameUnique(name)
+    public override fitName(name: AstNodeIdentityName): RollbackableResult<AstNodeIdentityName> | undefined {
+        const normalizedName = name.replace(AstNodeIndexedIdentities.ILLEGAL_NAME_CHAR, AstNodeIndexedIdentities.SEPARATOR)
+        return super.fitName(normalizedName)
+    }
+
+    public override isNameFit(name: AstNodeIdentityName): boolean {
+        return !this.hasActiveNode(name) && !name.includes(AstNodeIndexedIdentities.ILLEGAL_NAME_CHAR)
+    }
+
+    protected override fitUnfittedName(name: string): RollbackableResult<string> | undefined {
+        return this.makeNameUnique(name)
     }
 
     protected override softDeleteIdentity(identity: ID & EditableIdentity<T, string>, deletedSemanticModel?: sem.Identified<T, AstNodeIdentityName>): void {
@@ -62,7 +77,7 @@ export class AstNodeIndexedIdentities<T extends AstNode | sem.ArtificialAstNode,
      * @returns `originalName` if it existed and [`originalName`, `name`] was removed from the duplicates multimap. Otherwise returns `undefined`
      */
     private removeDuplicateName(name: AstNodeIdentityName): string | undefined {
-        const originalName = name.substring(0, name.lastIndexOf(AstNodeIndexedIdentities.DUPLICATE_NAME_DELIM))
+        const originalName = name.substring(0, name.lastIndexOf(AstNodeIndexedIdentities.SEPARATOR))
         if (this._nameDuplicates.delete(originalName, name)) {
             return originalName
         }
@@ -73,7 +88,7 @@ export class AstNodeIndexedIdentities<T extends AstNode | sem.ArtificialAstNode,
         const lastDuplicate = this._nameDuplicates.get(name).at(-1)
         let maxNumber: number
         if (lastDuplicate) {
-            maxNumber = Number.parseInt(lastDuplicate.substring(lastDuplicate.lastIndexOf(AstNodeIndexedIdentities.DUPLICATE_NAME_DELIM) + 1)) || 1
+            maxNumber = Number.parseInt(lastDuplicate.substring(lastDuplicate.lastIndexOf(AstNodeIndexedIdentities.SEPARATOR) + 1)) || 1
         } else {
             maxNumber = 1
         }
