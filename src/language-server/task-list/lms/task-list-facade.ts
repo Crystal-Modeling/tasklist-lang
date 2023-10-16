@@ -1,6 +1,6 @@
 import type { AstNodeLocator, References } from 'langium'
-import { findNodeForProperty, getContainerOfType, getDocument, getPreviousNode, stream, type MaybePromise } from 'langium'
-import type { Position } from 'vscode-languageserver'
+import { findNodeForProperty, getContainerOfType, getDocument, stream, type MaybePromise, getNextNode } from 'langium'
+import type { Position} from 'vscode-languageserver'
 import { ApplyWorkspaceEditRequest, TextEdit } from 'vscode-languageserver'
 import * as id from '../../../langium-model-server/identity/model'
 import { AbstractLangiumModelServerFacade } from '../../../langium-model-server/lms/facade'
@@ -351,8 +351,8 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             throw new Error('Cannot locate model ' + task.name + '(' + task.id + ') in text')
         }
 
-        const start = getPreviousNode(task.$cstNode, false)?.range?.end ?? { line: 0, character: 0 }
-        const end = task.$cstNode.range.end
+        const start = task.$cstNode.range.start
+        const end = getNextNode(task.$cstNode, false)?.range?.start ?? {line: lmsDocument.textDocument.lineCount, character: 0}
         const deleteTaskEdit = TextEdit.del({ start, end })
         const sourceEdit = SourceEdit.ofSingleEdit(lmsDocument.uri, deleteTaskEdit)
         this.references.findReferences(task, { includeDeclaration: false })
