@@ -3,7 +3,7 @@ import { stream } from 'langium'
 import type { ArtificialAstNode, IdentifiedNode } from '../../../langium-model-server/semantic/model'
 import { Identified, Validated, isReferenceValid } from '../../../langium-model-server/semantic/model'
 import { type QueriableSemanticDomain, type SemanticDomain } from '../../../langium-model-server/semantic/semantic-domain'
-import { embedIndex } from '../../../langium-model-server/utils/functions'
+import { embedElementIndices } from '../../../langium-model-server/utils/functions'
 import * as ast from '../../generated/ast'
 import type * as id from '../identity/model'
 import type { IdentifiedTask, IdentifiedTransition, TransitionIdentifiedProperties } from './model'
@@ -49,7 +49,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
 
     public readonly rootId: string
 
-    private _validatedTransitions: Set<Validated<Transition>>
+    private _validatedTransitionsByReference: Map<Reference<ast.Task>, Validated<Transition>>
     private _identifiedTasksById: Map<string, IdentifiedTask>
     private _previousIdentifiedTaskById: Map<string, IdentifiedTask> | undefined
     private _identifiedTransitionsById: Map<string, IdentifiedTransition>
@@ -58,7 +58,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
     constructor(rootId: string) {
         this.rootId = rootId
         this._identifiedTasksById = new Map()
-        this._validatedTransitions = new Set()
+        this._validatedTransitionsByReference = new Map()
         this._identifiedTransitionsById = new Map()
     }
 
@@ -72,17 +72,20 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
     */
 
     public validateTasksForModel(model: ast.Model, invalidTasks: Set<ast.Task>): void {
-        model.tasks.filter(task => !invalidTasks.has(task))
+        model.tasks
+            .filter(task => !invalidTasks.has(task))
             .forEach(Validated.validate)
     }
 
     public validateReferencesForTask(task: ast.Task, invalidReferences: Set<Reference<ast.Task>>): void {
         if (Validated.is(task)) {
-            stream(task.references.map(embedIndex))
+            stream(embedElementIndices(task.references))
                 .filter(ref => !invalidReferences.has(ref))
                 .filter(isReferenceValid)
-                .map(reference => Validated.validate(Transition.create(task, reference, reference.index)))
-                .forEach(transition => this._validatedTransitions.add(transition))
+                .forEach(reference => {
+                    const transition = Validated.validate(Transition.create(task, reference, reference.index))
+                    this._validatedTransitionsByReference.set(reference, transition)
+                })
         }
     }
 
@@ -92,7 +95,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
     }
 
     public getValidatedTransitions(): Stream<Validated<Transition & TransitionIdentifiedProperties>> {
-        return stream(this._validatedTransitions)
+        return stream(this._validatedTransitionsByReference.values())
             .filter(Transition.assertIdentifiedProperties)
     }
 
@@ -125,7 +128,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
     }
 
     public clear() {
-        this._validatedTransitions.clear()
+        this._validatedTransitionsByReference.clear()
         this._previousIdentifiedTaskById = this._identifiedTasksById
         this._identifiedTasksById = new Map()
         this._previousIdentifiedTransitionsById = this._identifiedTransitionsById
@@ -134,10 +137,12 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     public getValidatedNode<N extends AstNode, P = Properties<N>>(node: N, property?: P, index?: number): Validated<AstNode | ArtificialAstNode> | undefined {
-        if (ast.isTask(node) && Validated.is(node)) {
-            return node
+        if (ast.isTask(node)) {
+            if ((property as Properties<ast.Task>) === 'references' && index !== undefined) {
+                return this._validatedTransitionsByReference.get(node.references[index])
+            }
         }
-        return undefined
+        return Validated.is(node) ? node : undefined
     }
 
     public getIdentifiedNodes(): Stream<IdentifiedNode> {
