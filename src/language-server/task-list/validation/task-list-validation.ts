@@ -15,6 +15,7 @@ export function registerValidationChecks(services: TaskListServices) {
         Model: validator.checkModelHasUniqueTasks,
         Task: [
             validator.checkTaskHasUniqueReferences,
+            validator.checkTaskNameMustStartWithLowercase,
             validator.checkTaskContentShouldStartWithCapital,
             validator.checkTaskDoesNotReferenceItself
         ]
@@ -77,6 +78,16 @@ export class TaskListValidator {
             }
         }
         getTaskListDocument(task).semanticDomain?.validateReferencesForTask(task, nonUniqueReferences)
+    }
+
+    checkTaskNameMustStartWithLowercase(task: Task, accept: ValidationAcceptor): void {
+        if (task.name) {
+            const firstChar = task.name.substring(0, 1)
+            if (firstChar.toLowerCase() !== firstChar) {
+                accept('error', 'Task name must start with a lowercase.',
+                    { node: task, property: 'name' })
+            }
+        }
     }
 
     checkTaskContentShouldStartWithCapital(task: Task, accept: ValidationAcceptor): void {
