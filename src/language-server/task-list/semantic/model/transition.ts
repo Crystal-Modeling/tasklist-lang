@@ -2,11 +2,10 @@ import { findNodeForProperty } from 'langium'
 import * as sem from '../../../../langium-model-server/semantic/model'
 import { isDefined } from '../../../../langium-model-server/utils/predicates'
 import type * as ast from '../../../generated/ast'
-import * as identity from '../../identity/model'
+import type * as identity from '../../identity/model'
 import type { IdentifiedTask } from './task'
 
 export type NewTransition = {
-    name: identity.TransitionDerivativeName
     sourceTask: IdentifiedTask,
     targetTask: IdentifiedTask
 }
@@ -27,7 +26,6 @@ export namespace Transition {
         return {
             sourceTask,
             targetTask,
-            name: identity.TransitionDerivativeName.of(sourceTask.id, targetTask.id)
         }
     }
 
@@ -39,9 +37,7 @@ export namespace Transition {
         if (sem.ResolvedReference.is(reference)
             && isTaskReferenceValidated(sourceTask, referenceIndex)
             && sem.Identified.is(reference.ref)) {
-            const name = identity.TransitionDerivativeName.of(sourceTask.id, reference.ref.id)
             return {
-                name,
                 sourceTask,
                 targetTask: reference.ref,
                 $type: 'Transition',

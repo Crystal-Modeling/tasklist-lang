@@ -5,7 +5,7 @@ import { AbstractModelUpdateCalculators, compareModelWithExistingBefore, deleteI
 import type { Initialized } from '../../../langium-model-server/workspace/documents'
 import type { TaskListIdentityIndex } from '../identity'
 import type { TaskListIdentityManager } from '../identity/manager'
-import * as identity from '../identity/model'
+import type * as identity from '../identity/model'
 import type * as semantic from '../semantic/model'
 import type { QueriableTaskListSemanticDomain } from '../semantic/task-list-semantic-domain'
 import type { TaskListServices } from '../task-list-module'
@@ -108,14 +108,13 @@ function applyTransitionChanges(update: ElementUpdate<Transition>,
     previous: semantic.IdentifiedTransition | identity.TransitionIdentity,
     current: semantic.IdentifiedTransition
 ): void {
-    const currentProperties = identity.TransitionDerivativeName.toProperties(current.name)
     if (previous !== current.identity) {
-        const previousProperties = identity.TransitionDerivativeName.toProperties(previous.name)
-        Update.assignIfUpdated(update, 'sourceTaskId', previousProperties.sourceTaskId, currentProperties.sourceTaskId)
-        Update.assignIfUpdated(update, 'targetTaskId', previousProperties.targetTaskId, currentProperties.targetTaskId)
+        const previousModel = previous as semantic.IdentifiedTransition
+        Update.assignIfUpdated(update, 'sourceTaskId', previousModel.sourceTask.id, current.sourceTask.id)
+        Update.assignIfUpdated(update, 'targetTaskId', previousModel.targetTask.id, current.targetTask.id)
     } else {
-        console.info(`Can't compare attributes of Transition '${current.id}' with name=${current.name}: previous semantic Transition is missing`)
-        Update.assign(update, 'sourceTaskId', currentProperties.sourceTaskId)
-        Update.assign(update, 'targetTaskId', currentProperties.targetTaskId)
+        console.info(`Can't compare attributes of Transition '${current.id}' with name=${current.identity.name}: previous semantic Transition is missing`)
+        Update.assign(update, 'sourceTaskId', current.sourceTask.id)
+        Update.assign(update, 'targetTaskId', current.targetTask.id)
     }
 }

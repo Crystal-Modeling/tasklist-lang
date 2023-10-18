@@ -11,6 +11,10 @@ export namespace TransitionDerivativeName {
         return [sourceTaskId, targetTaskId]
     }
 
+    export function ofNew(newTransition: semantic.NewTransition): TransitionDerivativeName {
+        return [newTransition.sourceTask.id, newTransition.targetTask.id]
+    }
+
     export function of(sourceTaskId: string, targetTaskId: string): TransitionDerivativeName {
         return [sourceTaskId, targetTaskId]
     }

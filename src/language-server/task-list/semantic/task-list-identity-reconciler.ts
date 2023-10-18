@@ -3,6 +3,7 @@ import type { IdentityReconciler } from '../../../langium-model-server/semantic/
 import type { Initialized } from '../../../langium-model-server/workspace/documents'
 import type * as ast from '../../generated/ast'
 import type { TaskListIdentityManager } from '../identity/manager'
+import { TransitionDerivativeName } from '../identity/model'
 import type * as source from '../lms/model'
 import type { TaskListModelUpdateCalculators } from '../lms/task-list-model-update-calculation'
 import type { TaskListServices } from '../task-list-module'
@@ -74,11 +75,12 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         const existingUnmappedIdentities = new Set(transitionIdentities.values())
         semanticDomain.getValidatedTransitions()
             .forEach(transition => {
-                let transitionIdentity = transitionIdentities.byName(transition.name)
+                const name = TransitionDerivativeName.ofNew(transition)
+                let transitionIdentity = transitionIdentities.byName(name)
                 if (transitionIdentity) {
                     existingUnmappedIdentities.delete(transitionIdentity)
                 } else {
-                    transitionIdentity = transitionIdentities.addNew(transition.name)
+                    transitionIdentity = transitionIdentities.addNew(name)
                 }
                 semanticDomain.identifyTransition(transition, transitionIdentity)
             })
