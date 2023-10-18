@@ -242,6 +242,14 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<SemanticIdent
             return
         }
 
+        const validateModelHandler: Http2RequestHandler = (stream) => {
+            const result = langiumModelServerFacade.validate(id)
+
+            if (!result) return notFoundHandler
+            respondWithJson(stream, result, 200)
+            return
+        }
+
         const persistModelHandler: Http2RequestHandler = (stream) => {
             const result = langiumModelServerFacade.persist(id)
 
@@ -262,6 +270,11 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<SemanticIdent
         if (unmatchedPath.readPathSegment('highlight')) {
             if (method === 'PUT')
                 return updateHighlightHandler
+            return notImplementedMethodHandler
+        }
+        if (unmatchedPath.readPathSegment('validation')) {
+            if (method === 'GET')
+                return validateModelHandler
             return notImplementedMethodHandler
         }
         if (unmatchedPath.readPathSegment('persist')) {

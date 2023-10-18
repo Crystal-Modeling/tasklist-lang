@@ -1,6 +1,6 @@
 import type { AstNode, Properties, Stream } from 'langium'
 import { stream } from 'langium'
-import type { ArtificialAstNode } from '../../../langium-model-server/semantic/model'
+import type { ArtificialAstNode, IdentifiedNode } from '../../../langium-model-server/semantic/model'
 import { Validated } from '../../../langium-model-server/semantic/model'
 import { Identified } from '../../../langium-model-server/semantic/model'
 import type { QueriableSemanticDomain, SemanticDomain } from '../../../langium-model-server/semantic/semantic-domain'
@@ -145,6 +145,11 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
             return node
         }
         return undefined
+    }
+
+    public getIdentifiedNodes(): Stream<IdentifiedNode> {
+        return stream(this._identifiedTasksById.values())
+            .concat(this._identifiedTransitionsById.values())
     }
 
     public getIdentifiedNode(id: string): Identified<AstNode | ArtificialAstNode> | undefined {

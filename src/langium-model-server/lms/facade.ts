@@ -1,4 +1,4 @@
-import type { LangiumDocuments, LanguageMetaData, MaybePromise } from 'langium'
+import { type LangiumDocuments, type LanguageMetaData, type MaybePromise } from 'langium'
 import type { Connection } from 'vscode-languageserver'
 import { ShowDocumentRequest } from 'vscode-languageserver'
 import { URI } from 'vscode-uri'
@@ -10,7 +10,7 @@ import type { TypeGuard } from '../utils/types'
 import { UriConverter } from '../utils/uri-converter'
 import type { ExtendableLangiumDocument, Initialized } from '../workspace/documents'
 import { LmsDocument, LmsDocumentState } from '../workspace/documents'
-import type { Creation, CreationParams, ModificationResult, Modification } from './model'
+import type { Creation, CreationParams, Modification, ModificationResult, ValidationMarker } from './model'
 import { HighlightResponse } from './model'
 
 export interface LangiumModelServerFacade<SM> {
@@ -24,6 +24,7 @@ export interface LangiumModelServerFacade<SM> {
      * @returns `undefined` if unexpected error happened during showing code (opening document and highligting some range)
      */
     highlight(rootModelId: string, id: string): MaybePromise<HighlightResponse>
+    validate(rootModelId: string): ValidationMarker[] | undefined
     persist(rootModelId: string): MaybePromise<boolean>
     deleteModels(rootModelId: string, modelIds: string[]): MaybePromise<ModificationResult> | undefined
     //HACK: I rely on LMS consumers having the file URI almost identical to Langium Document URI
@@ -44,8 +45,7 @@ export type UpdateModelHandler<T extends SemanticIdentifier = SemanticIdentifier
 
 export type DeleteModelHandler = (rootModelId: string, modelId: string) => MaybePromise<ModificationResult> | undefined
 
-export abstract class AbstractLangiumModelServerFacade<SM extends SemanticIdentifier, SemI extends IdentityIndex, D extends LmsDocument>
-implements LangiumModelServerFacade<SM> {
+export abstract class AbstractLangiumModelServerFacade<SM extends SemanticIdentifier, SemI extends IdentityIndex, D extends LmsDocument> implements LangiumModelServerFacade<SM> {
 
     protected identityManager: IdentityManager<SemI>
     protected langiumDocuments: LangiumDocuments
@@ -107,6 +107,21 @@ implements LangiumModelServerFacade<SM> {
         return this.connection.sendRequest(ShowDocumentRequest.type,
             { uri: lmsDocument.textDocument.uri, selection: identifiedNode.$cstNode?.range, takeFocus: true }
         ).then(({ success }) => HighlightResponse.modelHighlighted(rootModelId, identifiedNode.id, success))
+    }
+
+    public validate(rootModelId: string): ValidationMarker[] | undefined {
+        const lmsDocument = this.getDocumentById(rootModelId)
+        if (!lmsDocument) {
+            return undefined
+        }
+        return lmsDocument.semanticDomain.getIdentifiedNodes()
+            .filter(node => node.$validation.length > 0)
+            .flatMap(node => node.$validation
+                .map(({ kind, description, label }): ValidationMarker => ({
+                    kind, description, label,
+                    elementId: node.id
+                }))
+            ).toArray()
     }
 
     public persist(rootModelId: string): MaybePromise<boolean> {

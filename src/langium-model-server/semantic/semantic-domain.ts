@@ -1,4 +1,4 @@
-import type { AstNode, Properties } from 'langium'
+import type { AstNode, Properties, Stream } from 'langium'
 import type { ArtificialAstNode, IdentifiedNode, Validated } from './model'
 
 export interface QueriableSemanticDomain {
@@ -13,6 +13,7 @@ export interface QueriableSemanticDomain {
      * @returns `undefined` if `node`.`property`[`index`] or `node` is not part of the LMS model, or if it is not semantically valid
      */
     getValidatedNode<N extends AstNode, P = Properties<N>>(node: N, property?: P, index?: number): Validated<AstNode | ArtificialAstNode> | undefined
+    getIdentifiedNodes(): Stream<IdentifiedNode>
     getIdentifiedNode(id: string): IdentifiedNode | undefined
 }
 
