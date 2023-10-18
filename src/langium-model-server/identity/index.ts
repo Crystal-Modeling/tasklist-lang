@@ -16,6 +16,13 @@ export interface IndexedIdentities<T extends AstNode | sem.ArtificialAstNode, NA
     byName(name: NAME): ID | undefined
     isNameFit(name: NAME): boolean
     fitName(name: NAME): RollbackableResult<NAME> | undefined
+    /**
+     * Not to be used by LMS API, since it relies on name validation performed by the textual language itself
+     * @returns Newly created identity
+     */
     addNew(name: NAME): ID
+}
+
+export interface IdentityConstructor<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName, ID extends Identity<T, NAME>> {
     add(id: string, name: NAME): ID
 }

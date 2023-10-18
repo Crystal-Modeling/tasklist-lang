@@ -3,9 +3,9 @@ import type * as sem from '../semantic/model'
 import type { AbstractMap } from '../utils/collections'
 import type { EditableIdentity, Identity, IdentityName, RollbackableResult, StateRollback } from './model'
 import { SemanticIdentifier } from './model'
-import type { IndexedIdentities } from '.'
+import type { IdentityConstructor, IndexedIdentities } from '.'
 
-export abstract class AbstractIndexedIdentities<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName, ID extends Identity<T, NAME>> implements IndexedIdentities<T, NAME, ID> {
+export abstract class AbstractIndexedIdentities<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName, ID extends Identity<T, NAME>> implements IndexedIdentities<T, NAME, ID>, IdentityConstructor<T, NAME, ID> {
 
     protected static readonly NO_OP = () => { }
 
@@ -51,10 +51,6 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
         return this.fitUnfittedName(name)
     }
 
-    /**
-     * Not to be used by LMS API, since it relies on name validation performed by the textual language itself
-     * @returns Newly created identity
-     */
     public addNew(name: NAME): ID {
         return this.add(SemanticIdentifier.generate(), name)
     }

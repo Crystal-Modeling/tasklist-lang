@@ -16,20 +16,22 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
 
     public constructor(identityModel: IdentityModel) {
         this.id = identityModel.id
-        this.tasks = new AstNodeIndexedIdentities(id =>
+        const tasks = new AstNodeIndexedIdentities<ast.Task, TaskIdentity>(id =>
             // TODO: Here I hardcode ModelUri of Task -- it should be taken from some centralized place (LMS grammar?)
             ModelUri.ofSegments(
                 ModelUri.Segment.property('tasks'),
                 ModelUri.Segment.id(id)
             ))
-        this.transitions = new DerivativeIndexedIdentities(id =>
+        identityModel.tasks.forEach(task => tasks.add(task.id, task.name))
+        this.tasks = tasks
+        const transitions = new DerivativeIndexedIdentities<semantic.Transition, TransitionDerivativeName, TransitionIdentity>(id =>
             // TODO: Here I hardcode ModelUri of Transition -- it should be taken from some centralized place (LMS grammar?)
             ModelUri.ofSegments(
                 ModelUri.Segment.property('transitions'),
                 ModelUri.Segment.id(id)
             ))
-        identityModel.tasks.forEach(task => this.tasks.add(task.id, task.name))
-        identityModel.transitions.forEach(transition => this.transitions.add(transition.id, TransitionDerivativeName.ofProperties(transition)))
+        identityModel.transitions.forEach(transition => transitions.add(transition.id, TransitionDerivativeName.ofProperties(transition)))
+        this.transitions = transitions
     }
 
     protected get model(): IdentityModel {
