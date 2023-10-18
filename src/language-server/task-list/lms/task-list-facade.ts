@@ -87,8 +87,8 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             return ModificationResult.failedValidation('Unable to resolve: ' + unresolvedTasks.join(', '))
         }
 
-        const newTransition = semantic.Transition.createNew(sourceTask, targetTask)
-        const newTransitionName = identity.TransitionDerivativeName.ofNew(newTransition)
+        const newTransition = semantic.Transition.properties(sourceTask, targetTask)
+        const newTransitionName = identity.TransitionDerivativeName.create(newTransition)
         if (!this.identityManager.getIdentityIndex(lmsDocument).transitions.isNameFit(newTransitionName)) {
             return ModificationResult.failedValidation(`Unable to fit supplied transition name ${newTransitionName}: invalid value`)
         }
@@ -170,8 +170,8 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             return ModificationResult.failedValidation('Unable to resolve: ' + unresolvedTasks.join(', '))
         }
 
-        const newTransition = semantic.Transition.createNew(newSourceTask ?? transition.sourceTask, newTargetTask ?? transition.targetTask)
-        const newTransitionName = identity.TransitionDerivativeName.ofNew(newTransition)
+        const newTransition = semantic.Transition.properties(newSourceTask ?? transition.sourceTask, newTargetTask ?? transition.targetTask)
+        const newTransitionName = identity.TransitionDerivativeName.create(newTransition)
         if (!transition.identity.isNewNameFit(newTransitionName)) {
             return ModificationResult.failedValidation(`Unable to fit supplied transition name ${newTransitionName}: invalid value`)
         }
@@ -286,7 +286,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return TextEdit.insert(position, prefix + serializedTask + suffix)
     }
 
-    private computeTransitionCreation({ sourceTask, targetTask }: semantic.NewTransition,
+    private computeTransitionCreation({ sourceTask, targetTask }: semantic.TransitionIdentifiedProperties,
         anchorModel?: semantic.IdentifiedTransition): TextEdit {
 
         if (!sourceTask.$cstNode) {
@@ -331,7 +331,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return undefined
     }
 
-    private computeTransitionUpdate(lmsDocument: LmsDocument, transition: semantic.IdentifiedTransition, newTransition: semantic.NewTransition): SourceEdit {
+    private computeTransitionUpdate(lmsDocument: LmsDocument, transition: semantic.IdentifiedTransition, newTransition: semantic.TransitionIdentifiedProperties): SourceEdit {
         if (!transition.$cstNode) {
             throw new Error('Cannot locate model ' + transition.identity.name + '(' + transition.id + ') in text')
         }

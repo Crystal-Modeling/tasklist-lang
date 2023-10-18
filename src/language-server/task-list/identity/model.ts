@@ -7,11 +7,7 @@ export type TaskIdentity = id.AstNodeIdentity<ast.Task>
 export type TransitionDerivativeName = id.DerivativeIdentityName & [sourceTaskId: string, targetTaskId: string]
 export namespace TransitionDerivativeName {
 
-    export function ofProperties({sourceTaskId, targetTaskId}: TransitionDerivativeNameProperties): TransitionDerivativeName {
-        return [sourceTaskId, targetTaskId]
-    }
-
-    export function ofNew(newTransition: semantic.NewTransition): TransitionDerivativeName {
+    export function create(newTransition: semantic.TransitionIdentifiedProperties): TransitionDerivativeName {
         return [newTransition.sourceTask.id, newTransition.targetTask.id]
     }
 
@@ -27,4 +23,4 @@ export namespace TransitionDerivativeName {
     }
 }
 type TransitionDerivativeNameProperties = {sourceTaskId: string, targetTaskId: string}
-export type TransitionIdentity = id.DerivativeSemanticIdentity<semantic.Transition, TransitionDerivativeName>
+export type TransitionIdentity = id.DerivativeSemanticIdentity<semantic.Transition & semantic.TransitionIdentifiedProperties, TransitionDerivativeName>

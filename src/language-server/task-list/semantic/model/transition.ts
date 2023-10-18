@@ -1,68 +1,49 @@
 import { findNodeForProperty } from 'langium'
 import * as sem from '../../../../langium-model-server/semantic/model'
-import { isDefined } from '../../../../langium-model-server/utils/predicates'
 import type * as ast from '../../../generated/ast'
 import type * as identity from '../../identity/model'
 import type { IdentifiedTask } from './task'
 
-export type NewTransition = {
+export type IdentifiedTransition = sem.Identified<sem.Validated<Transition & TransitionIdentifiedProperties>, identity.TransitionDerivativeName>
+
+export type TransitionIdentifiedProperties = {
     sourceTask: IdentifiedTask,
     targetTask: IdentifiedTask
 }
 
-export type Transition = sem.Validated<sem.ArtificialIndexedAstNode & NewTransition>
+export interface Transition extends sem.ArtificialIndexedAstNode {
+    sourceTask: sem.Validated<ast.Task>,
+    targetTask: sem.Validated<ast.Task>
+}
 
 export namespace Transition {
 
-    export function create(sourceTask: IdentifiedTask,
-        isTaskReferenceValidated: (task: sem.Validated<ast.Task>, referenceIndex: number) => boolean
-    ): Transition[] {
-        return TransitionData.create(sourceTask)
-            .map(transition => createOne(transition, isTaskReferenceValidated))
-            .filter(isDefined)
+    export function create(task: sem.Validated<ast.Task>, reference: sem.ResolvedReference<sem.Validated<ast.Task>>, refIndex: number): Transition {
+        return {
+            sourceTask: task,
+            targetTask: reference.ref,
+            $type: 'Transition',
+            $container: task,
+            $containerIndex: refIndex,
+            $containerProperty: 'references',
+            get $cstNode() {
+                return findNodeForProperty(task.$cstNode, 'references', refIndex)
+            }
+        }
     }
 
-    export function createNew(sourceTask: IdentifiedTask, targetTask: IdentifiedTask): NewTransition {
+    export function properties(sourceTask: IdentifiedTask, targetTask: IdentifiedTask): TransitionIdentifiedProperties {
         return {
             sourceTask,
             targetTask,
         }
     }
 
-    function createOne(
-        { sourceTask, referenceIndex }: TransitionData,
-        isTaskReferenceValidated: (task: sem.Validated<ast.Task>, referenceIndex: number) => boolean
-    ): Transition | undefined {
-        const reference = sourceTask.references[referenceIndex]
-        if (sem.ResolvedReference.is(reference)
-            && isTaskReferenceValidated(sourceTask, referenceIndex)
-            && sem.Identified.is(reference.ref)) {
-            return {
-                sourceTask,
-                targetTask: reference.ref,
-                $type: 'Transition',
-                $validation: [],
-                $container: sourceTask,
-                $containerIndex: referenceIndex,
-                $containerProperty: 'references',
-                get $cstNode() {
-                    return findNodeForProperty(sourceTask.$cstNode, 'references', referenceIndex)
-                }
-            }
+    export function assertIdentifiedProperties(transition: sem.Validated<Transition>): transition is sem.Validated<Transition & TransitionIdentifiedProperties> {
+        if (!sem.Identified.is(transition.sourceTask) || !sem.Identified.is(transition.targetTask)) {
+            throw new Error(`Expected Transition properties to be identified, but got sourceTask=${transition.sourceTask} and targetTask=${transition.targetTask}`)
         }
-        return undefined
+        return true
     }
-}
 
-export type IdentifiedTransition = sem.Identified<Transition, identity.TransitionDerivativeName>
-
-type TransitionData = {
-    sourceTask: IdentifiedTask,
-    referenceIndex: number
-}
-
-namespace TransitionData {
-    export function create(sourceTask: IdentifiedTask): TransitionData[] {
-        return sourceTask.references.map((_, referenceIndex) => ({ sourceTask, referenceIndex }))
-    }
 }

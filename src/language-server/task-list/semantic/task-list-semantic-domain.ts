@@ -1,12 +1,12 @@
-import type { AstNode, Properties, Stream } from 'langium'
+import type { AstNode, Properties, Reference, Stream } from 'langium'
 import { stream } from 'langium'
 import type { ArtificialAstNode, IdentifiedNode } from '../../../langium-model-server/semantic/model'
-import { Validated } from '../../../langium-model-server/semantic/model'
-import { Identified } from '../../../langium-model-server/semantic/model'
-import type { QueriableSemanticDomain, SemanticDomain } from '../../../langium-model-server/semantic/semantic-domain'
+import { Identified, Validated, isReferenceValid } from '../../../langium-model-server/semantic/model'
+import { type QueriableSemanticDomain, type SemanticDomain } from '../../../langium-model-server/semantic/semantic-domain'
+import { embedIndex } from '../../../langium-model-server/utils/functions'
 import * as ast from '../../generated/ast'
 import type * as id from '../identity/model'
-import type { IdentifiedTask, IdentifiedTransition } from './model'
+import type { IdentifiedTask, IdentifiedTransition, TransitionIdentifiedProperties } from './model'
 import { Transition } from './model'
 
 export interface QueriableTaskListSemanticDomain extends QueriableSemanticDomain {
@@ -19,11 +19,10 @@ export interface TaskListSemanticDomain extends SemanticDomain, QueriableTaskLis
     clear(): void
     // NOTE: 👇 These are initialized during Validation phase to define elements, semantically valid WITHIN THIS DOCUMENT
     validateTasksForModel(model: ast.Model, invalidTasks: Set<ast.Task>): void
-    validateReferencesForTask(task: ast.Task, invalidReferences: Set<number>): void
+    validateReferencesForTask(task: ast.Task, invalidReferences: Set<Reference<ast.Task>>): void
     // NOTE: 👇 This is considered as part of manipulation with AST Nodes
     getValidatedTasks(model: ast.Model): Stream<Validated<ast.Task>>
-    // "Mixed" operation: is called after tasks are already identified, but serve for Transition identification
-    getValidatedTransitions(): Stream<Transition>
+    getValidatedTransitions(): Stream<Validated<Transition & TransitionIdentifiedProperties>>
     // NOTE: 👇 This is considered as part of manipulation with Semantic Model (IdentifiedTask and IdentifiedTransition)
     /**
      * Maps Validated Task node with semantic identity.
@@ -36,7 +35,7 @@ export interface TaskListSemanticDomain extends SemanticDomain, QueriableTaskLis
      * @param transition Artificial Transition node (they are created being already validated)
      * @param identity Semantic identity, which {@link transition} is identified with
      */
-    identifyTransition(transition: Transition, identity: id.TransitionIdentity): IdentifiedTransition
+    identifyTransition(transition: Validated<Transition>, identity: id.TransitionIdentity): IdentifiedTransition
 }
 
 export namespace TaskListSemanticDomain {
@@ -50,19 +49,16 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
 
     public readonly rootId: string
 
-    protected invalidReferences: Map<ast.Task, Set<number>>
-
+    private _validatedTransitions: Set<Validated<Transition>>
     private _identifiedTasksById: Map<string, IdentifiedTask>
     private _previousIdentifiedTaskById: Map<string, IdentifiedTask> | undefined
-    private _validTransitionsByIdentifiedTask: Map<IdentifiedTask, Transition[]>
     private _identifiedTransitionsById: Map<string, IdentifiedTransition>
     private _previousIdentifiedTransitionsById: Map<string, IdentifiedTransition> | undefined
 
     constructor(rootId: string) {
         this.rootId = rootId
-        this.invalidReferences = new Map()
         this._identifiedTasksById = new Map()
-        this._validTransitionsByIdentifiedTask = new Map()
+        this._validatedTransitions = new Set()
         this._identifiedTransitionsById = new Map()
     }
 
@@ -75,21 +71,19 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         So that neither SemanticManager, nor IdentityIndex is responsible for traversing AST internals
     */
 
-    protected isTaskReferenceValidated(
-        task: Validated<ast.Task>,
-        referenceIndex: number
-    ): boolean {
-        return !this.invalidReferences.get(task)?.has(referenceIndex)
+    public validateTasksForModel(model: ast.Model, invalidTasks: Set<ast.Task>): void {
+        model.tasks.filter(task => !invalidTasks.has(task))
+            .forEach(Validated.validate)
     }
 
-    // NOTE: Rather defensive function, to ensure synthetic Transition domain objects uniqueness (per AST Task.reference)
-    protected getValidatedTransitionsForSourceTask(sourceTask: IdentifiedTask): Transition[] {
-        let validTransitions = this._validTransitionsByIdentifiedTask.get(sourceTask)
-        if (!validTransitions) {
-            validTransitions = Transition.create(sourceTask, this.isTaskReferenceValidated.bind(this))
-            this._validTransitionsByIdentifiedTask.set(sourceTask, validTransitions)
+    public validateReferencesForTask(task: ast.Task, invalidReferences: Set<Reference<ast.Task>>): void {
+        if (Validated.is(task)) {
+            stream(task.references.map(embedIndex))
+                .filter(ref => !invalidReferences.has(ref))
+                .filter(isReferenceValid)
+                .map(reference => Validated.validate(Transition.create(task, reference, reference.index)))
+                .forEach(transition => this._validatedTransitions.add(transition))
         }
-        return validTransitions
     }
 
     public getValidatedTasks(model: ast.Model): Stream<Validated<ast.Task>> {
@@ -97,9 +91,9 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
             .filter(Validated.is)
     }
 
-    public getValidatedTransitions(): Stream<Transition> {
-        return stream(this.identifiedTasks.values())
-            .flatMap(this.getValidatedTransitionsForSourceTask.bind(this))
+    public getValidatedTransitions(): Stream<Validated<Transition & TransitionIdentifiedProperties>> {
+        return stream(this._validatedTransitions)
+            .filter(Transition.assertIdentifiedProperties)
     }
 
     public identifyTask(task: Validated<ast.Task>, identity: id.TaskIdentity): IdentifiedTask {
@@ -108,7 +102,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         return identifiedTask
     }
 
-    public identifyTransition(transition: Transition, identity: id.TransitionIdentity): IdentifiedTransition {
+    public identifyTransition(transition: Validated<Transition & TransitionIdentifiedProperties>, identity: id.TransitionIdentity): IdentifiedTransition {
         const identifiedTransition = Identified.identify(transition, identity)
         this._identifiedTransitionsById.set(identifiedTransition.id, identifiedTransition)
         return identifiedTransition
@@ -131,8 +125,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
     }
 
     public clear() {
-        this.invalidReferences.clear()
-        this._validTransitionsByIdentifiedTask.clear()
+        this._validatedTransitions.clear()
         this._previousIdentifiedTaskById = this._identifiedTasksById
         this._identifiedTasksById = new Map()
         this._previousIdentifiedTransitionsById = this._identifiedTransitionsById
@@ -154,15 +147,6 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
 
     public getIdentifiedNode(id: string): Identified<AstNode | ArtificialAstNode> | undefined {
         return this._identifiedTasksById.get(id) || this._identifiedTransitionsById.get(id)
-    }
-
-    public validateTasksForModel(model: ast.Model, invalidTasks: Set<ast.Task>): void {
-        model.tasks.filter(task => !invalidTasks.has(task))
-            .forEach(Validated.validate)
-    }
-
-    public validateReferencesForTask(task: ast.Task, invalidReferences: Set<number>): void {
-        this.invalidReferences.set(task, invalidReferences)
     }
 
 }

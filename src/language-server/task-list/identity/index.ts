@@ -30,7 +30,7 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
                 ModelUri.Segment.property('transitions'),
                 ModelUri.Segment.id(id)
             ))
-        identityModel.transitions.forEach(transition => transitions.add(transition.id, TransitionDerivativeName.ofProperties(transition)))
+        identityModel.transitions.forEach(({id, sourceTaskId, targetTaskId}) => transitions.add(id, TransitionDerivativeName.of(sourceTaskId, targetTaskId)))
         this.transitions = transitions
     }
 

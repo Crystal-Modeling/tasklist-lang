@@ -1,4 +1,4 @@
-import type { ValidationAcceptor, ValidationChecks } from 'langium'
+import type { Reference, ValidationAcceptor, ValidationChecks } from 'langium'
 import { MultiMap } from 'langium'
 import type { Model, Task, TaskListLangAstType } from '../../generated/ast'
 import { isTask } from '../../generated/ast'
@@ -62,7 +62,7 @@ export class TaskListValidator {
 
     checkTaskHasUniqueReferences(task: Task, accept: ValidationAcceptor): void {
         const referenceNames = new Set<string>()
-        const nonUniqueReferenceIndices = new Set<number>()
+        const nonUniqueReferences = new Set<Reference<Task>>()
         for (let index = 0; index < task.references.length; index++) {
             const reference = task.references[index]
             if (isTask(reference.ref)) {
@@ -70,13 +70,13 @@ export class TaskListValidator {
                 if (referenceNames.has(referencedName)) {
                     accept('error', 'Task cannot reference another task more than once',
                         { node: task, property: 'references', index })
-                    nonUniqueReferenceIndices.add(index)
+                    nonUniqueReferences.add(reference)
                 } else {
                     referenceNames.add(referencedName)
                 }
             }
         }
-        getTaskListDocument(task).semanticDomain?.validateReferencesForTask(task, nonUniqueReferenceIndices)
+        getTaskListDocument(task).semanticDomain?.validateReferencesForTask(task, nonUniqueReferences)
     }
 
     checkTaskContentShouldStartWithCapital(task: Task, accept: ValidationAcceptor): void {

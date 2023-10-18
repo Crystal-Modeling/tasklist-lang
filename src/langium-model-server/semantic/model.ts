@@ -51,9 +51,10 @@ export namespace Identified {
     }
 }
 
+// TODO: Suggest Artificial AstNode to be added to Langium grammar
 export interface ArtificialAstNode {
     //HACK: Every Artificial AST node has a type. Should it be declared anywhere in grammar?
-    readonly $type: string;
+    readonly $type: string
     readonly $container: AstNode | ArtificialAstNode
     readonly $containerProperty: string
     readonly $containerIndex?: number
@@ -68,11 +69,18 @@ export type AstRootNode<T extends AstNode = AstNode> = T & {
     readonly $document: LangiumDocument<T>
 }
 
+// TODO: Suggest ResolvedReference and IndexedReference to be added to Langium
+
 export type ResolvedReference<T extends AstNode> = Reference<T> & {
     ref: T
 }
+
 export namespace ResolvedReference {
-    export function is<T extends AstNode>(node: Reference<T>): node is ResolvedReference<T> {
-        return !!node.ref
+    export function is<T extends AstNode>(ref: Reference<T>): ref is ResolvedReference<T> {
+        return !!ref.ref
     }
+}
+
+export function isReferenceValid<T extends AstNode, R extends Reference<T>>(ref: R): ref is R & ResolvedReference<Validated<T>> {
+    return ResolvedReference.is(ref) && Validated.is(ref.ref)
 }

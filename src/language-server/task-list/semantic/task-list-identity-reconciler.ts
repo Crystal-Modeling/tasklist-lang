@@ -75,7 +75,7 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         const existingUnmappedIdentities = new Set(transitionIdentities.values())
         semanticDomain.getValidatedTransitions()
             .forEach(transition => {
-                const name = TransitionDerivativeName.ofNew(transition)
+                const name = TransitionDerivativeName.create(transition)
                 let transitionIdentity = transitionIdentities.byName(name)
                 if (transitionIdentity) {
                     existingUnmappedIdentities.delete(transitionIdentity)
