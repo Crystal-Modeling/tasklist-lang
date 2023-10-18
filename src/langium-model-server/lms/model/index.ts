@@ -1,9 +1,11 @@
 export * from './action'
-export * from './modification'
 export * from './highlight-response'
+export * from './modification'
 export * from './response'
 export * from './semantic-id-response'
 export * from './update/array-update'
 export * from './update/element-update'
 export * from './update/root-update'
 export * from './update/update'
+export * from './validation-marker'
+

@@ -14,8 +14,8 @@ export function registerValidationChecks(services: TaskListServices) {
     const checks: ValidationChecks<TaskListLangAstType> = {
         Model: validator.checkModelHasUniqueTasks,
         Task: [
-            validator.checkTaskContentShouldStartWithCapital,
             validator.checkTaskHasUniqueReferences,
+            validator.checkTaskContentShouldStartWithCapital,
             validator.checkTaskDoesNotReferenceItself
         ]
     }
@@ -47,26 +47,17 @@ export class TaskListValidator {
                 { node: task, property: 'name' })
         })
 
-        getTaskListDocument(model).semanticDomain?.setInvalidTasksForModel(model, incorrectlyNamedTasks
+        getTaskListDocument(model).semanticDomain?.validateTasksForModel(model, incorrectlyNamedTasks
             .concat(tasksWithEmptyName)
             .toSet())
 
-        tasksByContent.entriesGroupedByKey().filter(([, tasks]) => tasks.length > 1)
+        tasksByContent.entriesGroupedByKey()
+            .filter(([, tasks]) => tasks.length > 1)
             .flatMap(([, tasks]) => tasks)
             .forEach(task => {
                 accept('warning', 'Task should have unique content',
                     { node: task, property: 'content' })
             })
-    }
-
-    checkTaskContentShouldStartWithCapital(task: Task, accept: ValidationAcceptor): void {
-        if (task.content) {
-            const firstChar = task.content.substring(0, 1)
-            if (firstChar.toUpperCase() !== firstChar) {
-                accept('warning', 'Task content should start with a capital.',
-                    { node: task, property: 'content' })
-            }
-        }
     }
 
     checkTaskHasUniqueReferences(task: Task, accept: ValidationAcceptor): void {
@@ -85,7 +76,17 @@ export class TaskListValidator {
                 }
             }
         }
-        getTaskListDocument(task).semanticDomain?.setInvalidReferencesForTask(task, nonUniqueReferenceIndices)
+        getTaskListDocument(task).semanticDomain?.validateReferencesForTask(task, nonUniqueReferenceIndices)
+    }
+
+    checkTaskContentShouldStartWithCapital(task: Task, accept: ValidationAcceptor): void {
+        if (task.content) {
+            const firstChar = task.content.substring(0, 1)
+            if (firstChar.toUpperCase() !== firstChar) {
+                accept('warning', 'Task content should start with a capital.',
+                    { node: task, property: 'content' })
+            }
+        }
     }
 
     checkTaskDoesNotReferenceItself(task: Task, accept: ValidationAcceptor): void {

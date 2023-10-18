@@ -2,7 +2,28 @@ import type { AstNode, CstNode, LangiumDocument, Reference } from 'langium'
 import type * as id from '../identity/model'
 import type { TypeGuard } from '../utils/types'
 
-export type Valid<T> = T & { __semantic: 'valid' }
+export type Valid<T extends AstNode | ArtificialAstNode> = T & {
+    $validation: ValidationMessage[]
+}
+
+export namespace Valid {
+    export function validate<T extends AstNode | ArtificialAstNode>(node: T): Valid<T> {
+        const messages: ValidationMessage[] = []
+        return Object.assign(node, { $validation: messages })
+    }
+    export function is<T extends AstNode | ArtificialAstNode>(node: T): node is Valid<T> {
+        return (node as Valid<T>).$validation !== undefined
+    }
+}
+
+export interface ValidationMessage {
+    readonly label: string
+    readonly description: string
+    /**
+     * Message kind, e.g., info, warning, error or custom kind
+     */
+    readonly kind: string
+}
 
 export type IdentifiedNode = Identified<AstNode | ArtificialAstNode, id.IdentityName>
 export type Identified<T extends AstNode | ArtificialAstNode, NAME extends id.IdentityName = id.IdentityName> = Valid<T> & {
@@ -31,6 +52,8 @@ export namespace Identified {
 }
 
 export interface ArtificialAstNode {
+    //HACK: Every Artificial AST node has a type. Should it be declared anywhere in grammar?
+    readonly $type: string;
     readonly $container: AstNode | ArtificialAstNode
     readonly $containerProperty: string
     readonly $containerIndex?: number

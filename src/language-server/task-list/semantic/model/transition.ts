@@ -11,7 +11,7 @@ export type NewTransition = {
     targetTask: IdentifiedTask
 }
 
-export type Transition = sem.ArtificialIndexedAstNode & sem.Valid<NewTransition>
+export type Transition = sem.Valid<sem.ArtificialIndexedAstNode & NewTransition>
 
 export namespace Transition {
 
@@ -41,10 +41,11 @@ export namespace Transition {
             && sem.Identified.is(reference.ref)) {
             const name = identity.TransitionDerivativeName.of(sourceTask.id, reference.ref.id)
             return {
-                __semantic: 'valid',
                 name,
                 sourceTask,
                 targetTask: reference.ref,
+                $type: 'Transition',
+                $validation: [],
                 $container: sourceTask,
                 $containerIndex: referenceIndex,
                 $containerProperty: 'references',
