@@ -10,6 +10,7 @@ import { DefaultLmsSubscriptions } from './lms/subscriptions'
 import type { LmsDocument } from './workspace/documents'
 import { DefaultLmsDocumentBuilder } from './workspace/lms-document-builder'
 import { DefaultTextEditService } from './lms/text-edit-service'
+import { LmsDocumentValidator } from './validation/document-validator'
 
 export function createLangiumModelServerDefaultModule
 <SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument>():
@@ -18,6 +19,9 @@ Module<LangiumModelServerServices<SM, II, D>, LangiumModelServerDefaultServices<
         lsp: {
             RenameProvider: (services) => new LmsRenameProvider(services),
             DocumentHighlightProvider: (services) => new LmsDocumentHighlightProvider(services),
+        },
+        validation: {
+            DocumentValidator: (services) => new LmsDocumentValidator(services),
         },
         workspace: {
             LmsDocumentBuilder: (services) => new DefaultLmsDocumentBuilder(services),
