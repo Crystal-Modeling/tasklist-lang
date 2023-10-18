@@ -1,7 +1,7 @@
 import type { AstNode, Properties, Stream } from 'langium'
 import { stream } from 'langium'
 import type { ArtificialAstNode } from '../../../langium-model-server/semantic/model'
-import { Valid } from '../../../langium-model-server/semantic/model'
+import { Validated } from '../../../langium-model-server/semantic/model'
 import { Identified } from '../../../langium-model-server/semantic/model'
 import type { QueriableSemanticDomain, SemanticDomain } from '../../../langium-model-server/semantic/semantic-domain'
 import * as ast from '../../generated/ast'
@@ -21,16 +21,16 @@ export interface TaskListSemanticDomain extends SemanticDomain, QueriableTaskLis
     validateTasksForModel(model: ast.Model, invalidTasks: Set<ast.Task>): void
     validateReferencesForTask(task: ast.Task, invalidReferences: Set<number>): void
     // NOTE: 👇 This is considered as part of manipulation with AST Nodes
-    getValidTasks(model: ast.Model): Stream<Valid<ast.Task>>
+    getValidatedTasks(model: ast.Model): Stream<Validated<ast.Task>>
     // "Mixed" operation: is called after tasks are already identified, but serve for Transition identification
-    getValidTransitions(): Stream<Transition>
+    getValidatedTransitions(): Stream<Transition>
     // NOTE: 👇 This is considered as part of manipulation with Semantic Model (IdentifiedTask and IdentifiedTransition)
     /**
-     * Maps Valid Task node with semantic identity.
-     * @param task Valid AST Task node
+     * Maps Validated Task node with semantic identity.
+     * @param task Validated AST Task node
      * @param identity Semantic identity, which {@link task} is identified with
     */
-    identifyTask(task: Valid<ast.Task>, identity: id.TaskIdentity): IdentifiedTask
+    identifyTask(task: Validated<ast.Task>, identity: id.TaskIdentity): IdentifiedTask
     /**
      * Maps Transition *artificial* node with semantic identity
      * @param transition Artificial Transition node (they are created being already validated)
@@ -70,39 +70,39 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
 
         - Task is valid for Semantic Model (is unique by name within a document)
         - Transition is valid for Semantic Model (is unique by name within a Task).
-        - Aggregate functions: getValidTasks, getValidTargetTasks, which deals with Model/Task internals
+        - Aggregate functions: getValidatedTasks, getValidatedTargetTasks, which deals with Model/Task internals
 
         So that neither SemanticManager, nor IdentityIndex is responsible for traversing AST internals
     */
 
-    protected isTaskReferenceValid(
-        task: Valid<ast.Task>,
+    protected isTaskReferenceValidated(
+        task: Validated<ast.Task>,
         referenceIndex: number
     ): boolean {
         return !this.invalidReferences.get(task)?.has(referenceIndex)
     }
 
     // NOTE: Rather defensive function, to ensure synthetic Transition domain objects uniqueness (per AST Task.reference)
-    protected getValidTransitionsForSourceTask(sourceTask: IdentifiedTask): Transition[] {
+    protected getValidatedTransitionsForSourceTask(sourceTask: IdentifiedTask): Transition[] {
         let validTransitions = this._validTransitionsByIdentifiedTask.get(sourceTask)
         if (!validTransitions) {
-            validTransitions = Transition.create(sourceTask, this.isTaskReferenceValid.bind(this))
+            validTransitions = Transition.create(sourceTask, this.isTaskReferenceValidated.bind(this))
             this._validTransitionsByIdentifiedTask.set(sourceTask, validTransitions)
         }
         return validTransitions
     }
 
-    public getValidTasks(model: ast.Model): Stream<Valid<ast.Task>> {
+    public getValidatedTasks(model: ast.Model): Stream<Validated<ast.Task>> {
         return stream(model.tasks)
-            .filter(Valid.is)
+            .filter(Validated.is)
     }
 
-    public getValidTransitions(): Stream<Transition> {
+    public getValidatedTransitions(): Stream<Transition> {
         return stream(this.identifiedTasks.values())
-            .flatMap(this.getValidTransitionsForSourceTask.bind(this))
+            .flatMap(this.getValidatedTransitionsForSourceTask.bind(this))
     }
 
-    public identifyTask(task: Valid<ast.Task>, identity: id.TaskIdentity): IdentifiedTask {
+    public identifyTask(task: Validated<ast.Task>, identity: id.TaskIdentity): IdentifiedTask {
         const identifiedTask = Identified.identify(task, identity)
         this._identifiedTasksById.set(identifiedTask.id, identifiedTask)
         return identifiedTask
@@ -140,8 +140,8 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    public getValidNode<N extends AstNode, P = Properties<N>>(node: N, property?: P, index?: number): Valid<AstNode | ArtificialAstNode> | undefined {
-        if (ast.isTask(node) && Valid.is(node)) {
+    public getValidatedNode<N extends AstNode, P = Properties<N>>(node: N, property?: P, index?: number): Validated<AstNode | ArtificialAstNode> | undefined {
+        if (ast.isTask(node) && Validated.is(node)) {
             return node
         }
         return undefined
@@ -153,7 +153,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
 
     public validateTasksForModel(model: ast.Model, invalidTasks: Set<ast.Task>): void {
         model.tasks.filter(task => !invalidTasks.has(task))
-            .forEach(Valid.validate)
+            .forEach(Validated.validate)
     }
 
     public validateReferencesForTask(task: ast.Task, invalidReferences: Set<number>): void {

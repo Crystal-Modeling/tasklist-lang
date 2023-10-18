@@ -28,7 +28,7 @@ export type Initialized<T extends LmsDocument> = T & Required<SemanticAwareDocum
 
 export type SemanticAwareDocument = {
     /**
-     * This property is initialized during Validation phase to be considered during Identity Reconciliation phase
+     * This property is initialized during Validatedation phase to be considered during Identity Reconciliation phase
      */
     semanticDomain?: SemanticDomain
 }

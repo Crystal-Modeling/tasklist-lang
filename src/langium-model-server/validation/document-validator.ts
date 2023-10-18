@@ -36,7 +36,7 @@ export class LmsDocumentValidator<SM extends SemanticIdentifier, II extends Iden
     protected createValidationAcceptor(validationItems: Diagnostic[], document: LangiumDocument): ValidationAcceptor {
         if (this.isLmsDocument(document)) {
             return <N extends AstNode>(severity: 'error' | 'warning' | 'info' | 'hint', message: string, info: DiagnosticInfo<N>) => {
-                const affectedNode = document.semanticDomain?.getValidNode(info.node, info.property, info.index)
+                const affectedNode = document.semanticDomain?.getValidatedNode(info.node, info.property, info.index)
                 if (affectedNode) {
                     affectedNode.$validation.push({ kind: severity, label: info.code?.toString() || affectedNode.$type, description: message })
                 }

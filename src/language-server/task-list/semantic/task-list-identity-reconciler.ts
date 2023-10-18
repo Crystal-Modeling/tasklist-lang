@@ -47,7 +47,7 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
 
         const existingUnmappedIdentities = new Set(taskIdentities.values())
         // Actual mapping: marking semantic elements for deletion, and AST nodes to be added
-        semanticDomain.getValidTasks(astModel)
+        semanticDomain.getValidatedTasks(astModel)
             .forEach(task => {
                 let taskIdentity = taskIdentities.byName(task.name)
                 if (taskIdentity) {
@@ -72,7 +72,7 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
         const semanticDomain = document.semanticDomain
 
         const existingUnmappedIdentities = new Set(transitionIdentities.values())
-        semanticDomain.getValidTransitions()
+        semanticDomain.getValidatedTransitions()
             .forEach(transition => {
                 let transitionIdentity = transitionIdentities.byName(transition.name)
                 if (transitionIdentity) {

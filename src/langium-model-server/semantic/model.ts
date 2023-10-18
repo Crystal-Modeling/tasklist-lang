@@ -2,17 +2,17 @@ import type { AstNode, CstNode, LangiumDocument, Reference } from 'langium'
 import type * as id from '../identity/model'
 import type { TypeGuard } from '../utils/types'
 
-export type Valid<T extends AstNode | ArtificialAstNode> = T & {
+export type Validated<T extends AstNode | ArtificialAstNode> = T & {
     $validation: ValidationMessage[]
 }
 
-export namespace Valid {
-    export function validate<T extends AstNode | ArtificialAstNode>(node: T): Valid<T> {
+export namespace Validated {
+    export function validate<T extends AstNode | ArtificialAstNode>(node: T): Validated<T> {
         const messages: ValidationMessage[] = []
         return Object.assign(node, { $validation: messages })
     }
-    export function is<T extends AstNode | ArtificialAstNode>(node: T): node is Valid<T> {
-        return (node as Valid<T>).$validation !== undefined
+    export function is<T extends AstNode | ArtificialAstNode>(node: T): node is Validated<T> {
+        return (node as Validated<T>).$validation !== undefined
     }
 }
 
@@ -26,15 +26,15 @@ export interface ValidationMessage {
 }
 
 export type IdentifiedNode = Identified<AstNode | ArtificialAstNode, id.IdentityName>
-export type Identified<T extends AstNode | ArtificialAstNode, NAME extends id.IdentityName = id.IdentityName> = Valid<T> & {
+export type Identified<T extends AstNode | ArtificialAstNode, NAME extends id.IdentityName = id.IdentityName> = Validated<T> & {
     readonly id: string
     identity: id.Identity<T, NAME>
 }
 
 export namespace Identified {
-    export function identify<T extends AstNode>(node: Valid<T>, identity: id.AstNodeIdentity<T>): Identified<T, id.AstNodeIdentityName>
-    export function identify<T extends ArtificialAstNode, NAME extends id.DerivativeIdentityName>(node: Valid<T>, identity: id.DerivativeSemanticIdentity<T, NAME>): Identified<T, NAME>
-    export function identify<T extends AstNode | ArtificialAstNode, NAME extends id.IdentityName>(node: Valid<T>, identity: id.Identity<T, NAME>): Identified<T, NAME> {
+    export function identify<T extends AstNode>(node: Validated<T>, identity: id.AstNodeIdentity<T>): Identified<T, id.AstNodeIdentityName>
+    export function identify<T extends ArtificialAstNode, NAME extends id.DerivativeIdentityName>(node: Validated<T>, identity: id.DerivativeSemanticIdentity<T, NAME>): Identified<T, NAME>
+    export function identify<T extends AstNode | ArtificialAstNode, NAME extends id.IdentityName>(node: Validated<T>, identity: id.Identity<T, NAME>): Identified<T, NAME> {
         return Object.assign(node, { identity, id: identity.id })
     }
 

@@ -11,15 +11,15 @@ export type NewTransition = {
     targetTask: IdentifiedTask
 }
 
-export type Transition = sem.Valid<sem.ArtificialIndexedAstNode & NewTransition>
+export type Transition = sem.Validated<sem.ArtificialIndexedAstNode & NewTransition>
 
 export namespace Transition {
 
     export function create(sourceTask: IdentifiedTask,
-        isTaskReferenceValid: (task: sem.Valid<ast.Task>, referenceIndex: number) => boolean
+        isTaskReferenceValidated: (task: sem.Validated<ast.Task>, referenceIndex: number) => boolean
     ): Transition[] {
         return TransitionData.create(sourceTask)
-            .map(transition => createOne(transition, isTaskReferenceValid))
+            .map(transition => createOne(transition, isTaskReferenceValidated))
             .filter(isDefined)
     }
 
@@ -33,11 +33,11 @@ export namespace Transition {
 
     function createOne(
         { sourceTask, referenceIndex }: TransitionData,
-        isTaskReferenceValid: (task: sem.Valid<ast.Task>, referenceIndex: number) => boolean
+        isTaskReferenceValidated: (task: sem.Validated<ast.Task>, referenceIndex: number) => boolean
     ): Transition | undefined {
         const reference = sourceTask.references[referenceIndex]
         if (sem.ResolvedReference.is(reference)
-            && isTaskReferenceValid(sourceTask, referenceIndex)
+            && isTaskReferenceValidated(sourceTask, referenceIndex)
             && sem.Identified.is(reference.ref)) {
             const name = identity.TransitionDerivativeName.of(sourceTask.id, reference.ref.id)
             return {

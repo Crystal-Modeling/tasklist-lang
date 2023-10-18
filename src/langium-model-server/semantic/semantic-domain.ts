@@ -1,5 +1,5 @@
 import type { AstNode, Properties } from 'langium'
-import type { ArtificialAstNode, IdentifiedNode, Valid } from './model'
+import type { ArtificialAstNode, IdentifiedNode, Validated } from './model'
 
 export interface QueriableSemanticDomain {
     readonly rootId: string
@@ -12,7 +12,7 @@ export interface QueriableSemanticDomain {
      * @param index In case of a multi-value property (array), an index should be given to select a specific element.
      * @returns `undefined` if `node`.`property`[`index`] or `node` is not part of the LMS model, or if it is not semantically valid
      */
-    getValidNode<N extends AstNode, P = Properties<N>>(node: N, property?: P, index?: number): Valid<AstNode | ArtificialAstNode> | undefined
+    getValidatedNode<N extends AstNode, P = Properties<N>>(node: N, property?: P, index?: number): Validated<AstNode | ArtificialAstNode> | undefined
     getIdentifiedNode(id: string): IdentifiedNode | undefined
 }
 
