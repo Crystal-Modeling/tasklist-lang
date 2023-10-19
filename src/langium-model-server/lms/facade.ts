@@ -1,16 +1,16 @@
-import type { LangiumDocuments, LanguageMetaData, MaybePromise } from 'langium'
+import { type LangiumDocuments, type LanguageMetaData, type MaybePromise } from 'langium'
 import type { Connection } from 'vscode-languageserver'
 import { ShowDocumentRequest } from 'vscode-languageserver'
 import { URI } from 'vscode-uri'
-import type { SemanticIdentity } from '../semantic/identity'
-import type { IdentityIndex } from '../semantic/identity-index'
-import type { IdentityManager } from '../semantic/identity-manager'
+import type { IdentityIndex } from '../identity'
+import type { IdentityManager } from '../identity/manager'
+import type { SemanticIdentifier } from '../identity/model'
 import type { LangiumModelServerServices } from '../services'
 import type { TypeGuard } from '../utils/types'
 import { UriConverter } from '../utils/uri-converter'
 import type { ExtendableLangiumDocument, Initialized } from '../workspace/documents'
 import { LmsDocument, LmsDocumentState } from '../workspace/documents'
-import type { Creation, CreationParams, EditingResult, Modification } from './model'
+import type { Creation, CreationParams, Modification, ModificationResult, ValidationMarker } from './model'
 import { HighlightResponse } from './model'
 
 export interface LangiumModelServerFacade<SM> {
@@ -24,6 +24,9 @@ export interface LangiumModelServerFacade<SM> {
      * @returns `undefined` if unexpected error happened during showing code (opening document and highligting some range)
      */
     highlight(rootModelId: string, id: string): MaybePromise<HighlightResponse>
+    validate(rootModelId: string): ValidationMarker[] | undefined
+    persist(rootModelId: string): MaybePromise<boolean>
+    deleteModels(rootModelId: string, modelIds: string[]): MaybePromise<ModificationResult> | undefined
     //HACK: I rely on LMS consumers having the file URI almost identical to Langium Document URI
     /**
      * @param sourceUri URI of some **other** file which is 'linked' to the source model file.
@@ -32,18 +35,17 @@ export interface LangiumModelServerFacade<SM> {
     getSemanticId(sourceUri: string): string | undefined
 }
 
-export interface AddModelHandler<T extends SemanticIdentity = SemanticIdentity> {
+export interface AddModelHandler<T extends SemanticIdentifier = SemanticIdentifier> {
     isApplicable(modelCreation: unknown): boolean
-    addModel(rootModelId: string, newModel: Creation<T>, creationParams: CreationParams): MaybePromise<EditingResult> | undefined
+    addModel(rootModelId: string, newModel: Creation<T>, creationParams: CreationParams): MaybePromise<ModificationResult> | undefined
 }
 
-export type UpdateModelHandler<T extends SemanticIdentity = SemanticIdentity> =
-    (rootModelId: string, modelId: string, modelUpdate: Modification<T>) => MaybePromise<EditingResult> | undefined
+export type UpdateModelHandler<T extends SemanticIdentifier = SemanticIdentifier> =
+    (rootModelId: string, modelId: string, modelUpdate: Modification<T>) => MaybePromise<ModificationResult> | undefined
 
-export type DeleteModelHandler = (rootModelId: string, modelId: string) => MaybePromise<EditingResult> | undefined
+export type DeleteModelHandler = (rootModelId: string, modelId: string) => MaybePromise<ModificationResult> | undefined
 
-export abstract class AbstractLangiumModelServerFacade<SM extends SemanticIdentity, SemI extends IdentityIndex, D extends LmsDocument>
-implements LangiumModelServerFacade<SM> {
+export abstract class AbstractLangiumModelServerFacade<SM extends SemanticIdentifier, SemI extends IdentityIndex, D extends LmsDocument> implements LangiumModelServerFacade<SM> {
 
     protected identityManager: IdentityManager<SemI>
     protected langiumDocuments: LangiumDocuments
@@ -56,7 +58,7 @@ implements LangiumModelServerFacade<SM> {
     readonly deleteModelHandlersByPathSegment: Map<string, DeleteModelHandler> = new Map()
 
     constructor(services: LangiumModelServerServices<SM, SemI, D>) {
-        this.identityManager = services.semantic.IdentityManager
+        this.identityManager = services.identity.IdentityManager
         this.langiumDocuments = services.shared.workspace.LangiumDocuments
         this.languageMetadata = services.LanguageMetaData
         this.isLmsDocument = services.workspace.LmsDocumentGuard
@@ -68,10 +70,14 @@ implements LangiumModelServerFacade<SM> {
             .replaceFileExtensionWith(this.getSourceModelFileExtension())
             .toUri()
         if (!this.langiumDocuments.hasDocument(documentUri)) {
+            console.debug('Cannot find Langium Document with URI', documentUri.toString())
             return undefined
         }
-        const langiumDocument = this.langiumDocuments.getOrCreateDocument(documentUri)
-        return this.identityManager.getIdentityIndex(langiumDocument).id
+        const document = this.langiumDocuments.getOrCreateDocument(documentUri)
+        if (this.isLmsDocument(document)) {
+            return this.identityManager.getIdentityIndex(document).id
+        }
+        return undefined
     }
 
     public getById(id: string): SM | undefined {
@@ -103,6 +109,38 @@ implements LangiumModelServerFacade<SM> {
         ).then(({ success }) => HighlightResponse.modelHighlighted(rootModelId, identifiedNode.id, success))
     }
 
+    public validate(rootModelId: string): ValidationMarker[] | undefined {
+        const lmsDocument = this.getDocumentById(rootModelId)
+        if (!lmsDocument) {
+            return undefined
+        }
+        return lmsDocument.semanticDomain.getIdentifiedNodes()
+            .filter(node => node.$validation.length > 0)
+            .flatMap(node => node.$validation
+                .map(({ kind, description, label }): ValidationMarker => ({
+                    kind, description, label,
+                    elementId: node.id
+                }))
+            ).toArray()
+    }
+
+    public persist(rootModelId: string): MaybePromise<boolean> {
+        const lmsDocument = this.getDocumentById(rootModelId)
+        if (!lmsDocument) {
+            return Promise.resolve(false)
+        }
+        const uri = lmsDocument.textDocument.uri
+        return this.connection.sendRequest<boolean>('lms/persistModel', uri).then((result) => {
+            result ? console.log(`Document saved from Language Server: ${uri}`) : console.warn('Document', uri, 'NOT saved!')
+            return result
+        }, (error) => {
+            console.error(`Error saving document from Language Server: ${error}`)
+            return false
+        })
+    }
+
+    public abstract deleteModels(rootModelId: string, modelIds: string[]): MaybePromise<ModificationResult> | undefined
+
     protected getSourceModelFileExtension(): string {
         return this.languageMetadata.fileExtensions[0]
     }
@@ -113,14 +151,16 @@ implements LangiumModelServerFacade<SM> {
         const documentUri = this.identityManager.getLanguageDocumentUri(id)
         // Not sure shouldn't I *create* LangiumDocument if it is not built yet (i.e., if the file has not been loaded)
         if (!documentUri || !this.langiumDocuments.hasDocument(documentUri)) {
+            console.debug('Unable to find document')
             return undefined
         }
         // NOTE: Since document URI is known to SemanticIndexManager, this LangiumDocument is LmsDocument
-        const document: LmsDocument = this.langiumDocuments.getOrCreateDocument(documentUri)
+        const document = this.langiumDocuments.getOrCreateDocument(documentUri)
         if (!this.isLmsDocument(document)) {
             throw new Error('Supplied ID is not compatible with LMSDocument type served')
         }
         // TODO: Change this to return Promise, if the document didn't reach the desired state.
+        console.debug('Document with id', id, 'has semanticDomain initialized?', !!document.semanticDomain, 'and its state is', document.state)
         if (!LmsDocument.isInitialized(document) || document.state < LmsDocumentState.Identified) {
             return undefined
         }

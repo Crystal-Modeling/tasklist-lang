@@ -2,19 +2,22 @@
 import type { AstNode, LangiumDocument, MaybePromise } from 'langium'
 import { DefaultDocumentHighlightProvider, findLeafNodeAtOffset, getContainerOfType } from 'langium'
 import type { DocumentHighlight, DocumentHighlightParams } from 'vscode-languageserver'
-import type * as identity from '../semantic/identity'
-import type { IdentityIndex } from '../semantic/identity-index'
-import type { IdentityManager } from '../semantic/identity-manager'
-import * as semantic from '../semantic/model'
-import type { LangiumModelServerServices } from '../services'
+import type { IdentityIndex } from '../identity'
+import type { IdentityManager } from '../identity/manager'
+import type * as identity from '../identity/model'
 import * as source from '../lms/model'
 import type { LmsSubscriptions } from '../lms/subscriptions'
-import type { LmsDocument, SemanticAwareDocument } from '../workspace/documents'
+import * as semantic from '../semantic/model'
+import type { LangiumModelServerServices } from '../services'
+import type { TypeGuard } from '../utils/types'
+import type { ExtendableLangiumDocument } from '../workspace/documents'
+import type { LmsDocument } from '../workspace/documents'
 
-export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> extends DefaultDocumentHighlightProvider {
+export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument> extends DefaultDocumentHighlightProvider {
 
-    private lmsSubscriptions: LmsSubscriptions
+    private lmsSubscriptions: LmsSubscriptions<SM>
     private identityManager: IdentityManager
+    private isLmsDocument: TypeGuard<LmsDocument, ExtendableLangiumDocument>
 
     private highlightedNodeIdByModelId: Map<string, string> = new Map()
     private highlightPushingTimeout: NodeJS.Timeout
@@ -22,10 +25,11 @@ export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, 
     constructor(services: LangiumModelServerServices<SM, II, D>) {
         super(services)
         this.lmsSubscriptions = services.lms.LmsSubscriptions
-        this.identityManager = services.semantic.IdentityManager
+        this.identityManager = services.identity.IdentityManager
+        this.isLmsDocument = services.workspace.LmsDocumentGuard
     }
 
-    override getDocumentHighlight(document: LangiumDocument & SemanticAwareDocument, params: DocumentHighlightParams): MaybePromise<DocumentHighlight[] | undefined> {
+    override getDocumentHighlight(document: LangiumDocument, params: DocumentHighlightParams): MaybePromise<DocumentHighlight[] | undefined> {
         const rootNode = document.parseResult.value.$cstNode
         if (!rootNode) {
             return undefined
@@ -35,7 +39,7 @@ export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, 
             return undefined
         }
 
-        if (document.semanticDomain) {
+        if (this.isLmsDocument(document)) {
             if (this.highlightPushingTimeout) {
                 clearInterval(this.highlightPushingTimeout)
             }
@@ -45,13 +49,13 @@ export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentity, 
         return super.getDocumentHighlight(document, params)
     }
 
-    private calculateAndPushHighlight(document: LangiumDocument, selectedAstNode: AstNode) {
-        const highlightedNodeId = getContainerOfType(selectedAstNode, semantic.Identified.is)?.id
+    private calculateAndPushHighlight(document: LmsDocument, selectedAstNode: AstNode) {
+        const highlightedNodeId = getContainerOfType<semantic.Identified<AstNode>>(selectedAstNode, semantic.Identified.is)?.id
         const modelId = this.identityManager.getIdentityIndex(document).id
         if (highlightedNodeId && highlightedNodeId !== this.highlightedNodeIdByModelId.get(modelId)) {
             this.highlightedNodeIdByModelId.set(modelId, highlightedNodeId)
             const highlight = source.Highlight.create(highlightedNodeId)
-            this.lmsSubscriptions.getSubscription(modelId)?.pushHighlight(highlight)
+            this.lmsSubscriptions.getSubscription(modelId)?.pushAction(highlight)
         }
     }
 }

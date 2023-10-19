@@ -1,12 +1,14 @@
-import * as http2 from 'http2'
-import { promisify } from 'util'
+import type * as http2 from 'http2'
 import { isPromise } from 'util/types'
-import type { SemanticIdentity } from '../semantic/identity'
-import type { IdentityIndex } from '../semantic/identity-index'
+import type { IdentityIndex } from '../identity'
+import type { SemanticIdentifier } from '../identity/model'
 import type { LangiumModelServerAddedServices, LmsServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
-import type { CreationParams, EditingResult } from './model'
+import type { CreationParams, ModificationResult } from './model'
 import { EditingFailureReason, Modification, Response, SemanticIdResponse } from './model'
+import { PathContainer } from './utils/path-container'
+import { readRequestBody, respondWithJson, setUpStreamForSSE } from './utils/http2-util'
+import { isArray } from '../utils/types'
 
 type Http2RequestHandler = (stream: http2.ServerHttp2Stream, unmatchedPath: PathContainer,
     headers: http2.IncomingHttpHeaders, flags: number) => Http2RequestHandler | void
@@ -14,7 +16,7 @@ type Http2RequestHandlerProvider<T> = (parameter: T) => Http2RequestHandler
 
 type Http2ServerRouter = (stream: http2.ServerHttp2Stream, headers: http2.IncomingHttpHeaders, flags: number) => void
 
-export function LangiumModelServerRouter<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument>(
+export function LangiumModelServerRouter<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument>(
     services: LangiumModelServerAddedServices<SM, II, D>
 ): Http2ServerRouter {
     return (stream, headers, flags) => {
@@ -22,9 +24,7 @@ export function LangiumModelServerRouter<SM extends SemanticIdentity, II extends
         let handler: Http2RequestHandler
 
         if (unmatchedPath.hasPathSegments()) {
-            if (unmatchedPath.suffix === '') {
-                handler = helloWorldHandler
-            } else if (unmatchedPath.readPathSegment('models')) {
+            if (unmatchedPath.readPathSegment('models')) {
                 handler = provideModelHandler(services.lms)
             } else {
                 handler = notFoundHandler
@@ -48,20 +48,12 @@ export function LangiumModelServerRouter<SM extends SemanticIdentity, II extends
     }
 }
 
-const helloWorldHandler: Http2RequestHandler = (stream) => {
-    stream.respond({
-        'content-type': 'text/plain; charset=utf-8',
-        ':status': 200
-    })
-    stream.end('Hello World')
-}
-
-const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (sourceServices) => {
+const provideModelHandler: Http2RequestHandlerProvider<LmsServices<SemanticIdentifier>> = (sourceServices) => {
 
     const langiumModelServerFacade = sourceServices.LangiumModelServerFacade
     const lmsSubscriptions = sourceServices.LmsSubscriptions
 
-    const modelHandler: Http2RequestHandler = (_, unmatchedPath, headers) => {
+    const modelHandler: Http2RequestHandler = (stream, unmatchedPath, headers) => {
         const id = unmatchedPath.readPathSegment()
         if (!id) {
             return notFoundHandler
@@ -98,7 +90,7 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
                     respondWithJson(stream, Response.create(`Root model (document) for id '${id}' not found`, 404))
                     return
                 }
-                const handleResult = (res: EditingResult) => {
+                const handleResult = (res: ModificationResult) => {
                     if (res.successful) {
                         if (res.modified) respondWithJson(stream, res, 201)
                         else respondWithJson(stream, res, 200)
@@ -123,7 +115,7 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
         const updateModelHandler: Http2RequestHandler = (stream, unmatchedPath, headers) => {
             const uriSegment = unmatchedPath.readPathSegment()
             if (!uriSegment) {
-                return notFoundHandler
+                return deleteModelsHandler
             }
             const updateModel = langiumModelServerFacade.updateModelHandlersByPathSegment.get(uriSegment)
             if (!updateModel) {
@@ -144,7 +136,7 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
                     respondWithJson(stream, Response.create(`Root model (document) for id '${id}' not found`, 404))
                     return
                 }
-                const handleResult = (res: EditingResult) => {
+                const handleResult = (res: ModificationResult) => {
                     if (res.successful) {
                         if (res.modified) respondWithJson(stream, res, 200)
                         else respondWithJson(stream, res, 200)
@@ -166,7 +158,43 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
             })
             return
         }
+
+        const handleDeletionResult = (res: ModificationResult) => {
+            console.debug('Handling Editing result on Deletion', res)
+            if (res.successful) {
+                if (res.modified) respondWithJson(stream, res, 200)
+                else respondWithJson(stream, res, 404)
+            } else switch (res.failureReason) {
+                case EditingFailureReason.VALIDATION:
+                    respondWithJson(stream, res, 400)
+                    break
+                case EditingFailureReason.TEXT_EDIT:
+                    respondWithJson(stream, res, 500)
+                    break
+            }
+        }
+        const deleteModelsHandler: Http2RequestHandler = (stream) => {
+            readRequestBody(stream).then(requestBody => {
+                if (!isArray(requestBody, (obj): obj is string => typeof obj === 'string')) {
+                    respondWithJson(stream,
+                        Response.create(`${headers[':method']} ('${headers[':path']}') cannot be processed: incorrect request body`, 400))
+                    return
+                }
+                const result = langiumModelServerFacade.deleteModels(id, requestBody)
+                if (!result) {
+                    respondWithJson(stream, Response.create(`Root model (document) for id '${id}' not found`, 404))
+                    return
+                }
+                if (isPromise(result)) {
+                    result.then(handleDeletionResult)
+                    return
+                } else {
+                    handleDeletionResult(result)
+                }
+            })
+        }
         const deleteModelHandler: Http2RequestHandler = (stream, unmatchedPath) => {
+
             const uriSegment = unmatchedPath.readPathSegment()
             if (!uriSegment) {
                 return notFoundHandler
@@ -184,26 +212,12 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
                 respondWithJson(stream, Response.create(`Model for rootId '${id}' and id '${modelId}' not found`, 404))
                 return
             }
-            const handleResult = (res: EditingResult) => {
-                console.debug('Handling Editing result on Deletion', res)
-                if (res.successful) {
-                    if (res.modified) respondWithJson(stream, res, 200)
-                    else respondWithJson(stream, res, 404)
-                } else switch (res.failureReason) {
-                    case EditingFailureReason.VALIDATION:
-                        respondWithJson(stream, res, 400)
-                        break
-                    case EditingFailureReason.TEXT_EDIT:
-                        respondWithJson(stream, res, 500)
-                        break
-                }
-            }
             if (isPromise(result)) {
                 console.debug('Awaiting promise result...')
-                result.then(handleResult, (error) => console.error('GOT ERROR!!!', error))
+                result.then(handleDeletionResult, (error) => console.error('GOT ERROR!!!', error))
                 return
             } else {
-                handleResult(result)
+                handleDeletionResult(result)
             }
             return
         }
@@ -228,6 +242,25 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
             return
         }
 
+        const validateModelHandler: Http2RequestHandler = (stream) => {
+            const result = langiumModelServerFacade.validate(id)
+
+            if (!result) return notFoundHandler
+            respondWithJson(stream, result, 200)
+            return
+        }
+
+        const persistModelHandler: Http2RequestHandler = (stream) => {
+            const result = langiumModelServerFacade.persist(id)
+
+            if (!isPromise(result)) return notFoundHandler
+            result.then((success) => {
+                success ? respondWithJson(stream, Response.create('Executed Model Persist action', 200))
+                    : respondWithJson(stream, Response.create('Failed to execute Model Persist action', 500))
+            })
+            return
+        }
+
         const method = headers[':method']
         if (unmatchedPath.readPathSegment('subscriptions')) {
             if (method === 'POST')
@@ -237,6 +270,16 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
         if (unmatchedPath.readPathSegment('highlight')) {
             if (method === 'PUT')
                 return updateHighlightHandler
+            return notImplementedMethodHandler
+        }
+        if (unmatchedPath.readPathSegment('validation')) {
+            if (method === 'GET')
+                return validateModelHandler
+            return notImplementedMethodHandler
+        }
+        if (unmatchedPath.readPathSegment('persist')) {
+            if (method === 'PUT')
+                return persistModelHandler
             return notImplementedMethodHandler
         }
         if (method === 'GET')
@@ -257,7 +300,10 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
     }
     const getModelIdHandler: Http2RequestHandler = (stream, unmatchedPath) => {
         //HACK: LMS should be unaware of the requester. By adding dependency on GLSP Notation URI I break this (temporarily)
-        const notationUri = unmatchedPath.suffix
+        const notationUri: string | undefined = unmatchedPath.readQueryParams()?.uri
+        if (!notationUri) {
+            return notFoundHandler
+        }
         const semanticId = langiumModelServerFacade.getSemanticId(notationUri)
 
         if (!semanticId) {
@@ -265,6 +311,7 @@ const provideModelHandler: Http2RequestHandlerProvider<LmsServices<object>> = (s
         } else {
             respondWithJson(stream, SemanticIdResponse.create(semanticId), 200)
         }
+        return
     }
 
     return (_, unmatchedPath, headers) => {
@@ -285,140 +332,4 @@ const notFoundHandler: Http2RequestHandler = (stream, unmatchedPath, header) => 
 const notImplementedMethodHandler: Http2RequestHandler = (stream, unmatchedPath, header) => {
     respondWithJson(stream,
         Response.create(`Path '${header[':path']}' is not implemented for method '${header[':method']}' (unmatched suffix '${unmatchedPath.suffix}')`, 501))
-}
-
-function readRequestBody(stream: http2.ServerHttp2Stream): Promise<object> {
-    const buffers: Array<Buffer | string> = []
-
-    stream.on('data', chunk => {
-        buffers.push(chunk)
-    })
-
-    return promisify(stream.once.bind(stream))('end')
-        .then(() => {
-            const joined = buffers.join()
-            console.debug('The stream ended. Joined first buffer', joined)
-            const parsed = JSON.parse(joined)
-            console.debug('Parsed response body', parsed)
-            return parsed
-        })
-}
-
-function respondWithJson(stream: http2.ServerHttp2Stream, response: Response): void
-function respondWithJson(stream: http2.ServerHttp2Stream, response: object, status: number): void
-function respondWithJson(stream: http2.ServerHttp2Stream, response: Response | object, status?: number): void {
-    console.debug('Responding with Response', response, status)
-    if (!status) {
-        status = (response as Response).code
-    }
-    stream.respond({
-        [http2.constants.HTTP2_HEADER_CONTENT_TYPE]: 'application/json; charset=utf-8',
-        [http2.constants.HTTP2_HEADER_STATUS]: status
-    })
-    if (status === 204) {
-        console.warn('You are trying to send response body with NO_CONTENT HTTP status. No body will be sent since the HTTP stream is already closed')
-        return
-    }
-    stream.end(JSON.stringify(response))
-}
-
-function setUpStreamForSSE(stream: http2.ServerHttp2Stream, response: Response): void
-function setUpStreamForSSE(stream: http2.ServerHttp2Stream, response: object, status: number): void
-function setUpStreamForSSE(stream: http2.ServerHttp2Stream, response: Response | object, status?: number): void {
-    if (!status) {
-        status = (response as Response).code
-    }
-    stream.respond({
-        [http2.constants.HTTP2_HEADER_STATUS]: status,
-        [http2.constants.HTTP2_HEADER_CONTENT_TYPE]: 'application/x-ndjson',
-        [http2.constants.HTTP2_HEADER_CACHE_CONTROL]: 'no-cache, no-store',
-    })
-    stream.write(JSON.stringify(response))
-}
-
-class PathContainer {
-    private _suffix: string
-
-    public get suffix(): string {
-        return this._suffix
-    }
-
-    public constructor(suffix: string) {
-        this._suffix = suffix
-    }
-
-    /**
-     * Checks whether unmatched path starts with '/'
-     */
-    public hasPathSegments(): boolean {
-        return (this.testPathSegmentSuffixMatch('') !== undefined)
-    }
-
-    /**
-     * Reads segment from the beginning of the path: `/${segmentValue}`. If specified `segmentValue` equals to the segment
-     * (i.e., it matches characters between the path delimimiter ('/') and another path delimiter or query character ('?') or end of the path),
-     * then segmentValue is returned and matched segment is eliminated from the {@link PathContainer}.
-     * If `segmentValue` is not provided, then attempts to match the path segment and return its value, also eliminating from the path.
-     * If the match is unsuccessful, returns `undefined` and leaves the path unchanged.
-     */
-    public readPathSegment(segmentValue?: string): string | undefined {
-        if (segmentValue !== undefined) {
-            if (segmentValue.length === 0) {
-                console.warn('Reading empty path segment (segmentValue is empty). This is most probably unintentionally')
-            }
-            const nextSegmentStart = this.testPathSegmentSuffixMatch(segmentValue)
-            if (nextSegmentStart === undefined || !this.isPathSegmentEnd(nextSegmentStart)) {
-                return undefined
-            }
-            this._suffix = this._suffix.substring(nextSegmentStart)
-            return segmentValue
-        }
-        return this.matchPrefix(/^\/[^\/?]*/)?.substring(1)
-    }
-
-    /**
-     * Reads query params (`?param=value&otherParam=value`) from the beginning of the path
-     */
-    public readQueryParams(): Record<string, string | undefined> | undefined {
-        const queryParamsText = this.matchPrefix(/^[?].*/)?.slice(1)
-        if (!queryParamsText) return undefined
-        const queryParams: Record<string, string | undefined> = {}
-        queryParamsText.split('&').forEach(queryParam => {
-            const assignment = queryParam.split('=', 2)
-            queryParams[assignment[0]] = assignment[1]
-        })
-        return queryParams
-    }
-
-    /**
-     * If successful, returns the index of the first unmatched character in the path after the matched path segment ('/' + segmentValue)
-     * Else returns `undefined`
-     */
-    private testPathSegmentSuffixMatch(segmentValue: string): number | undefined {
-        if (!this._suffix.startsWith('/' + segmentValue)) {
-            return undefined
-        }
-        return segmentValue.length + 1
-    }
-
-    private isPathSegmentEnd(pathIndex: number): boolean {
-        return this._suffix.length === pathIndex || this._suffix[pathIndex] === '/' || this._suffix[pathIndex] === '?'
-    }
-
-    /**
-     * If {@link PathContainer}.`suffix` begins with `prefix`, then this prefix is removed from `suffix`
-     * and method returns the matched prefix.
-     * Otherwise {@link PathContainer} remains unmodified and method returns `undefined`.
-     *
-     * @param prefix A RegExp against which existing `suffix` is matched
-     */
-    private matchPrefix(prefix: RegExp): string | undefined {
-        const matchResult = this._suffix.match(prefix)
-        if (!matchResult) {
-            return undefined
-        }
-        const prefixString = matchResult[0]
-        this._suffix = this._suffix.substring(prefixString.length)
-        return prefixString
-    }
 }

@@ -1,4 +1,4 @@
-import type { ValidationAcceptor, ValidationChecks } from 'langium'
+import type { Reference, ValidationAcceptor, ValidationChecks } from 'langium'
 import { MultiMap } from 'langium'
 import type { Model, Task, TaskListLangAstType } from '../../generated/ast'
 import { isTask } from '../../generated/ast'
@@ -14,8 +14,9 @@ export function registerValidationChecks(services: TaskListServices) {
     const checks: ValidationChecks<TaskListLangAstType> = {
         Model: validator.checkModelHasUniqueTasks,
         Task: [
-            validator.checkTaskContentShouldStartWithCapital,
             validator.checkTaskHasUniqueReferences,
+            validator.checkTaskNameMustStartWithLowercase,
+            validator.checkTaskContentShouldStartWithCapital,
             validator.checkTaskDoesNotReferenceItself
         ]
     }
@@ -29,34 +30,62 @@ export class TaskListValidator {
 
     checkModelHasUniqueTasks(model: Model, accept: ValidationAcceptor): void {
         const tasksByName = new MultiMap<string, Task>()
-        const tasksWithEmptyName: Task[] = []
         const tasksByContent = new MultiMap<string, Task>()
+        const invalidTasks = new Set<Task>()
         model.tasks.forEach(task => {
             tasksByName.add(task.name, task)
             tasksByContent.add(task.content, task)
             if (!task.name) {
-                tasksWithEmptyName.push(task)
+                invalidTasks.add(task)
             }
         })
 
-        const incorrectlyNamedTasks = tasksByName.entriesGroupedByKey().filter(([, tasks]) => tasks.length > 1)
+        tasksByName.entriesGroupedByKey().filter(([, tasks]) => tasks.length > 1)
             .flatMap(([, tasks]) => tasks.splice(1))
+            .forEach(task => {
+                accept('error', `Task must have unique name, but found another task with name [${task.name}]`,
+                    { node: task, property: 'name' })
+                invalidTasks.add(task)
+            })
 
-        incorrectlyNamedTasks.forEach(task => {
-            accept('error', `Task must have unique name, but found another task with name [${task.name}]`,
-                { node: task, property: 'name' })
-        })
+        getTaskListDocument(model).semanticDomain?.validateTasksForModel(model, invalidTasks)
 
-        getTaskListDocument(model).semanticDomain?.setInvalidTasksForModel(model, incorrectlyNamedTasks
-            .concat(tasksWithEmptyName)
-            .toSet())
-
-        tasksByContent.entriesGroupedByKey().filter(([, tasks]) => tasks.length > 1)
+        tasksByContent.entriesGroupedByKey()
+            .filter(([, tasks]) => tasks.length > 1)
             .flatMap(([, tasks]) => tasks)
             .forEach(task => {
                 accept('warning', 'Task should have unique content',
                     { node: task, property: 'content' })
             })
+    }
+
+    checkTaskHasUniqueReferences(task: Task, accept: ValidationAcceptor): void {
+        const referenceNames = new Set<string>()
+        const nonUniqueReferences = new Set<Reference<Task>>()
+        for (let index = 0; index < task.references.length; index++) {
+            const reference = task.references[index]
+            if (isTask(reference.ref)) {
+                const referencedName = reference.ref.name
+                if (referenceNames.has(referencedName)) {
+                    accept('error', 'Task cannot reference another task more than once',
+                        { node: task, property: 'references', index })
+                    nonUniqueReferences.add(reference)
+                } else {
+                    referenceNames.add(referencedName)
+                }
+            }
+        }
+        getTaskListDocument(task).semanticDomain?.validateReferencesForTask(task, nonUniqueReferences)
+    }
+
+    checkTaskNameMustStartWithLowercase(task: Task, accept: ValidationAcceptor): void {
+        if (task.name) {
+            const firstChar = task.name.substring(0, 1)
+            if (firstChar.toLowerCase() !== firstChar) {
+                accept('error', 'Task name must start with a lowercase.',
+                    { node: task, property: 'name' })
+            }
+        }
     }
 
     checkTaskContentShouldStartWithCapital(task: Task, accept: ValidationAcceptor): void {
@@ -67,25 +96,6 @@ export class TaskListValidator {
                     { node: task, property: 'content' })
             }
         }
-    }
-
-    checkTaskHasUniqueReferences(task: Task, accept: ValidationAcceptor): void {
-        const referenceNames = new Set<string>()
-        const nonUniqueReferenceIndices = new Set<number>()
-        for (let index = 0; index < task.references.length; index++) {
-            const reference = task.references[index]
-            if (isTask(reference.ref)) {
-                const referencedName = reference.ref.name
-                if (referenceNames.has(referencedName)) {
-                    accept('error', 'Task cannot reference another task more than once',
-                        { node: task, property: 'references', index })
-                    nonUniqueReferenceIndices.add(index)
-                } else {
-                    referenceNames.add(referencedName)
-                }
-            }
-        }
-        getTaskListDocument(task).semanticDomain?.setInvalidReferencesForTask(task, nonUniqueReferenceIndices)
     }
 
     checkTaskDoesNotReferenceItself(task: Task, accept: ValidationAcceptor): void {

@@ -1,5 +1,4 @@
 import type { Creation } from '../../../../langium-model-server/lms/model'
-import type * as sem from '../../../../langium-model-server/semantic/model'
 import { isDefinedObject } from '../../../../langium-model-server/utils/types'
 import type * as semantic from '../../semantic/model'
 
@@ -10,7 +9,7 @@ export interface Transition {
 }
 
 export namespace Transition {
-    export function create(transition: sem.Identified<semantic.Transition>): Transition {
+    export function create(transition: semantic.IdentifiedTransition): Transition {
         return {
             id: transition.id,
             sourceTaskId: transition.sourceTask.id,

@@ -1,27 +1,31 @@
 import { URI } from 'vscode-uri'
 import type { LangiumModelServerServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
-import type { SemanticIdentity } from './identity'
-import type { IdentityIndex, ModelExposedIdentityIndex } from './identity-index'
-import type { IdentityStorage } from './identity-storage'
+import type { SemanticIdentifier } from './model'
+import type { IdentityIndex, ModelExposedIdentityIndex } from '.'
+import type { IdentityStorage } from './storage'
 
 export interface IdentityManager<II extends IdentityIndex = IdentityIndex, D extends LmsDocument = LmsDocument> {
     getLanguageDocumentUri(id: string): URI | undefined
     getIdentityIndex(lmsDocument: D): II
-    saveIdentity(languageDocumentUri: string): void
+    /**
+     * @param languageDocumentUri URI of the Langium TextDocument to save identity model for
+     * @returns Root id of saved semantic identity
+     */
+    saveIdentity(languageDocumentUri: string): string
     loadIdentity(languageDocumentUri: string): void
     deleteIdentity(languageDocumentUri: string): void
     renameIdentity(oldLanguageDocumentUri: string, languageDocumentUri: string): void
 }
 
-export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements IdentityManager<II, D> {
+export abstract class AbstractIdentityManager<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument> implements IdentityManager<II, D> {
 
     protected identityStorage: IdentityStorage
     private indexRegistryByLanguageDocumentUri: Map<string, ModelExposedIdentityIndex<II>>
     private languageDocumentUriById: Map<string, URI>
 
     public constructor(services: LangiumModelServerServices<SM, II, D>) {
-        this.identityStorage = services.semantic.IdentityStorage
+        this.identityStorage = services.identity.IdentityStorage
         this.indexRegistryByLanguageDocumentUri = new Map()
         this.languageDocumentUriById = new Map()
     }
@@ -40,9 +44,10 @@ export abstract class AbstractIdentityManager<SM extends SemanticIdentity, II ex
         this.indexRegistryByLanguageDocumentUri.set(languageDocumentUri, identityIndex)
     }
 
-    public saveIdentity(languageDocumentUri: string): void {
-        const semanticModel = this.getOrLoadIdentity(languageDocumentUri).model
-        this.identityStorage.saveIdentityToFile(languageDocumentUri, semanticModel)
+    public saveIdentity(languageDocumentUri: string): string {
+        const rootIdentity = this.getOrLoadIdentity(languageDocumentUri)
+        this.identityStorage.saveIdentityToFile(languageDocumentUri, rootIdentity.model)
+        return rootIdentity.id
     }
 
     public renameIdentity(oldLanguageDocumentUri: string, languageDocumentUri: string): void {

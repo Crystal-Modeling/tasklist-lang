@@ -1,17 +1,19 @@
+import type { AstNode } from 'langium'
 import { stream } from 'langium'
-import type * as id from '../semantic/identity'
-import type { KeysOfType } from '../utils/types'
-import type { LmsDocument } from '../workspace/documents'
-import { ArrayUpdateCommand, ElementUpdate, type ReadonlyArrayUpdate } from './model'
+import type * as id from '../identity/model'
+import type * as sem from '../semantic/model'
+import type { Initialized, LmsDocument } from '../workspace/documents'
+import type { ReadonlyArrayUpdate, RootUpdate } from './model'
+import { ArrayUpdateCommand, ElementUpdate } from './model'
 
-export interface ModelUpdateCalculators<SM extends id.SemanticIdentity> {
-    getOrCreateCalculator(lmsDocument: LmsDocument): ModelUpdateCalculator<SM>
+export interface ModelUpdateCalculators<SM extends id.SemanticIdentifier> {
+    getOrCreateCalculator(lmsDocument: Initialized<LmsDocument>): ModelUpdateCalculator<SM>
 }
 
-export abstract class AbstractModelUpdateCalculators<SM extends id.SemanticIdentity> implements ModelUpdateCalculators<SM> {
+export abstract class AbstractModelUpdateCalculators<SM extends id.SemanticIdentifier> implements ModelUpdateCalculators<SM> {
     protected updateCalculatorsByLangiumDocumentUri: Map<string, ModelUpdateCalculator<SM>> = new Map()
 
-    public getOrCreateCalculator(lmsDocument: LmsDocument): ModelUpdateCalculator<SM> {
+    public getOrCreateCalculator(lmsDocument: Initialized<LmsDocument>): ModelUpdateCalculator<SM> {
         const documentUri = lmsDocument.textDocument.uri
         const existingCalculator = this.updateCalculatorsByLangiumDocumentUri.get(documentUri)
         if (existingCalculator) {
@@ -22,13 +24,43 @@ export abstract class AbstractModelUpdateCalculators<SM extends id.SemanticIdent
         return newCalculator
     }
 
-    protected abstract createCalculator(lmsDocument: LmsDocument): ModelUpdateCalculator<SM>
+    protected abstract createCalculator(lmsDocument: Initialized<LmsDocument>): ModelUpdateCalculator<SM>
 }
 
-export type ModelUpdateCalculator<SM extends id.SemanticIdentity> = DeletionsCalculation<SM>
+export interface ModelUpdateCalculator<SM extends id.SemanticIdentifier> {
+    clearSoftDeletedIdentities(): RootUpdate<SM>
+}
 
-type DeletionsCalculation<T> = {
-    [P in KeysOfType<T, id.SemanticIdentity[]> as `calculate${Capitalize<string & P>}Update`]: T[P] extends id.SemanticIdentity[] ? (identitiesToDelete: Iterable<T[P][0]>) => ReadonlyArrayUpdate<T[P][0]> : never
+// TODO: Either delete this pseudo-generic interface, or make it work! DoD: no "redefining the type" of ModelUpdateCalculators in task-list-module
+// type DeletionsCalculation<T> = {
+//     [P in KeysOfType<T, id.SemanticIdentity[]> as `calculate${Capitalize<string & P>}Update`]: T[P] extends id.SemanticIdentity[] ? (identitiesToDelete: Iterable<T[P][0]>) => ReadonlyArrayUpdate<T[P][0]> : never
+// }
+
+export function compareModelWithExistingBefore<T extends AstNode | sem.ArtificialAstNode, NAME extends id.IdentityName, SRC extends id.SemanticIdentifier>(
+    previous: sem.Identified<T, NAME> | undefined,
+    current: sem.Identified<T, NAME>,
+    sourceModelFactory: (semanticModel: sem.Identified<T, NAME>) => SRC,
+    applyModelChanges: (update: ElementUpdate<SRC>, previous: sem.Identified<T, NAME> | id.Identity<T, NAME>, current: sem.Identified<T, NAME>) => void
+): ReadonlyArrayUpdate<SRC> {
+    const semanticId = current.id
+    if (!previous) {
+        if (!current.identity.isSoftDeleted) {
+            return ArrayUpdateCommand.addition(sourceModelFactory(current))
+        }
+        // Existed in AST long before, was marked for deletion, now reappearing
+        const reappearance = ElementUpdate.createStateUpdate<SRC>(semanticId, 'REAPPEARED')
+        applyModelChanges(reappearance, current.identity.deletedSemanticModel ?? current.identity, current)
+        current.identity.restore()
+        return ArrayUpdateCommand.modification(reappearance)
+    } // Existed in AST before
+    const update = ElementUpdate.createEmpty<SRC>(semanticId)
+    applyModelChanges(update, previous, current)
+    if (current.identity.isSoftDeleted) {// Why it was soft-deleted if it existed in the AST before?
+        current.identity.restore()
+        console.warn(`Model '${semanticId}' existed in previous AST, but was marked for deletion.`)
+        update.__state = 'REAPPEARED'
+    }
+    return ArrayUpdateCommand.modification(update)
 }
 
 /**
@@ -43,27 +75,22 @@ type DeletionsCalculation<T> = {
  * @param getPreviousSemanticModel Fetches corresponding previous Semantic Model from SemanticDomain
  * @returns Semantic Model Update for this deletion request
  */
-export function deleteModels<ID extends id.SemanticIdentity, SEM extends id.SemanticIdentity, SRC extends id.SemanticIdentity>(
-    modelsMarkedForDeletion: Map<string, ID | SEM>,
-    identitiesToDelete: Iterable<ID>,
-    getPreviousSemanticModel: (id: string) => SEM | undefined
+export function deleteModels<T extends AstNode | sem.ArtificialAstNode, NAME extends id.IdentityName, SRC extends id.SemanticIdentifier>(
+    getSoftDeleted: () => Iterable<id.Identity<T, NAME>>,
+    getPreviousSemanticModel: (id: string) => sem.Identified<T, NAME> | undefined,
+    identitiesToDelete: Iterable<id.Identity<T, NAME>>
 ): ReadonlyArrayUpdate<SRC> {
-    let deletion: ReadonlyArrayUpdate<SRC> | undefined = undefined
-    let identitiesToBeMarkedForDeletion = stream(identitiesToDelete)
-    if (modelsMarkedForDeletion.size !== 0) {
-        deletion = ArrayUpdateCommand.deletion<SRC>(modelsMarkedForDeletion.values())
-        const deletedModelIds = new Set(modelsMarkedForDeletion.keys())
-        modelsMarkedForDeletion.clear()
-        identitiesToBeMarkedForDeletion = identitiesToBeMarkedForDeletion.filter(({ id }) => !deletedModelIds.has(id))
-    }
-    identitiesToBeMarkedForDeletion.forEach(identity => {
-        // When we receive Semantic Identity of the model to be deleted, we first try to use
-        // _Semantic Model_ with such semantic ID (which could exist in _previous_ AST state),
-        // since Semantic Model stores all attributes and we will be able to do more precise comparison
-        // if it reappears later
-        modelsMarkedForDeletion.set(identity.id, getPreviousSemanticModel(identity.id) ?? identity)
-    })
-    const dissappearances = ArrayUpdateCommand.modification(
-        Array.from(modelsMarkedForDeletion.keys(), id => ElementUpdate.createStateUpdate<SRC>(id, 'DISAPPEARED')))
-    return deletion ? ArrayUpdateCommand.all(deletion, dissappearances) : dissappearances
+    const deletedIds = stream(identitiesToDelete)
+        .filter(identity => identity.delete(getPreviousSemanticModel(identity.id)))
+        .map(identity => identity.id)
+        .toArray()
+    const softDeletetionUpdates = Array.from(getSoftDeleted(), ({ id }) => ElementUpdate.createStateUpdate<SRC>(id, 'DISAPPEARED'))
+    const deletion = ArrayUpdateCommand.deletion<SRC>(deletedIds)
+    const dissappearances = ArrayUpdateCommand.modification(softDeletetionUpdates)
+    return ArrayUpdateCommand.all(deletion, dissappearances)
+}
+
+export function deleteIdentity<T extends AstNode | sem.ArtificialAstNode>(identity: id.Identity<T>): string {
+    identity.delete()
+    return identity.id
 }

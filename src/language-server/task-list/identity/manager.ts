@@ -1,25 +1,25 @@
-import type { ModelExposedIdentityIndex } from '../../../langium-model-server/semantic/identity-index'
-import { AbstractIdentityManager } from '../../../langium-model-server/semantic/identity-manager'
+import type { ModelExposedIdentityIndex } from '../../../langium-model-server/identity'
+import { AbstractIdentityManager } from '../../../langium-model-server/identity/manager'
 import type * as source from '../lms/model'
 import type { TaskListDocument } from '../workspace/documents'
-import { Model } from './task-list-identity'
-import { TaskListIdentityIndex } from './task-list-identity-index'
+import { IdentityModel } from './storage'
+import { TaskListIdentityIndex } from '.'
 
 /**
- * Stores {@link Model} per URI of Langium-managed TextDocument.
+ * Stores {@link IdentityModel} per URI of Langium-managed TextDocument.
  * It has control over all {@link TaskListIdentityIndex}es existing.
  */
 export class TaskListIdentityManager extends AbstractIdentityManager<source.Model, TaskListIdentityIndex, TaskListDocument> {
 
     protected override loadIdentityToIndex(languageDocumentUri: string): ModelExposedIdentityIndex<TaskListIdentityIndex> {
-        const identityModel = this.identityStorage.loadIdentityFromFile(languageDocumentUri, Model.is)
+        const identityModel = this.identityStorage.loadIdentityFromFile(languageDocumentUri, IdentityModel.is)
         return new AccessibleTaskListIdentityIndex(identityModel)
     }
 
 }
 
 /**
- * Hidden class with the only purpose to reveal {@link Model}
+ * Hidden class with the only purpose to reveal {@link IdentityModel}
  * wrapped with {@link TaskListIdentityIndex} to persist it to the file
  * by {@link SemanticModelStorage}.
  *
@@ -30,7 +30,7 @@ export class TaskListIdentityManager extends AbstractIdentityManager<source.Mode
  */
 class AccessibleTaskListIdentityIndex extends TaskListIdentityIndex {
 
-    public override get model(): Model {
+    public override get model(): IdentityModel {
         return super.model
     }
 }

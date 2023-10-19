@@ -8,9 +8,9 @@ import type { LangiumModelServerServices } from '../services'
 import type { TypeGuard } from '../utils/types'
 import { UriConverter } from '../utils/uri-converter'
 import type { LmsDocument } from '../workspace/documents'
-import type { SemanticIdentity } from './identity'
-import { IdentityError } from './identity-error'
-import type { IdentityIndex } from './identity-index'
+import type { SemanticIdentifier } from './model'
+import { IdentityError } from './error'
+import type { IdentityIndex } from '.'
 
 export interface IdentityStorage {
     saveIdentityToFile(languageDocumentUri: string, identity: unknown): void
@@ -22,7 +22,7 @@ export interface IdentityStorage {
 /**
  * Copied and adopted from @eclipse-glsp/server-node/src/features/model/abstract-json-model-storage.ts
  */
-export abstract class AbstractIdentityStorage<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument> implements IdentityStorage {
+export abstract class AbstractIdentityStorage<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument> implements IdentityStorage {
 
     private languageMetaData: LanguageMetaData
 
@@ -74,6 +74,7 @@ export abstract class AbstractIdentityStorage<SM extends SemanticIdentity, II ex
                 if (!fileContent) {
                     throw new IdentityError(`Could not load the identity. The file '${path}' is empty!.`)
                 }
+                this.writeFile(path, fileContent)
             }
             if (guard && !guard(fileContent)) {
                 throw new Error('The loaded root object is not of the expected type!')
@@ -110,21 +111,21 @@ export abstract class AbstractIdentityStorage<SM extends SemanticIdentity, II ex
             throw new IdentityError(`Could not read & parse file contents of '${path}' as json`, error)
         }
     }
-    protected writeFile(fileUri: string, model: unknown): void {
-        const filePath = this.uriToPath(fileUri)
+    protected writeFile(fileUriOrPath: string, model: unknown): void {
+        const filePath = this.uriToPath(fileUriOrPath)
         const content = this.stringifyModel(model)
         const dirPath = path.dirname(filePath)
         fs.mkdir(dirPath, { recursive: true })
         fs.writeFileSync(filePath, content)
     }
 
-    protected deleteFile(fileUri: string): void {
-        const filePath = this.uriToPath(fileUri)
+    protected deleteFile(fileUriOrPath: string): void {
+        const filePath = this.uriToPath(fileUriOrPath)
         fs.rmSync(filePath, { force: true })
     }
 
-    protected uriToPath(sourceUri: string): string {
-        return sourceUri.startsWith('file://') ? fileURLToPath(sourceUri) : sourceUri
+    protected uriToPath(sourceUriOrPath: string): string {
+        return sourceUriOrPath.startsWith('file://') ? fileURLToPath(sourceUriOrPath) : sourceUriOrPath
     }
 
     protected parseContent(fileContent: string): unknown {

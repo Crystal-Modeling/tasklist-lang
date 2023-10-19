@@ -1,7 +1,7 @@
-import type * as id from '../semantic/identity'
-import type { ModelUpdate } from './model'
+import type * as id from '../identity/model'
+import type { RootUpdate } from './model'
 
-export interface ModelUpdateCombiner<SM extends id.SemanticIdentity> {
+export interface ModelUpdateCombiner<SM extends id.SemanticIdentifier> {
 
     /**
      * Combines updates made during several reconciliation phases (updates accumulate if during the last phase an update was not sent).
@@ -10,5 +10,5 @@ export interface ModelUpdateCombiner<SM extends id.SemanticIdentity> {
      * Else squashes elements into the new Update, and returns it.
      * @param updates Updates to flatten into a single update
      */
-    combineUpdates(updates: Array<ModelUpdate<SM>>): ModelUpdate<SM> | undefined
+    combineUpdates(updates: Array<RootUpdate<SM>>): RootUpdate<SM> | undefined
 }

@@ -1,10 +1,10 @@
 import type { Module } from 'langium'
 import type { LangiumModelServerServices, PartialLangiumModelServerServices } from '../../langium-model-server/services'
 import { TaskListValidator } from '../task-list/validation/task-list-validation'
-import type { TaskListIdentityIndex } from './semantic/task-list-identity-index'
-import { TaskListIdentityManager } from './semantic/task-list-identity-manager'
+import type { TaskListIdentityIndex } from './identity'
+import { TaskListIdentityManager } from './identity/manager'
 import { TaskListIdentityReconciler } from './semantic/task-list-identity-reconciler'
-import { TaskListIdentityStorage } from './semantic/task-list-identity-storage'
+import { TaskListIdentityStorage } from './identity/storage'
 import { TaskListSemanticDomain } from './semantic/task-list-semantic-domain'
 import type * as source from './lms/model'
 import { TaskListLangiumModelServerFacade } from './lms/task-list-facade'
@@ -20,7 +20,7 @@ export type TaskListAddedServices = {
     validation: {
         TaskListValidator: TaskListValidator
     },
-    semantic: {
+    identity: {
         // Redefining the type of IdentityManager to be used in TaskListIdentityReconciler
         IdentityManager: TaskListIdentityManager
     },
@@ -48,15 +48,17 @@ export const TaskListModule: Module<TaskListServices, PartialLangiumModelServerS
     workspace: {
         LmsDocumentGuard: () => isTaskListDocument
     },
-    semantic: {
+    identity: {
         IdentityStorage: (services) => new TaskListIdentityStorage(services),
         IdentityManager: (services) => new TaskListIdentityManager(services),
+    },
+    semantic: {
         IdentityReconciler: (services) => new TaskListIdentityReconciler(services),
         SemanticDomainFactory: () => TaskListSemanticDomain.create,
     },
     lms: {
         LangiumModelServerFacade: (services) => new TaskListLangiumModelServerFacade(services),
-        ModelUpdateCalculators: () => new TaskListModelUpdateCalculators(),
+        ModelUpdateCalculators: (services) => new TaskListModelUpdateCalculators(services),
         ModelUpdateCombiner: () => new TaskListModelUpdateCombiner(),
     },
 }

@@ -2,10 +2,12 @@ import type { LangiumSharedServices } from 'langium'
 import { DefaultLanguageServer, startLanguageServer } from 'langium'
 import type { Connection, InitializeParams, InitializeResult } from 'vscode-languageserver'
 import { FileChangeType } from 'vscode-languageserver'
-import type { SemanticIdentity } from '../semantic/identity'
-import type { IdentityIndex } from '../semantic/identity-index'
+import { URI } from 'vscode-uri'
+import type { IdentityIndex } from '../identity'
+import type { SemanticIdentifier } from '../identity/model'
+import { Save } from '../lms/model'
 import type { LangiumModelServerAddedServices } from '../services'
-import type { LmsDocument } from '../workspace/documents'
+import { LmsDocument } from '../workspace/documents'
 
 export class LmsLanguageServer extends DefaultLanguageServer {
 
@@ -30,30 +32,45 @@ export class LmsLanguageServer extends DefaultLanguageServer {
  * @param lmsServices Additional {@link LangiumModelServerAddedServices} introduced by langium-model-server module
  */
 //TODO: When elaborating into a library, make sure LMS is compatible with multiple Langium languages in one server
-export function startLMSLanguageServer<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument>(
+export function startLMSLanguageServer<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument>(
     services: LangiumSharedServices,
     lmsServices: LangiumModelServerAddedServices<SM, II, D>
 ): void {
     startLanguageServer(services)
-    addIdentityProcessingHandlers(services.lsp.Connection!, lmsServices)
+    addIdentityProcessingHandlers(services.lsp.Connection!, lmsServices, services)
 }
 
-function addIdentityProcessingHandlers<SM extends SemanticIdentity, II extends IdentityIndex, D extends LmsDocument>(
+function addIdentityProcessingHandlers<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument>(
     connection: Connection,
-    lmsServices: LangiumModelServerAddedServices<SM, II, D>
+    lmsServices: LangiumModelServerAddedServices<SM, II, D>,
+    services: LangiumSharedServices
 ) {
 
-    const semanticIndexManager = lmsServices.semantic.IdentityManager
+    const langiumDocuments = services.workspace.LangiumDocuments
+    const isLmsDocument = lmsServices.workspace.LmsDocumentGuard
+    const identityManager = lmsServices.identity.IdentityManager
+    const modelUpdateCalculators = lmsServices.lms.ModelUpdateCalculators
+    const lmsSubscriptions = lmsServices.lms.LmsSubscriptions
 
     connection.onDidSaveTextDocument(params => {
-        semanticIndexManager.saveIdentity(params.textDocument.uri)
+        const lmsUri = URI.parse(params.textDocument.uri)
+        if (langiumDocuments.hasDocument(lmsUri)) {
+            const document = langiumDocuments.getOrCreateDocument(lmsUri)
+            if (isLmsDocument(document) && LmsDocument.isInitialized(document)) {
+                const rootId = document.semanticDomain.rootId
+                const modelsPermanentDeletion = modelUpdateCalculators.getOrCreateCalculator(document).clearSoftDeletedIdentities()
+                lmsSubscriptions.getSubscription(rootId)?.pushModelUpdate(modelsPermanentDeletion)
+                identityManager.saveIdentity(params.textDocument.uri)
+                lmsSubscriptions.getSubscription(rootId)?.pushAction(Save.create(rootId))
+            }
+        }
     })
 
     connection.onDidChangeWatchedFiles(params => {
         for (const event of params.changes) {
             switch (event.type) {
                 case FileChangeType.Deleted:
-                    semanticIndexManager.deleteIdentity(event.uri)
+                    identityManager.deleteIdentity(event.uri)
                     break
                 default:
                     break
@@ -64,7 +81,7 @@ function addIdentityProcessingHandlers<SM extends SemanticIdentity, II extends I
     connection.workspace.onDidRenameFiles(params => {
         console.debug('============= > RENAMED FILES!!!', params.files)
         params.files.forEach(fileRename => {
-            semanticIndexManager.renameIdentity(fileRename.oldUri, fileRename.newUri)
+            identityManager.renameIdentity(fileRename.oldUri, fileRename.newUri)
         })
     })
 }
