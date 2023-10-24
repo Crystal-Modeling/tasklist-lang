@@ -16,7 +16,7 @@ import { LmsDocument, LmsDocumentState, type ExtendableLangiumDocument } from '.
 
 export interface LmsDocumentBuilder {
 }
-export class DefaultLmsDocumentBuilder<SM extends id.SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument> implements LmsDocumentBuilder {
+export class DefaultLmsDocumentBuilder<SM extends id.WithSemanticID, II extends IdentityIndex, D extends LmsDocument> implements LmsDocumentBuilder {
 
     protected readonly createSemanticDomain: SemanticDomainFactory
     protected readonly isLmsDocument: TypeGuard<D, ExtendableLangiumDocument>

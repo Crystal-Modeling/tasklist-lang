@@ -3,13 +3,13 @@ import { DefaultRenameProvider, findDeclarationNodeAtOffset } from 'langium'
 import type { RenameParams, WorkspaceEdit } from 'vscode-languageserver'
 import type { IdentityIndex } from '../identity/identity-index'
 import type { IdentityManager } from '../identity/manager'
-import type { SemanticIdentifier } from '../identity/model'
+import type { WithSemanticID } from '../identity/model'
 import type { TextEditService } from '../lms/text-edit-service'
 import * as sem from '../semantic/model'
 import type { LangiumModelServerServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
 
-export class LmsRenameProvider<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument> extends DefaultRenameProvider {
+export class LmsRenameProvider<SM extends WithSemanticID, II extends IdentityIndex, D extends LmsDocument> extends DefaultRenameProvider {
 
     protected identityManager: IdentityManager
     protected textEditService: TextEditService

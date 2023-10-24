@@ -4,7 +4,7 @@ import type { Connection, InitializeParams, InitializeResult } from 'vscode-lang
 import { FileChangeType } from 'vscode-languageserver'
 import { URI } from 'vscode-uri'
 import type { IdentityIndex } from '../identity/identity-index'
-import type { SemanticIdentifier } from '../identity/model'
+import type { WithSemanticID } from '../identity/model'
 import { Save } from '../lms/model'
 import type { LangiumModelServerAddedServices } from '../services'
 import { LmsDocument } from '../workspace/documents'
@@ -32,7 +32,7 @@ export class LmsLanguageServer extends DefaultLanguageServer {
  * @param lmsServices Additional {@link LangiumModelServerAddedServices} introduced by langium-model-server module
  */
 //TODO: When elaborating into a library, make sure LMS is compatible with multiple Langium languages in one server
-export function startLMSLanguageServer<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument>(
+export function startLMSLanguageServer<SM extends WithSemanticID, II extends IdentityIndex, D extends LmsDocument>(
     services: LangiumSharedServices,
     lmsServices: LangiumModelServerAddedServices<SM, II, D>
 ): void {
@@ -40,7 +40,7 @@ export function startLMSLanguageServer<SM extends SemanticIdentifier, II extends
     addIdentityProcessingHandlers(services.lsp.Connection!, lmsServices, services)
 }
 
-function addIdentityProcessingHandlers<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument>(
+function addIdentityProcessingHandlers<SM extends WithSemanticID, II extends IdentityIndex, D extends LmsDocument>(
     connection: Connection,
     lmsServices: LangiumModelServerAddedServices<SM, II, D>,
     services: LangiumSharedServices

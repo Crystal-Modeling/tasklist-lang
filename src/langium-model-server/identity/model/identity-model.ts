@@ -1,9 +1,9 @@
 import type { TypeGuard} from '../../utils/types'
 import { isDefinedObject } from '../../utils/types'
 import type { AstNodeIdentityName, DerivativeIdentityName, IdentityName } from './name'
-import type { SemanticIdentifier } from './semantic-identifier'
+import type { WithSemanticID } from './semantic-id'
 
-export interface IdentityModel<NAME extends IdentityName> extends Readonly<SemanticIdentifier> {
+export interface IdentityModel<NAME extends IdentityName> extends Readonly<WithSemanticID> {
     name: NAME
 }
 

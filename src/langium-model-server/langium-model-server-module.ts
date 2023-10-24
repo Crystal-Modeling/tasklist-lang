@@ -2,7 +2,7 @@ import type { LangiumSharedServices, Module } from 'langium'
 import { LmsDocumentHighlightProvider } from './lsp/document-highlight-provider'
 import { LmsLanguageServer } from './lsp/lms-language-server'
 import { LmsRenameProvider } from './lsp/rename-provider'
-import type { SemanticIdentifier } from './identity/model'
+import type { WithSemanticID } from './identity/model'
 import type { IdentityIndex } from './identity/identity-index'
 import type { LangiumModelServerDefaultServices, LangiumModelServerDefaultSharedServices, LangiumModelServerServices } from './services'
 import { DefaultLangiumSourceModelServer } from './lms/langium-model-server'
@@ -13,7 +13,7 @@ import { DefaultTextEditService } from './lms/text-edit-service'
 import { LmsDocumentValidator } from './validation/document-validator'
 
 export function createLangiumModelServerDefaultModule
-<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument>():
+<SM extends WithSemanticID, II extends IdentityIndex, D extends LmsDocument>():
 Module<LangiumModelServerServices<SM, II, D>, LangiumModelServerDefaultServices<SM>> {
     return {
         lsp: {
