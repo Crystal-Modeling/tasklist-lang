@@ -96,7 +96,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         let anchorModel: semantic.IdentifiedTransition | undefined
         if (creationParams.anchorModelId) {
             anchorModel = lmsDocument.semanticDomain.identifiedTransitions.get(creationParams.anchorModelId)
-            if (anchorModel && anchorModel.sourceTask.id !== sourceTask.id) {
+            if (anchorModel && anchorModel.sourceTask !== sourceTask) {
                 return ModificationResult.failedValidation('Anchor model for Transition must be another Transition within the same sourceTask')
             }
         }
@@ -118,7 +118,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         }
         let rollback: id.StateRollback | undefined
         if (taskModification.name) {
-            const validatedName = task.identity.fitNewName(taskModification.name)
+            const validatedName = task.$identity.fitNewName(taskModification.name)
             if (!validatedName) {
                 return ModificationResult.failedValidation(`Unable to fit supplied task name '${taskModification.name}': invalid value`)
             }
@@ -132,7 +132,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         }
 
         if (taskModification.name) {
-            const renameRollback = task.identity.updateName(taskModification.name)
+            const renameRollback = task.$identity.updateName(taskModification.name)
             if (!renameRollback) {
                 return ModificationResult.failedValidation(`Unable to rename task to '${taskModification.name}'`)
             }
@@ -172,18 +172,18 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
 
         const newTransitionProps = semantic.Transition.properties(newSourceTask ?? transition.sourceTask, newTargetTask ?? transition.targetTask)
         const newTransitionName = identity.TransitionName.from(newTransitionProps)
-        if (!transition.identity.isNewNameFit(newTransitionName)) {
+        if (!transition.$identity.isNewNameFit(newTransitionName)) {
             return ModificationResult.failedValidation(`Unable to fit supplied transition name ${newTransitionName}: invalid value`)
         }
 
         const sourceEdit = this.computeTransitionUpdate(lmsDocument, transition, newTransitionProps)
 
         if (sourceEdit.size > 0) {
-            const rollback = transition.identity.updateName(newTransitionName)
+            const rollback = transition.$identity.updateName(newTransitionName)
             if (!rollback) {
                 return ModificationResult.failedValidation(`Unable to rename transition to '${newTransitionName}'`)
             }
-            return this.applySourceEdit(sourceEdit, 'Updated transition: ' + transition.identity.name + 'to ' + newTransitionName, rollback)
+            return this.applySourceEdit(sourceEdit, 'Updated transition: ' + transition.$identity.name + 'to ' + newTransitionName, rollback)
         } else {
             return ModificationResult.unmodified()
         }
@@ -215,7 +215,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         const sourceEditAndLabel = stream(resolvedTasks.values())
             .map(task => this.computeTaskDeletion(lmsDocument, task, taskIds))
             .concat(stream(resolvedTransitions.values())
-                .filter((transition) => !resolvedTasks.has(transition.sourceTask.id) && !resolvedTasks.has(transition.targetTask.id))
+                .filter((transition) => !resolvedTasks.has(transition.sourceTask.$identity.id) && !resolvedTasks.has(transition.targetTask.$identity.id))
                 .map(transition => this.computeTransitionDeletion(lmsDocument, transition))
             ).reduce((sourceEditAndLabel, [nextSourceEdit, nextLabel]) => {
                 sourceEditAndLabel[0].apply(nextSourceEdit)
@@ -239,7 +239,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return this.deleteModel(rootModelId, transitionId, (domain, id) => domain.identifiedTransitions.get(id), this.computeTransitionDeletion.bind(this))
     }
 
-    private deleteModel<SEM extends id.SemanticIdentifier>(rootModelId: string, modelId: string,
+    private deleteModel<SEM extends sem.IdentifiedNode>(rootModelId: string, modelId: string,
         resolveModel: (domain: TaskListSemanticDomain, id: string) => SEM | undefined, computeModelDeletion: (document: LmsDocument, model: SEM) => [SourceEdit, string]
     ): MaybePromise<ModificationResult> | undefined {
 
@@ -290,7 +290,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         anchorModel?: semantic.IdentifiedTransition): TextEdit {
 
         if (!sourceTask.$cstNode) {
-            throw new Error('Cannot locate source task ' + sourceTask.name + '(' + sourceTask.id + ') in text')
+            throw new Error('Cannot locate source task ' + sourceTask.name + '(' + sourceTask.$identity.id + ') in text')
         }
 
         let prefix = (!sourceTask.references || sourceTask.references.length === 0)
@@ -313,7 +313,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
     private computeTaskUpdate(task: semantic.IdentifiedTask, taskModification: Modification<Task>): SourceEdit | undefined {
         console.debug('Computing Update edit for Task with name', task.name)
         if (!task.$cstNode) {
-            throw new Error('Cannot locate task ' + task.name + '(' + task.id + ') in text')
+            throw new Error('Cannot locate task ' + task.name + '(' + task.$identity.id + ') in text')
         }
         if (taskModification.content || taskModification.name) {
             const serializedTask = `task ${taskModification.name ?? task.name} "${taskModification.content ?? task.content}"`
@@ -333,7 +333,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
 
     private computeTransitionUpdate(lmsDocument: LmsDocument, transition: semantic.IdentifiedTransition, newTransitionProps: semantic.TransitionIdentifiedProperties): SourceEdit {
         if (!transition.$cstNode) {
-            throw new Error('Cannot locate model ' + transition.identity.name + '(' + transition.id + ') in text')
+            throw new Error('Cannot locate model ' + transition.$identity.name + '(' + transition.$identity.id + ') in text')
         }
         const sourceEdit = new SourceEdit()
         if (newTransitionProps.sourceTask !== transition.sourceTask) {
@@ -350,7 +350,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
 
         console.debug('Computing Deletion edit for Task with name', task.name)
         if (!task.$cstNode) {
-            throw new Error('Cannot locate model ' + task.name + '(' + task.id + ') in text')
+            throw new Error('Cannot locate model ' + task.name + '(' + task.$identity.id + ') in text')
         }
 
         const start = task.$cstNode.range.start
@@ -365,11 +365,11 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
                     console.debug('Source document or source task are not LMS-compatible', doc, sourceTask)
                     return undefined
                 }
-                if (ignoreReferencesFromTasks && ignoreReferencesFromTasks.has(sourceTask.id)) {
-                    console.debug(`Transition from source Task ${sourceTask.id} (${sourceTask.name}) ignored`)
+                if (ignoreReferencesFromTasks && ignoreReferencesFromTasks.has(sourceTask.$identity.id)) {
+                    console.debug(`Transition from source Task ${sourceTask.$identity.id} (${sourceTask.name}) ignored`)
                     return undefined
                 }
-                const transitionName = identity.TransitionName.of(sourceTask.id, task.id)
+                const transitionName = identity.TransitionName.of(sourceTask.$identity.id, task.$identity.id)
                 const transitionId = this.identityManager.getIdentityIndex(doc).transitions.byName(transitionName)?.id
                 if (!transitionId) {
                     console.debug('Cannot find transition identity with name', transitionName)
@@ -394,10 +394,10 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
     // TODO: Extract to separate component (that will be responsible for TextEdit computation)
     private computeTransitionDeletion(lmsDocument: LmsDocument, transition: semantic.IdentifiedTransition): [SourceEdit, string] {
 
-        console.debug('Computing Deletion edit for Transition with name', transition.identity.name)
+        console.debug('Computing Deletion edit for Transition with name', transition.$identity.name)
         const task = transition.sourceTask
         if (!transition.$cstNode || !task.$cstNode) {
-            throw new Error('Cannot locate model ' + transition.identity.name + '(' + transition.id + ') in text')
+            throw new Error('Cannot locate model ' + transition.$identity.name + '(' + transition.$identity.id + ') in text')
         }
 
         let start: Position
@@ -419,7 +419,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         }
         const sourceEdit = SourceEdit.ofSingleEdit(lmsDocument.uri, TextEdit.del({ start, end }))
 
-        return [sourceEdit, 'Deleted transition ' + transition.identity.name]
+        return [sourceEdit, 'Deleted transition ' + transition.$identity.name]
     }
 
     private applyTextEdit(lmsDocument: LmsDocument, textEdit: TextEdit, label: string, rollback?: id.StateRollback): Promise<ModificationResult> {

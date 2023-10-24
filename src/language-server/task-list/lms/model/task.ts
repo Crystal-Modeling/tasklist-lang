@@ -12,7 +12,7 @@ export namespace Task {
 
     export function create(task: semantic.IdentifiedTask): Task {
         return {
-            id: task.id,
+            id: task.$identity.id,
             name: task.name,
             content: task.content ?? ''
         }

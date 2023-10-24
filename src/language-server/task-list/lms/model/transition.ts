@@ -11,9 +11,9 @@ export interface Transition {
 export namespace Transition {
     export function create(transition: semantic.IdentifiedTransition): Transition {
         return {
-            id: transition.id,
-            sourceTaskId: transition.sourceTask.id,
-            targetTaskId: transition.targetTask.id
+            id: transition.$identity.id,
+            sourceTaskId: transition.sourceTask.$identity.id,
+            targetTaskId: transition.targetTask.$identity.id
         }
     }
 

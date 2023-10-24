@@ -106,7 +106,7 @@ export abstract class AbstractLangiumModelServerFacade<SM extends SemanticIdenti
 
         return this.connection.sendRequest(ShowDocumentRequest.type,
             { uri: lmsDocument.textDocument.uri, selection: identifiedNode.$cstNode?.range, takeFocus: true }
-        ).then(({ success }) => HighlightResponse.modelHighlighted(rootModelId, identifiedNode.id, success))
+        ).then(({ success }) => HighlightResponse.modelHighlighted(rootModelId, identifiedNode.$identity.id, success))
     }
 
     public validate(rootModelId: string): ValidationMarker[] | undefined {
@@ -119,7 +119,7 @@ export abstract class AbstractLangiumModelServerFacade<SM extends SemanticIdenti
             .flatMap(node => node.$validation
                 .map(({ kind, description, label }): ValidationMarker => ({
                     kind, description, label,
-                    elementId: node.id
+                    elementId: node.$identity.id
                 }))
             ).toArray()
     }

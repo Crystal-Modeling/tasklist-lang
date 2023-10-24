@@ -27,27 +27,26 @@ export interface ValidationMessage {
 
 export type IdentifiedNode = Identified<AstNode | ArtificialAstNode, id.IdentityName>
 export type Identified<T extends AstNode | ArtificialAstNode, NAME extends id.IdentityName = id.IdentityName> = Validated<T> & {
-    readonly id: string
-    identity: id.Identity<T, NAME>
+    $identity: id.Identity<T, NAME>
 }
 
 export namespace Identified {
     export function identify<T extends AstNode>(node: Validated<T>, identity: id.AstNodeIdentity<T>): Identified<T, id.AstNodeIdentityName>
     export function identify<T extends ArtificialAstNode, NAME extends id.DerivativeIdentityName>(node: Validated<T>, identity: id.DerivativeIdentity<T, NAME>): Identified<T, NAME>
     export function identify<T extends AstNode | ArtificialAstNode, NAME extends id.IdentityName>(node: Validated<T>, identity: id.Identity<T, NAME>): Identified<T, NAME> {
-        return Object.assign(node, { identity, id: identity.id })
+        return Object.assign(node, { $identity: identity })
     }
 
     export function is<T extends AstNode>(node: T): node is Identified<T, id.AstNodeIdentityName>
     export function is<T extends ArtificialAstNode>(node: T): node is Identified<T>
     export function is<T extends AstNode | ArtificialAstNode>(node: T): node is Identified<T> {
-        return !!(node as Identified<T>)?.identity?.id
+        return (node as Identified<T>)?.$identity?.id !== undefined
     }
 
     export function isArtificial<T extends ArtificialAstNode, NAME extends id.DerivativeIdentityName>(
         node: T, nameGuard: TypeGuard<NAME, id.IdentityName>
     ): node is Identified<T, NAME> {
-        return is(node) && nameGuard(node.identity.name)
+        return is(node) && nameGuard(node.$identity.name)
     }
 }
 

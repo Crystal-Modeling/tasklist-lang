@@ -48,7 +48,7 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
     public applyTasksUpdate(identitiesToDelete: Iterable<identity.TaskIdentity>): ReadonlyArrayUpdate<Task> {
         const existingTasks = this.semanticDomain.identifiedTasks.values()
         const updates = Array.from(existingTasks, task => compareModelWithExistingBefore(
-            this.semanticDomain.getPreviousIdentifiedTask(task.id),
+            this.semanticDomain.getPreviousIdentifiedTask(task.$identity.id),
             task,
             Task.create,
             applyTaskChanges,
@@ -68,7 +68,7 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
     public applyTransitionsUpdate(identitiesToDelete: Iterable<identity.TransitionIdentity>): ReadonlyArrayUpdate<Transition> {
         const existingTransitions = this.semanticDomain.identifiedTransitions.values()
         const updates = Array.from(existingTransitions, transition => compareModelWithExistingBefore(
-            this.semanticDomain.getPreviousIdentifiedTransition(transition.id),
+            this.semanticDomain.getPreviousIdentifiedTransition(transition.$identity.id),
             transition,
             Transition.create,
             applyTransitionChanges,
@@ -94,11 +94,11 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
 }
 
 function applyTaskChanges(update: ElementUpdate<Task>, previous: semantic.IdentifiedTask | identity.TaskIdentity, current: semantic.IdentifiedTask): void {
-    if (previous !== current.identity) {
+    if (previous !== current.$identity) {
         Update.assignIfUpdated(update, 'name', previous.name, current.name, '')
         Update.assignIfUpdated(update, 'content', (previous as semantic.IdentifiedTask).content, current.content, '')
     } else {
-        console.info(`Can't compare attributes of Task '${current.id}' with name=${current.name}: previous semantic Task is missing`)
+        console.info(`Can't compare attributes of Task '${current.$identity.id}' with name=${current.name}: previous semantic Task is missing`)
         Update.assign(update, 'name', current.name, '')
         Update.assign(update, 'content', current.content, '')
     }
@@ -108,13 +108,13 @@ function applyTransitionChanges(update: ElementUpdate<Transition>,
     previous: semantic.IdentifiedTransition | identity.TransitionIdentity,
     current: semantic.IdentifiedTransition
 ): void {
-    if (previous !== current.identity) {
+    if (previous !== current.$identity) {
         const previousModel = previous as semantic.IdentifiedTransition
-        Update.assignIfUpdated(update, 'sourceTaskId', previousModel.sourceTask.id, current.sourceTask.id)
-        Update.assignIfUpdated(update, 'targetTaskId', previousModel.targetTask.id, current.targetTask.id)
+        Update.assignIfUpdated(update, 'sourceTaskId', previousModel.sourceTask.$identity.id, current.sourceTask.$identity.id)
+        Update.assignIfUpdated(update, 'targetTaskId', previousModel.targetTask.$identity.id, current.targetTask.$identity.id)
     } else {
-        console.info(`Can't compare attributes of Transition '${current.id}' with name=${current.identity.name}: previous semantic Transition is missing`)
-        Update.assign(update, 'sourceTaskId', current.sourceTask.id)
-        Update.assign(update, 'targetTaskId', current.targetTask.id)
+        console.info(`Can't compare attributes of Transition '${current.$identity.id}' with name=${current.$identity.name}: previous semantic Transition is missing`)
+        Update.assign(update, 'sourceTaskId', current.sourceTask.$identity.id)
+        Update.assign(update, 'targetTaskId', current.targetTask.$identity.id)
     }
 }

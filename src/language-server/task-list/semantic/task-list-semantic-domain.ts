@@ -101,13 +101,13 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
 
     public identifyTask(task: Validated<ast.Task>, identity: id.TaskIdentity): IdentifiedTask {
         const identifiedTask = Identified.identify(task, identity)
-        this._identifiedTasksById.set(identifiedTask.id, identifiedTask)
+        this._identifiedTasksById.set(identifiedTask.$identity.id, identifiedTask)
         return identifiedTask
     }
 
     public identifyTransition(transition: Validated<Transition & TransitionIdentifiedProperties>, identity: id.TransitionIdentity): IdentifiedTransition {
         const identifiedTransition = Identified.identify(transition, identity)
-        this._identifiedTransitionsById.set(identifiedTransition.id, identifiedTransition)
+        this._identifiedTransitionsById.set(identifiedTransition.$identity.id, identifiedTransition)
         return identifiedTransition
     }
 

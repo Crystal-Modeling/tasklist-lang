@@ -31,15 +31,15 @@ export class LmsRenameProvider<SM extends SemanticIdentifier, II extends Identit
 
         let newName = params.newName
         if (sem.Identified.is(targetNode)) {
-            console.debug('Identity for the targetNode:', targetNode.identity)
-            const validatedName = targetNode.identity.fitNewName(newName)
+            console.debug('Identity for the targetNode:', targetNode.$identity)
+            const validatedName = targetNode.$identity.fitNewName(newName)
             if (!validatedName) {
                 console.debug('Failed name validation')
                 return undefined
             }
             newName = validatedName.result
             console.debug('After name validation, new name is', newName)
-            if (!targetNode.identity.updateName(newName)) {
+            if (!targetNode.$identity.updateName(newName)) {
                 console.debug('After updating semantic element, its name has NOT changed')
                 return undefined
             }

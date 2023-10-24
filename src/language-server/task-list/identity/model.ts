@@ -19,7 +19,7 @@ export namespace TransitionName {
     }
 
     export function from(newTransition: semantic.TransitionIdentifiedProperties): TransitionName {
-        return of(newTransition.sourceTask.id, newTransition.targetTask.id)
+        return of(newTransition.sourceTask.$identity.id, newTransition.targetTask.$identity.id)
     }
 
     export function of(sourceTaskId: string, targetTaskId: string): TransitionName {

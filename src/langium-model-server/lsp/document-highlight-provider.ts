@@ -50,7 +50,7 @@ export class LmsDocumentHighlightProvider<SM extends identity.SemanticIdentifier
     }
 
     private calculateAndPushHighlight(document: LmsDocument, selectedAstNode: AstNode) {
-        const highlightedNodeId = getContainerOfType<semantic.Identified<AstNode>>(selectedAstNode, semantic.Identified.is)?.id
+        const highlightedNodeId = getContainerOfType<semantic.Identified<AstNode>>(selectedAstNode, semantic.Identified.is)?.$identity.id
         const modelId = this.identityManager.getIdentityIndex(document).id
         if (highlightedNodeId && highlightedNodeId !== this.highlightedNodeIdByModelId.get(modelId)) {
             this.highlightedNodeIdByModelId.set(modelId, highlightedNodeId)

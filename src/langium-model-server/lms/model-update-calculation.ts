@@ -42,21 +42,21 @@ export function compareModelWithExistingBefore<T extends AstNode | sem.Artificia
     sourceModelFactory: (semanticModel: sem.Identified<T, NAME>) => SRC,
     applyModelChanges: (update: ElementUpdate<SRC>, previous: sem.Identified<T, NAME> | id.Identity<T, NAME>, current: sem.Identified<T, NAME>) => void
 ): ReadonlyArrayUpdate<SRC> {
-    const semanticId = current.id
+    const semanticId = current.$identity.id
     if (!previous) {
-        if (!current.identity.isSoftDeleted) {
+        if (!current.$identity.isSoftDeleted) {
             return ArrayUpdateCommand.addition(sourceModelFactory(current))
         }
         // Existed in AST long before, was marked for deletion, now reappearing
         const reappearance = ElementUpdate.createStateUpdate<SRC>(semanticId, 'REAPPEARED')
-        applyModelChanges(reappearance, current.identity.deletedSemanticModel ?? current.identity, current)
-        current.identity.restore()
+        applyModelChanges(reappearance, current.$identity.deletedSemanticModel ?? current.$identity, current)
+        current.$identity.restore()
         return ArrayUpdateCommand.modification(reappearance)
     } // Existed in AST before
     const update = ElementUpdate.createEmpty<SRC>(semanticId)
     applyModelChanges(update, previous, current)
-    if (current.identity.isSoftDeleted) {// Why it was soft-deleted if it existed in the AST before?
-        current.identity.restore()
+    if (current.$identity.isSoftDeleted) {// Why it was soft-deleted if it existed in the AST before?
+        current.$identity.restore()
         console.warn(`Model '${semanticId}' existed in previous AST, but was marked for deletion.`)
         update.__state = 'REAPPEARED'
     }
