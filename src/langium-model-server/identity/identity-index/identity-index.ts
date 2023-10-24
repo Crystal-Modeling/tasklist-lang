@@ -1,6 +1,6 @@
 import type { AstNode } from 'langium'
-import type * as sem from '../semantic/model'
-import type { Identity, IdentityModel, IdentityName, RollbackableResult } from './model'
+import type * as sem from '../../semantic/model'
+import type { Identity, IdentityModel, IdentityName, RollbackableResult } from '../model'
 
 export type IdentityIndex = {
     readonly id: string

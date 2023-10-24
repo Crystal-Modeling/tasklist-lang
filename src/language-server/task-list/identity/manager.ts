@@ -1,9 +1,9 @@
-import type { ModelExposedIdentityIndex } from '../../../langium-model-server/identity'
+import type { ModelExposedIdentityIndex } from '../../../langium-model-server/identity/identity-index'
 import { AbstractIdentityManager } from '../../../langium-model-server/identity/manager'
 import type * as source from '../lms/model'
 import type { TaskListDocument } from '../workspace/documents'
 import { ModelIdentityModel } from './storage'
-import { TaskListIdentityIndex } from '.'
+import { TaskListIdentityIndex } from './identity-index'
 
 /**
  * Stores {@link ModelIdentityModel} per URI of Langium-managed TextDocument.

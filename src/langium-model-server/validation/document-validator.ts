@@ -6,7 +6,7 @@ import type { AstNode, LangiumDocument, DiagnosticInfo, ValidationAcceptor } fro
 import { streamAst, interruptAndCheck } from 'langium'
 import type { LangiumModelServerServices } from '../services'
 import type { SemanticIdentifier } from '../identity/model'
-import type { IdentityIndex } from '../identity'
+import type { IdentityIndex } from '../identity/identity-index'
 import type { ExtendableLangiumDocument, LmsDocument } from '../workspace/documents'
 import type { TypeGuard } from '../utils/types'
 

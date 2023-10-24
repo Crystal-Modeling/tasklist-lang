@@ -1,4 +1,4 @@
-import type { TaskListIdentityIndex } from '.'
+import type { TaskListIdentityIndex } from './identity-index'
 import * as id from '../../../langium-model-server/identity/model'
 import type { IdentityStorage } from '../../../langium-model-server/identity/storage'
 import { AbstractIdentityStorage } from '../../../langium-model-server/identity/storage'

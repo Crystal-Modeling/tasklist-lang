@@ -2,7 +2,7 @@ import { URI } from 'vscode-uri'
 import type { LangiumModelServerServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
 import type { SemanticIdentifier } from './model'
-import type { IdentityIndex, ModelExposedIdentityIndex } from '.'
+import type { IdentityIndex, ModelExposedIdentityIndex } from './identity-index'
 import type { IdentityStorage } from './storage'
 
 export interface IdentityManager<II extends IdentityIndex = IdentityIndex, D extends LmsDocument = LmsDocument> {

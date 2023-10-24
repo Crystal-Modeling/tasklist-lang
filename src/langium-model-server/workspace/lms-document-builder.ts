@@ -1,7 +1,7 @@
 import type { LangiumDocument } from 'langium'
 import { DocumentState, interruptAndCheck } from 'langium'
 import type { CancellationToken } from 'vscode-languageserver'
-import type { IdentityIndex } from '../identity'
+import type { IdentityIndex } from '../identity/identity-index'
 import type { IdentityManager } from '../identity/manager'
 import * as id from '../identity/model'
 import * as src from '../lms/model'

@@ -3,7 +3,7 @@ import type { ElementUpdate, ReadonlyArrayUpdate } from '../../../langium-model-
 import { ArrayUpdate, ArrayUpdateCommand, RootUpdate, Update } from '../../../langium-model-server/lms/model'
 import { AbstractModelUpdateCalculators, compareModelWithExistingBefore, deleteIdentity, deleteModels, type ModelUpdateCalculator } from '../../../langium-model-server/lms/model-update-calculation'
 import type { Initialized } from '../../../langium-model-server/workspace/documents'
-import type { TaskListIdentityIndex } from '../identity'
+import type { TaskListIdentityIndex } from '../identity/identity-index'
 import type { TaskListIdentityManager } from '../identity/manager'
 import type * as identity from '../identity/model'
 import type * as semantic from '../semantic/model'

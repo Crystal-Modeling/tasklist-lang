@@ -1,6 +1,6 @@
 import type * as http2 from 'http2'
 import { isPromise } from 'util/types'
-import type { IdentityIndex } from '../identity'
+import type { IdentityIndex } from '../identity/identity-index'
 import type { SemanticIdentifier } from '../identity/model'
 import type { LangiumModelServerAddedServices, LmsServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
