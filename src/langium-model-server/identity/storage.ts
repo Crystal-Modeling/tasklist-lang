@@ -9,7 +9,7 @@ import type { TypeGuard } from '../utils/types'
 import { UriConverter } from '../utils/uri-converter'
 import type { LmsDocument } from '../workspace/documents'
 import type { SemanticIdentifier } from './model'
-import { IdentityError } from './error'
+import { IdentityError } from './model'
 import type { IdentityIndex } from '.'
 
 export interface IdentityStorage {
