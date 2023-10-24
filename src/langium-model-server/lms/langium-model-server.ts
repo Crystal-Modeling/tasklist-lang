@@ -1,14 +1,14 @@
 import * as fs from 'fs-extra'
 import * as http2 from 'http2'
 import path from 'path'
-import type { SemanticIdentifier } from '../identity/model'
+import type { WithSemanticID } from '../identity/model'
 import type { IdentityIndex } from '../identity/indexed'
 import type { LangiumModelServerServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
 import { LangiumModelServerRouter } from './router'
 
 export function startLangiumModelServer<
-    SM extends SemanticIdentifier,
+    SM extends WithSemanticID,
     II extends IdentityIndex,
     D extends LmsDocument
 >(lmsServices: LangiumModelServerServices<SM, II, D>): LangiumModelServer {
@@ -22,7 +22,7 @@ export interface LangiumModelServer {
     shutDown(callback?: (err?: Error | undefined) => void): void
 }
 
-export class DefaultLangiumSourceModelServer<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument> implements LangiumModelServer {
+export class DefaultLangiumSourceModelServer<SM extends WithSemanticID, II extends IdentityIndex, D extends LmsDocument> implements LangiumModelServer {
 
     protected readonly http2Server: http2.Http2SecureServer
 

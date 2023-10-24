@@ -1,5 +1,5 @@
 
-export type ModelUri = {
+export type WithModelUri = {
     readonly modelUri: string
 }
 

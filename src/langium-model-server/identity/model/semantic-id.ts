@@ -1,10 +1,10 @@
 import * as uuid from 'uuid'
 
-export type SemanticIdentifier = {
+export type WithSemanticID = {
     id: string
 }
 
-export namespace SemanticIdentifier {
+export namespace SemanticID {
     export function generate(): string {
         return uuid.v4()
     }

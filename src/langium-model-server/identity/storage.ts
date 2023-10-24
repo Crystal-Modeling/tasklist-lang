@@ -8,7 +8,7 @@ import type { LangiumModelServerServices } from '../services'
 import type { TypeGuard } from '../utils/types'
 import { UriConverter } from '../utils/uri-converter'
 import type { LmsDocument } from '../workspace/documents'
-import type { SemanticIdentifier } from './model'
+import type { WithSemanticID } from './model'
 import { IdentityError } from './model'
 import type { IdentityIndex } from './indexed'
 
@@ -22,7 +22,7 @@ export interface IdentityStorage {
 /**
  * Copied and adopted from @eclipse-glsp/server-node/src/features/model/abstract-json-model-storage.ts
  */
-export abstract class AbstractIdentityStorage<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument> implements IdentityStorage {
+export abstract class AbstractIdentityStorage<SM extends WithSemanticID, II extends IdentityIndex, D extends LmsDocument> implements IdentityStorage {
 
     private languageMetaData: LanguageMetaData
 

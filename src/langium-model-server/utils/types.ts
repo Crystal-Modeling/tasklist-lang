@@ -11,6 +11,9 @@ export type ExcludeExisting<T extends keyof any, K extends T> = Exclude<T, K>
 export type Override<T, K extends (keyof T), O> = Omit<T, K> & {
     [P in K]: O
 }
+export type PickOfTypeAndOverride<R, T, O> = {
+    [P in KeysOfType<R, T>]?: R[P] extends T ? O : never
+}
 
 export function isDefinedObject(obj: unknown): obj is any {
     return !!obj && typeof obj === 'object'

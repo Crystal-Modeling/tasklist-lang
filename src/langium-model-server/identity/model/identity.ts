@@ -2,7 +2,7 @@ import type { AstNode } from 'langium'
 import type * as sem from '../../semantic/model'
 import type { IdentityModel } from './identity-model'
 import type { AstNodeIdentityName, DerivativeIdentityName, IdentityName } from './name'
-import type { ModelUri } from './uri'
+import type { WithModelUri } from './uri'
 
 export type StateRollback = () => void
 export namespace StateRollback {
@@ -19,7 +19,7 @@ export type RollbackableResult<T> = {
     rollback: StateRollback
 }
 
-export interface EditableIdentity<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName = IdentityName> extends IdentityModel<NAME>, Readonly<ModelUri> {
+export interface EditableIdentity<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName = IdentityName> extends IdentityModel<NAME>, Readonly<WithModelUri> {
     isNewNameFit(newName: NAME): boolean
     fitNewName(newName: NAME): RollbackableResult<NAME> | undefined
     /**

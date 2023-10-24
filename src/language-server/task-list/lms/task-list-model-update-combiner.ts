@@ -55,7 +55,7 @@ class ModelCumulativeUpdate implements Readonly<RootUpdate<Model>> {
 
 }
 
-function mergeArrayUpdates<T extends id.SemanticIdentifier>(
+function mergeArrayUpdates<T extends id.WithSemanticID>(
     arrayUpdates: Array<ArrayUpdate<T>>,
     ...mutableProps: Array<ElementAttributes<T>>
 ): ArrayUpdate<T> | undefined {

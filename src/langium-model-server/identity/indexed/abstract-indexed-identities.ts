@@ -2,7 +2,7 @@ import type { AstNode } from 'langium'
 import type * as sem from '../../semantic/model'
 import type { AbstractMap } from '../../utils/collections'
 import type { EditableIdentity, Identity, IdentityModel, IdentityName, RollbackableResult, StateRollback } from '../model'
-import { SemanticIdentifier } from '../model'
+import { SemanticID } from '../model'
 import type { IdentityConstructor, IndexedIdentities } from './indexed-identities'
 
 export abstract class AbstractIndexedIdentities<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName, ID extends Identity<T, NAME>> implements IndexedIdentities<T, NAME, ID>, IdentityConstructor<T, NAME, ID> {
@@ -53,7 +53,7 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
     }
 
     public addNew(name: NAME): ID {
-        return this.add(SemanticIdentifier.generate(), name)
+        return this.add(SemanticID.generate(), name)
     }
 
     public load(model: IdentityModel<NAME>): ID {

@@ -4,7 +4,7 @@ import { ShowDocumentRequest } from 'vscode-languageserver'
 import { URI } from 'vscode-uri'
 import type { IdentityIndex } from '../identity/indexed'
 import type { IdentityManager } from '../identity/manager'
-import type { SemanticIdentifier } from '../identity/model'
+import type { WithSemanticID } from '../identity/model'
 import type { LangiumModelServerServices } from '../services'
 import type { TypeGuard } from '../utils/types'
 import { UriConverter } from '../utils/uri-converter'
@@ -35,17 +35,17 @@ export interface LangiumModelServerFacade<SM> {
     getSemanticId(sourceUri: string): string | undefined
 }
 
-export interface AddModelHandler<T extends SemanticIdentifier = SemanticIdentifier> {
+export interface AddModelHandler<T extends WithSemanticID = WithSemanticID> {
     isApplicable(modelCreation: unknown): boolean
     addModel(rootModelId: string, newModel: Creation<T>, creationParams: CreationParams): MaybePromise<ModificationResult> | undefined
 }
 
-export type UpdateModelHandler<T extends SemanticIdentifier = SemanticIdentifier> =
+export type UpdateModelHandler<T extends WithSemanticID = WithSemanticID> =
     (rootModelId: string, modelId: string, modelUpdate: Modification<T>) => MaybePromise<ModificationResult> | undefined
 
 export type DeleteModelHandler = (rootModelId: string, modelId: string) => MaybePromise<ModificationResult> | undefined
 
-export abstract class AbstractLangiumModelServerFacade<SM extends SemanticIdentifier, SemI extends IdentityIndex, D extends LmsDocument> implements LangiumModelServerFacade<SM> {
+export abstract class AbstractLangiumModelServerFacade<SM extends WithSemanticID, SemI extends IdentityIndex, D extends LmsDocument> implements LangiumModelServerFacade<SM> {
 
     protected identityManager: IdentityManager<SemI>
     protected langiumDocuments: LangiumDocuments

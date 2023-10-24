@@ -5,12 +5,12 @@ import { CancellationToken } from 'vscode-languageserver'
 import type { AstNode, LangiumDocument, DiagnosticInfo, ValidationAcceptor } from 'langium'
 import { streamAst, interruptAndCheck } from 'langium'
 import type { LangiumModelServerServices } from '../services'
-import type { SemanticIdentifier } from '../identity/model'
+import type { WithSemanticID } from '../identity/model'
 import type { IdentityIndex } from '../identity/indexed'
 import type { ExtendableLangiumDocument, LmsDocument } from '../workspace/documents'
 import type { TypeGuard } from '../utils/types'
 
-export class LmsDocumentValidator<SM extends SemanticIdentifier, II extends IdentityIndex, D extends LmsDocument> extends DefaultDocumentValidator {
+export class LmsDocumentValidator<SM extends WithSemanticID, II extends IdentityIndex, D extends LmsDocument> extends DefaultDocumentValidator {
 
     protected isLmsDocument: TypeGuard<D, ExtendableLangiumDocument>
 

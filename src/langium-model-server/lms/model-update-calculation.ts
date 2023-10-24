@@ -6,11 +6,11 @@ import type { Initialized, LmsDocument } from '../workspace/documents'
 import type { ReadonlyArrayUpdate, RootUpdate } from './model'
 import { ArrayUpdateCommand, ElementUpdate } from './model'
 
-export interface ModelUpdateCalculators<SM extends id.SemanticIdentifier> {
+export interface ModelUpdateCalculators<SM extends id.WithSemanticID> {
     getOrCreateCalculator(lmsDocument: Initialized<LmsDocument>): ModelUpdateCalculator<SM>
 }
 
-export abstract class AbstractModelUpdateCalculators<SM extends id.SemanticIdentifier> implements ModelUpdateCalculators<SM> {
+export abstract class AbstractModelUpdateCalculators<SM extends id.WithSemanticID> implements ModelUpdateCalculators<SM> {
     protected updateCalculatorsByLangiumDocumentUri: Map<string, ModelUpdateCalculator<SM>> = new Map()
 
     public getOrCreateCalculator(lmsDocument: Initialized<LmsDocument>): ModelUpdateCalculator<SM> {
@@ -27,7 +27,7 @@ export abstract class AbstractModelUpdateCalculators<SM extends id.SemanticIdent
     protected abstract createCalculator(lmsDocument: Initialized<LmsDocument>): ModelUpdateCalculator<SM>
 }
 
-export interface ModelUpdateCalculator<SM extends id.SemanticIdentifier> {
+export interface ModelUpdateCalculator<SM extends id.WithSemanticID> {
     clearSoftDeletedIdentities(): RootUpdate<SM>
 }
 
@@ -36,7 +36,7 @@ export interface ModelUpdateCalculator<SM extends id.SemanticIdentifier> {
 //     [P in KeysOfType<T, id.SemanticIdentity[]> as `calculate${Capitalize<string & P>}Update`]: T[P] extends id.SemanticIdentity[] ? (identitiesToDelete: Iterable<T[P][0]>) => ReadonlyArrayUpdate<T[P][0]> : never
 // }
 
-export function compareModelWithExistingBefore<T extends AstNode | sem.ArtificialAstNode, NAME extends id.IdentityName, SRC extends id.SemanticIdentifier>(
+export function compareModelWithExistingBefore<T extends AstNode | sem.ArtificialAstNode, NAME extends id.IdentityName, SRC extends id.WithSemanticID>(
     previous: sem.Identified<T, NAME> | undefined,
     current: sem.Identified<T, NAME>,
     sourceModelFactory: (semanticModel: sem.Identified<T, NAME>) => SRC,
@@ -75,7 +75,7 @@ export function compareModelWithExistingBefore<T extends AstNode | sem.Artificia
  * @param getPreviousSemanticModel Fetches corresponding previous Semantic Model from SemanticDomain
  * @returns Semantic Model Update for this deletion request
  */
-export function deleteModels<T extends AstNode | sem.ArtificialAstNode, NAME extends id.IdentityName, SRC extends id.SemanticIdentifier>(
+export function deleteModels<T extends AstNode | sem.ArtificialAstNode, NAME extends id.IdentityName, SRC extends id.WithSemanticID>(
     getSoftDeleted: () => Iterable<id.Identity<T, NAME>>,
     getPreviousSemanticModel: (id: string) => sem.Identified<T, NAME> | undefined,
     identitiesToDelete: Iterable<id.Identity<T, NAME>>
