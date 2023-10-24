@@ -11,6 +11,7 @@ export class AstNodeIndexedIdentities<T extends AstNode | sem.ArtificialAstNode,
 
     protected override readonly _activeByName: Map<AstNodeIdentityName, ID> = new Map()
     protected override readonly _shadowedSoftDeletedByName: Map<AstNodeIdentityName, ID> = new Map()
+    protected override namesAreEqual = (left: AstNodeIdentityName, right: AstNodeIdentityName) => (left === right)
     protected readonly _nameDuplicates: MultiMap<AstNodeIdentityName, AstNodeIdentityName> = new MultiMap()
 
     protected override isNewNameFitForIdentity(identity: ID & EditableIdentity<T, AstNodeIdentityName>, newName: AstNodeIdentityName): boolean {
@@ -66,10 +67,6 @@ export class AstNodeIndexedIdentities<T extends AstNode | sem.ArtificialAstNode,
     protected override softDeleteIdentity(identity: ID & EditableIdentity<T, string>, deletedSemanticModel?: sem.Identified<T, AstNodeIdentityName>): void {
         super.softDeleteIdentity(identity, deletedSemanticModel)
         this.removeDuplicateName(identity.name)
-    }
-
-    protected override namesAreEqual(left: AstNodeIdentityName, right: AstNodeIdentityName): boolean {
-        return left === right
     }
 
     /**

@@ -42,6 +42,11 @@ export function isArray<T>(obj: unknown, ofType: TypeGuard<T>): obj is T[] {
     return Array.isArray(obj) && (obj.length === 0 || ofType(obj[0]))
 }
 
+export interface ValueBasedOperations<T> {
+    stringify: (obj: T) => string
+    equal: (right: T, left: T) => boolean
+}
+
 export type ModelAttribute = PrimitiveModelAttribute | IterableModelAttribute
 export type PrimitiveModelAttribute = string | number | symbol | boolean | bigint
 export type IterableModelAttribute = string[] | number[] | symbol[] | boolean[] | bigint[]

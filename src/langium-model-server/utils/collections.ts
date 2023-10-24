@@ -1,3 +1,4 @@
+import type { ValueBasedOperations } from './types'
 
 /**
  * An abstraction over ES 2015 Map<K, V>, that does not implement iteration over key-value pairs.
@@ -31,16 +32,18 @@ export interface AbstractMap<K, V> {
     readonly size: number
 }
 
-export class ValueBasedMap<K extends string[], V> implements AbstractMap<K, V> {
+export class ValueBasedMap<K, V> implements AbstractMap<K, V> {
 
     private map = new Map<string, V>()
+    private stringifyKey: (k: K) => string
 
-    public constructor(map: Map<string, V> = new Map()) {
+    public constructor(stringify: ValueBasedOperations<K>['stringify'], map: Map<string, V> = new Map()) {
         this.map = map
+        this.stringifyKey = stringify
     }
 
     copy(): ValueBasedMap<K, V> {
-        return new ValueBasedMap(new Map(this.map))
+        return new ValueBasedMap(this.stringifyKey, new Map(this.map))
     }
 
     clear(): void {
@@ -48,19 +51,19 @@ export class ValueBasedMap<K extends string[], V> implements AbstractMap<K, V> {
     }
 
     delete(key: K): boolean {
-        return this.map.delete(stringifyKey(key))
+        return this.map.delete(this.stringifyKey(key))
     }
 
     get(key: K): V | undefined {
-        return this.map.get(stringifyKey(key))
+        return this.map.get(this.stringifyKey(key))
     }
 
     has(key: K): boolean {
-        return this.map.has(stringifyKey(key))
+        return this.map.has(this.stringifyKey(key))
     }
 
     set(key: K, value: V): this {
-        this.map.set(stringifyKey(key), value)
+        this.map.set(this.stringifyKey(key), value)
         return this
     }
 
@@ -82,8 +85,4 @@ export function equal<K extends string[]>(right: K, left: K): boolean {
         if (right[i] !== left[i]) return false
     }
     return true
-}
-
-function stringifyKey(key: string[]): string {
-    return key.join('|')
 }

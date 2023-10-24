@@ -5,13 +5,11 @@ import { AbstractIdentityStorage } from '../../../langium-model-server/identity/
 import { isArray, isDefinedObject } from '../../../langium-model-server/utils/types'
 import type * as source from '../lms/model'
 import type { TaskListDocument } from '../workspace/documents'
-import { TransitionDerivativeName } from './model'
-import type * as ast from '../../generated/ast'
-import type * as semantic from '../semantic/model'
+import { TransitionName } from './model'
 
 export class TaskListIdentityStorage extends AbstractIdentityStorage<source.Model, TaskListIdentityIndex, TaskListDocument> implements IdentityStorage {
 
-    protected override createIdentityForEmptyFile(): IdentityModel {
+    protected override createIdentityForEmptyFile(): ModelIdentityModel {
         return {
             id: id.SemanticIdentifier.generate(),
             tasks: [],
@@ -20,65 +18,23 @@ export class TaskListIdentityStorage extends AbstractIdentityStorage<source.Mode
     }
 }
 
-export interface Task {
+export interface ModelIdentityModel {
     id: string
-    name: string
+    tasks: id.AstNodeIdentityModel[]
+    transitions: Array<id.DerivativeIdentityModel<TransitionName>>
 }
 
-export namespace Task {
-    export function of(taskIdentity: id.AstNodeIdentity<ast.Task>): Task {
-        return {
-            id: taskIdentity.id,
-            name: taskIdentity.name
-        }
-    }
-}
-
-export interface Transition {
-    id: string
-    sourceTaskId: string
-    targetTaskId: string
-}
-
-export namespace Transition {
-    export function of(transitionIdentity: id.DerivativeSemanticIdentity<semantic.Transition, TransitionDerivativeName>): Transition {
-        return {
-            id: transitionIdentity.id,
-            ...TransitionDerivativeName.toProperties(transitionIdentity.name)
-        }
-    }
-}
-
-export interface IdentityModel {
-    id: string
-    tasks: Task[]
-    transitions: Transition[]
-}
-
-export namespace IdentityModel {
-    export function is(obj: unknown): obj is IdentityModel {
+export namespace ModelIdentityModel {
+    export function is(obj: unknown): obj is ModelIdentityModel {
         if (!isDefinedObject(obj)) {
             return false
         }
         if (typeof obj.id !== 'string'
-            || !isArray(obj.tasks, isTask)
-            || !isArray(obj.transitions, isTransition)) {
+            || !isArray(obj.tasks, id.IdentityModel.is)
+            || !isArray(obj.transitions, (m): m is id.IdentityModel<TransitionName> => id.IdentityModel.is(m, TransitionName.is))) {
             return false
         }
 
         return true
-    }
-
-    export function isTask(obj: unknown): obj is Task {
-        return isDefinedObject(obj)
-            && typeof obj.id === 'string'
-            && typeof obj.name === 'string'
-    }
-
-    export function isTransition(obj: unknown): obj is Transition {
-        return isDefinedObject(obj)
-            && typeof obj.id === 'string'
-            && typeof obj.sourceTaskId === 'string'
-            && typeof obj.targetTaskId === 'string'
     }
 }

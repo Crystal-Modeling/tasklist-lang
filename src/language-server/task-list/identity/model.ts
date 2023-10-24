@@ -1,26 +1,39 @@
 import type * as id from '../../../langium-model-server/identity/model'
+import { isDefinedObject } from '../../../langium-model-server/utils/types'
 import type * as ast from '../../generated/ast'
 import type * as semantic from '../semantic/model'
 
 export type TaskIdentity = id.AstNodeIdentity<ast.Task>
 
-export type TransitionDerivativeName = id.DerivativeIdentityName & [sourceTaskId: string, targetTaskId: string]
-export namespace TransitionDerivativeName {
+export interface TransitionName extends id.DerivativeIdentityName {
+    sourceTaskId: string
+    targetTaskId: string
+}
 
-    export function create(newTransition: semantic.TransitionIdentifiedProperties): TransitionDerivativeName {
-        return [newTransition.sourceTask.id, newTransition.targetTask.id]
+export namespace TransitionName {
+
+    export function is(obj: unknown): obj is TransitionName {
+        return isDefinedObject(obj)
+            && typeof obj.sourceTaskId === 'string'
+            && typeof obj.targetTaskId === 'string'
     }
 
-    export function of(sourceTaskId: string, targetTaskId: string): TransitionDerivativeName {
-        return [sourceTaskId, targetTaskId]
+    export function from(newTransition: semantic.TransitionIdentifiedProperties): TransitionName {
+        return of(newTransition.sourceTask.id, newTransition.targetTask.id)
     }
 
-    export function toProperties(name: TransitionDerivativeName): TransitionDerivativeNameProperties {
-        return {
-            sourceTaskId: name[0],
-            targetTaskId: name[1]
-        }
+    export function of(sourceTaskId: string, targetTaskId: string): TransitionName {
+        return { sourceTaskId, targetTaskId }
+    }
+
+    export function stringify(name: TransitionName): string {
+        return `${name.sourceTaskId}|${name.targetTaskId}`
+    }
+
+    export function equal(name1: TransitionName, name2: TransitionName): boolean {
+        return name1 === name2
+            || (name1.sourceTaskId === name2.sourceTaskId && name1.targetTaskId === name2.targetTaskId)
     }
 }
-type TransitionDerivativeNameProperties = {sourceTaskId: string, targetTaskId: string}
-export type TransitionIdentity = id.DerivativeSemanticIdentity<semantic.Transition & semantic.TransitionIdentifiedProperties, TransitionDerivativeName>
+
+export type TransitionIdentity = id.DerivativeIdentity<semantic.Transition & semantic.TransitionIdentifiedProperties, TransitionName>

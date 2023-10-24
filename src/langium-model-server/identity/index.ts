@@ -1,6 +1,6 @@
 import type { AstNode } from 'langium'
 import type * as sem from '../semantic/model'
-import type { Identity, IdentityName, RollbackableResult } from './model'
+import type { Identity, IdentityModel, IdentityName, RollbackableResult } from './model'
 
 export type IdentityIndex = {
     readonly id: string
@@ -24,5 +24,5 @@ export interface IndexedIdentities<T extends AstNode | sem.ArtificialAstNode, NA
 }
 
 export interface IdentityConstructor<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName, ID extends Identity<T, NAME>> {
-    add(id: string, name: NAME): ID
+    load(model: IdentityModel<NAME>): ID
 }

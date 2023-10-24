@@ -1,15 +1,20 @@
 import type { AstNode } from 'langium'
 import type * as sem from '../semantic/model'
-import { ValueBasedMap, equal } from '../utils/collections'
+import { ValueBasedMap } from '../utils/collections'
 import { AbstractIndexedIdentities } from './abstract-indexed-identities'
 import type { DerivativeIdentityName, Identity } from './model'
+import type { ValueBasedOperations } from '../utils/types'
 
 export class DerivativeIndexedIdentities<T extends AstNode | sem.ArtificialAstNode, NAME extends DerivativeIdentityName, ID extends Identity<T, NAME>> extends AbstractIndexedIdentities<T, NAME, ID> {
 
-    protected override readonly _activeByName = new ValueBasedMap<NAME, ID>()
-    protected override readonly _shadowedSoftDeletedByName = new ValueBasedMap<NAME, ID>()
+    protected override readonly _activeByName: ValueBasedMap<NAME, ID>
+    protected override readonly _shadowedSoftDeletedByName: ValueBasedMap<NAME, ID>
+    protected override readonly namesAreEqual: ValueBasedOperations<NAME>['equal']
 
-    protected override namesAreEqual(left: NAME, right: NAME): boolean {
-        return equal(left, right)
+    public constructor(modelUriFactory: (id: string) => string, nameOperations: ValueBasedOperations<NAME>) {
+        super(modelUriFactory)
+        this._activeByName = new ValueBasedMap(nameOperations.stringify)
+        this._shadowedSoftDeletedByName = new ValueBasedMap(nameOperations.stringify)
+        this.namesAreEqual = nameOperations.equal
     }
 }

@@ -1,44 +1,44 @@
 import { type IdentityIndex, type IndexedIdentities } from '../../../langium-model-server/identity'
-import { DerivativeIndexedIdentities } from '../../../langium-model-server/identity/derivative-indexed-identities'
 import { AstNodeIndexedIdentities } from '../../../langium-model-server/identity/ast-indexed-identities'
+import { DerivativeIndexedIdentities } from '../../../langium-model-server/identity/derivative-indexed-identities'
 import type { AstNodeIdentityName } from '../../../langium-model-server/identity/model'
-import { ModelUri } from '../../../langium-model-server/identity/model'
+import { Identity, ModelUri } from '../../../langium-model-server/identity/model'
 import type * as ast from '../../generated/ast'
 import type * as semantic from '../semantic/model'
 import type { TaskIdentity, TransitionIdentity } from './model'
-import { TransitionDerivativeName } from './model'
-import { Task, Transition, type IdentityModel } from './storage'
+import { TransitionName } from './model'
+import { type ModelIdentityModel } from './storage'
 
 export abstract class TaskListIdentityIndex implements IdentityIndex {
     public readonly id: string
     public readonly tasks: IndexedIdentities<ast.Task, AstNodeIdentityName, TaskIdentity>
-    public readonly transitions: IndexedIdentities<semantic.Transition, TransitionDerivativeName, TransitionIdentity>
+    public readonly transitions: IndexedIdentities<semantic.Transition, TransitionName, TransitionIdentity>
 
-    public constructor(identityModel: IdentityModel) {
-        this.id = identityModel.id
+    public constructor(rootIdentityModel: ModelIdentityModel) {
+        this.id = rootIdentityModel.id
         const tasks = new AstNodeIndexedIdentities<ast.Task, TaskIdentity>(id =>
             // TODO: Here I hardcode ModelUri of Task -- it should be taken from some centralized place (LMS grammar?)
             ModelUri.ofSegments(
                 ModelUri.Segment.property('tasks'),
                 ModelUri.Segment.id(id)
             ))
-        identityModel.tasks.forEach(task => tasks.add(task.id, task.name))
+        rootIdentityModel.tasks.forEach(tasks.load.bind(tasks))
         this.tasks = tasks
-        const transitions = new DerivativeIndexedIdentities<semantic.Transition, TransitionDerivativeName, TransitionIdentity>(id =>
+        const transitions = new DerivativeIndexedIdentities<semantic.Transition, TransitionName, TransitionIdentity>(id =>
             // TODO: Here I hardcode ModelUri of Transition -- it should be taken from some centralized place (LMS grammar?)
             ModelUri.ofSegments(
                 ModelUri.Segment.property('transitions'),
                 ModelUri.Segment.id(id)
-            ))
-        identityModel.transitions.forEach(({id, sourceTaskId, targetTaskId}) => transitions.add(id, TransitionDerivativeName.of(sourceTaskId, targetTaskId)))
+            ), TransitionName)
+        rootIdentityModel.transitions.forEach(transitions.load.bind(transitions))
         this.transitions = transitions
     }
 
-    protected get model(): IdentityModel {
+    protected get model(): ModelIdentityModel {
         return {
             id: this.id,
-            tasks: Array.from(this.tasks.values(), Task.of),
-            transitions: Array.from(this.transitions.values(), Transition.of)
+            tasks: Array.from(this.tasks.values(), Identity.toModel),
+            transitions: Array.from(this.transitions.values(), Identity.toModel)
         }
     }
 

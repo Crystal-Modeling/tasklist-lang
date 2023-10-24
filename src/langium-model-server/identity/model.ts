@@ -1,6 +1,8 @@
+import type { AstNode } from 'langium'
 import * as uuid from 'uuid'
 import type * as sem from '../semantic/model'
-import type { AstNode } from 'langium'
+import type { TypeGuard} from '../utils/types'
+import { isDefinedObject } from '../utils/types'
 
 export type SemanticIdentifier = {
     id: string
@@ -48,7 +50,7 @@ export namespace ModelUri {
     }
 }
 
-export type DerivativeIdentityName = string[]
+export type DerivativeIdentityName = object
 export type AstNodeIdentityName = string
 export type IdentityName = AstNodeIdentityName | DerivativeIdentityName
 
@@ -67,8 +69,24 @@ export type RollbackableResult<T> = {
     rollback: StateRollback
 }
 
-export interface EditableIdentity<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName = IdentityName> extends Readonly<SemanticIdentifier>, Readonly<ModelUri> {
+export interface IdentityModel<NAME extends IdentityName> extends Readonly<SemanticIdentifier> {
     name: NAME
+}
+
+export namespace IdentityModel {
+    export function is<NAME extends AstNodeIdentityName>(obj: unknown): obj is IdentityModel<NAME>
+    export function is<NAME extends DerivativeIdentityName>(obj: unknown, nameGuard: TypeGuard<NAME>): obj is IdentityModel<NAME>
+    export function is<NAME extends IdentityName>(obj: unknown, nameGuard: TypeGuard<NAME> = (o): o is NAME => typeof o.id === 'string'): obj is IdentityModel<NAME> {
+        return isDefinedObject(obj)
+            && typeof obj.id === 'string'
+            && nameGuard(obj.name)
+    }
+}
+
+export type AstNodeIdentityModel = IdentityModel<AstNodeIdentityName>
+export type DerivativeIdentityModel<NAME extends DerivativeIdentityName> = IdentityModel<NAME>
+
+export interface EditableIdentity<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName = IdentityName> extends IdentityModel<NAME>, Readonly<ModelUri> {
     isNewNameFit(newName: NAME): boolean
     fitNewName(newName: NAME): RollbackableResult<NAME> | undefined
     /**
@@ -97,5 +115,11 @@ export interface EditableIdentity<T extends AstNode | sem.ArtificialAstNode, NAM
 
 export type Identity<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName = IdentityName> = Readonly<EditableIdentity<T, NAME>>
 
+export namespace Identity {
+    export function toModel<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName>({ id, name }: Identity<T, NAME>): IdentityModel<NAME> {
+        return { id, name }
+    }
+}
+
 export type AstNodeIdentity<T extends AstNode> = Identity<T, AstNodeIdentityName>
-export type DerivativeSemanticIdentity<T extends sem.ArtificialAstNode, NAME extends DerivativeIdentityName = DerivativeIdentityName> = Identity<T, NAME>
+export type DerivativeIdentity<T extends sem.ArtificialAstNode, NAME extends DerivativeIdentityName = DerivativeIdentityName> = Identity<T, NAME>

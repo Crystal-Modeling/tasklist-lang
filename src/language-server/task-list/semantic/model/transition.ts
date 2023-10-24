@@ -4,7 +4,7 @@ import type * as ast from '../../../generated/ast'
 import type * as identity from '../../identity/model'
 import type { IdentifiedTask } from './task'
 
-export type IdentifiedTransition = sem.Identified<sem.Validated<Transition & TransitionIdentifiedProperties>, identity.TransitionDerivativeName>
+export type IdentifiedTransition = sem.Identified<sem.Validated<Transition & TransitionIdentifiedProperties>, identity.TransitionName>
 
 export type TransitionIdentifiedProperties = {
     sourceTask: IdentifiedTask,

@@ -1,7 +1,7 @@
 import type { AstNode } from 'langium'
 import type * as sem from '../semantic/model'
 import type { AbstractMap } from '../utils/collections'
-import type { EditableIdentity, Identity, IdentityName, RollbackableResult, StateRollback } from './model'
+import type { EditableIdentity, Identity, IdentityModel, IdentityName, RollbackableResult, StateRollback } from './model'
 import { SemanticIdentifier } from './model'
 import type { IdentityConstructor, IndexedIdentities } from '.'
 
@@ -16,6 +16,7 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
     * This can happen, if an active identity name is changed to the same a soft-deleted one has.
     */
     protected abstract readonly _shadowedSoftDeletedByName: AbstractMap<NAME, ID>
+    protected abstract readonly namesAreEqual: (left: NAME, right: NAME) => boolean
     protected readonly _allSoftDeletedById: Map<string, ID> = new Map()
     protected readonly modelUriFactory: (id: string) => string
 
@@ -55,7 +56,11 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
         return this.add(SemanticIdentifier.generate(), name)
     }
 
-    public add(id: string, name: NAME): ID {
+    public load(model: IdentityModel<NAME>): ID {
+        return this.add(model.id, model.name)
+    }
+
+    protected add(id: string, name: NAME): ID {
         const index = this
         let identity: ID & EditableIdentity<T, NAME>
         const abstractIdentity: EditableIdentity<T, NAME> = {
@@ -194,8 +199,6 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
             this._activeByName.set(oldName, identity)
         }
     }
-
-    protected abstract namesAreEqual(left: NAME, right: NAME): boolean
 
     protected softDeleteIdentity(identity: ID & EditableIdentity<T, NAME>, deletedSemanticModel?: sem.Identified<T, NAME>) {
         if (!deletedSemanticModel) {

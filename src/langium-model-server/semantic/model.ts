@@ -33,7 +33,7 @@ export type Identified<T extends AstNode | ArtificialAstNode, NAME extends id.Id
 
 export namespace Identified {
     export function identify<T extends AstNode>(node: Validated<T>, identity: id.AstNodeIdentity<T>): Identified<T, id.AstNodeIdentityName>
-    export function identify<T extends ArtificialAstNode, NAME extends id.DerivativeIdentityName>(node: Validated<T>, identity: id.DerivativeSemanticIdentity<T, NAME>): Identified<T, NAME>
+    export function identify<T extends ArtificialAstNode, NAME extends id.DerivativeIdentityName>(node: Validated<T>, identity: id.DerivativeIdentity<T, NAME>): Identified<T, NAME>
     export function identify<T extends AstNode | ArtificialAstNode, NAME extends id.IdentityName>(node: Validated<T>, identity: id.Identity<T, NAME>): Identified<T, NAME> {
         return Object.assign(node, { identity, id: identity.id })
     }

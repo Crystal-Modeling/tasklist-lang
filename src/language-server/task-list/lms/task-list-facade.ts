@@ -87,8 +87,8 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             return ModificationResult.failedValidation('Unable to resolve: ' + unresolvedTasks.join(', '))
         }
 
-        const newTransition = semantic.Transition.properties(sourceTask, targetTask)
-        const newTransitionName = identity.TransitionDerivativeName.create(newTransition)
+        const newTransitionProps = semantic.Transition.properties(sourceTask, targetTask)
+        const newTransitionName = identity.TransitionName.from(newTransitionProps)
         if (!this.identityManager.getIdentityIndex(lmsDocument).transitions.isNameFit(newTransitionName)) {
             return ModificationResult.failedValidation(`Unable to fit supplied transition name ${newTransitionName}: invalid value`)
         }
@@ -100,7 +100,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
                 return ModificationResult.failedValidation('Anchor model for Transition must be another Transition within the same sourceTask')
             }
         }
-        const textEdit = this.computeTransitionCreation(newTransition, anchorModel)
+        const textEdit = this.computeTransitionCreation(newTransitionProps, anchorModel)
 
         return this.applyTextEdit(lmsDocument, textEdit, 'Created new transition: ' + newTransitionName)
     }
@@ -170,13 +170,13 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             return ModificationResult.failedValidation('Unable to resolve: ' + unresolvedTasks.join(', '))
         }
 
-        const newTransition = semantic.Transition.properties(newSourceTask ?? transition.sourceTask, newTargetTask ?? transition.targetTask)
-        const newTransitionName = identity.TransitionDerivativeName.create(newTransition)
+        const newTransitionProps = semantic.Transition.properties(newSourceTask ?? transition.sourceTask, newTargetTask ?? transition.targetTask)
+        const newTransitionName = identity.TransitionName.from(newTransitionProps)
         if (!transition.identity.isNewNameFit(newTransitionName)) {
             return ModificationResult.failedValidation(`Unable to fit supplied transition name ${newTransitionName}: invalid value`)
         }
 
-        const sourceEdit = this.computeTransitionUpdate(lmsDocument, transition, newTransition)
+        const sourceEdit = this.computeTransitionUpdate(lmsDocument, transition, newTransitionProps)
 
         if (sourceEdit.size > 0) {
             const rollback = transition.identity.updateName(newTransitionName)
@@ -331,16 +331,16 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return undefined
     }
 
-    private computeTransitionUpdate(lmsDocument: LmsDocument, transition: semantic.IdentifiedTransition, newTransition: semantic.TransitionIdentifiedProperties): SourceEdit {
+    private computeTransitionUpdate(lmsDocument: LmsDocument, transition: semantic.IdentifiedTransition, newTransitionProps: semantic.TransitionIdentifiedProperties): SourceEdit {
         if (!transition.$cstNode) {
             throw new Error('Cannot locate model ' + transition.identity.name + '(' + transition.id + ') in text')
         }
         const sourceEdit = new SourceEdit()
-        if (newTransition.sourceTask !== transition.sourceTask) {
+        if (newTransitionProps.sourceTask !== transition.sourceTask) {
             sourceEdit.apply(this.computeTransitionDeletion(lmsDocument, transition)[0])
-            sourceEdit.add(lmsDocument.uri, this.computeTransitionCreation(newTransition))
-        } else if (newTransition.targetTask !== transition.targetTask) {
-            const serializedModel = newTransition.targetTask.name
+            sourceEdit.add(lmsDocument.uri, this.computeTransitionCreation(newTransitionProps))
+        } else if (newTransitionProps.targetTask !== transition.targetTask) {
+            const serializedModel = newTransitionProps.targetTask.name
             sourceEdit.add(lmsDocument.uri, TextEdit.replace(transition.$cstNode.range, serializedModel))
         }
         return sourceEdit
@@ -369,7 +369,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
                     console.debug(`Transition from source Task ${sourceTask.id} (${sourceTask.name}) ignored`)
                     return undefined
                 }
-                const transitionName = identity.TransitionDerivativeName.of(sourceTask.id, task.id)
+                const transitionName = identity.TransitionName.of(sourceTask.id, task.id)
                 const transitionId = this.identityManager.getIdentityIndex(doc).transitions.byName(transitionName)?.id
                 if (!transitionId) {
                     console.debug('Cannot find transition identity with name', transitionName)
