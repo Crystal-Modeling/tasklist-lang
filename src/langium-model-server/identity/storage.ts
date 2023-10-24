@@ -31,25 +31,25 @@ export abstract class AbstractIdentityStorage<SM extends SemanticIdentifier, II 
     }
 
     public saveIdentityToFile(languageDocumentUri: string, identity: unknown): void {
-        console.debug('Saving semantic model...')
+        console.debug('Saving identity...')
         const uri = this.convertLangiumDocumentUriIntoIdentityUri(URI.parse(languageDocumentUri)).toString()
         this.writeFile(uri, identity)
     }
 
     public loadIdentityFromFile<T>(languageDocumentUri: string, guard: TypeGuard<T>): T {
-        console.debug('Loading semantic model for URI', languageDocumentUri)
+        console.debug('Loading identity for URI', languageDocumentUri)
         const uri = this.convertLangiumDocumentUriIntoIdentityUri(URI.parse(languageDocumentUri)).toString()
         return this.loadFromFile(uri, guard)
     }
 
     public deleteIdentityFile(languageDocumentUri: string): void {
-        console.debug('Deleting semantic model for URI', languageDocumentUri)
+        console.debug('Deleting identity for URI', languageDocumentUri)
         const uri = this.convertLangiumDocumentUriIntoIdentityUri(URI.parse(languageDocumentUri)).toString()
         this.deleteFile(uri)
     }
 
     public renameIdentityFile(oldLanguageDocumentUri: string, newLanguageDocumentUri: URI): void {
-        console.debug('Renaming semantic model from URI', oldLanguageDocumentUri, '\nto URI', newLanguageDocumentUri)
+        console.debug('Renaming identity from URI', oldLanguageDocumentUri, '\nto URI', newLanguageDocumentUri)
         const uri = this.convertLangiumDocumentUriIntoIdentityUri(URI.parse(oldLanguageDocumentUri)).toString()
         const newUri = this.convertLangiumDocumentUriIntoIdentityUri(newLanguageDocumentUri).toString()
         fs.renameSync(this.uriToPath(uri), this.uriToPath(newUri))
@@ -57,7 +57,7 @@ export abstract class AbstractIdentityStorage<SM extends SemanticIdentifier, II 
 
     protected convertLangiumDocumentUriIntoIdentityUri(langiumDocumentUri: URI): URI {
         return UriConverter.of(langiumDocumentUri)
-            .putFileInSubFolder('semantic')
+            .putFileInSubFolder('identity')
             .replaceFileExtension(this.languageMetaData.fileExtensions, '.json')
             .apply((_, path) => console.debug('Identity path is', path))
             .toUri()

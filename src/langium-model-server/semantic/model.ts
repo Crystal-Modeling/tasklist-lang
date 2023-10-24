@@ -69,7 +69,7 @@ export type AstRootNode<T extends AstNode = AstNode> = T & {
     readonly $document: LangiumDocument<T>
 }
 
-// TODO: Suggest ResolvedReference and IndexedReference to be added to Langium
+// TODO: Suggest ResolvedReference to be added to Langium
 
 export type ResolvedReference<T extends AstNode> = Reference<T> & {
     ref: T
