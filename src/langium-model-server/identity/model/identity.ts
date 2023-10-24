@@ -1,58 +1,8 @@
 import type { AstNode } from 'langium'
-import * as uuid from 'uuid'
-import type * as sem from '../semantic/model'
-import type { TypeGuard} from '../utils/types'
-import { isDefinedObject } from '../utils/types'
-
-export type SemanticIdentifier = {
-    id: string
-}
-
-export namespace SemanticIdentifier {
-    export function generate(): string {
-        return uuid.v4()
-    }
-}
-
-export type ModelUri = {
-    readonly modelUri: string
-}
-
-export namespace ModelUri {
-
-    export const root = '/'
-    const PROPERTY = '/'
-    const ID = '#'
-
-    export function ofSegments(...segments: Segment[]): string {
-        return segments.map(s => s.delimiter + s.value).join('')
-    }
-
-    export namespace Segment {
-
-        export function property(propertyName: string): Segment {
-            return of(PROPERTY, propertyName)
-        }
-
-        export function id(idValue: string): Segment {
-            return of(ID, idValue)
-        }
-
-        function of(delimiter: string, value: string): Segment {
-            return { delimiter, value } as Segment
-        }
-    }
-
-    export type Segment = {
-        __brand: 'segment'
-        readonly delimiter: string
-        readonly value: string
-    }
-}
-
-export type DerivativeIdentityName = object
-export type AstNodeIdentityName = string
-export type IdentityName = AstNodeIdentityName | DerivativeIdentityName
+import type * as sem from '../../semantic/model'
+import type { IdentityModel } from './identity-model'
+import type { AstNodeIdentityName, DerivativeIdentityName, IdentityName } from './name'
+import type { ModelUri } from './uri'
 
 export type StateRollback = () => void
 export namespace StateRollback {
@@ -68,23 +18,6 @@ export type RollbackableResult<T> = {
     result: T,
     rollback: StateRollback
 }
-
-export interface IdentityModel<NAME extends IdentityName> extends Readonly<SemanticIdentifier> {
-    name: NAME
-}
-
-export namespace IdentityModel {
-    export function is<NAME extends AstNodeIdentityName>(obj: unknown): obj is IdentityModel<NAME>
-    export function is<NAME extends DerivativeIdentityName>(obj: unknown, nameGuard: TypeGuard<NAME>): obj is IdentityModel<NAME>
-    export function is<NAME extends IdentityName>(obj: unknown, nameGuard: TypeGuard<NAME> = (o): o is NAME => typeof o.id === 'string'): obj is IdentityModel<NAME> {
-        return isDefinedObject(obj)
-            && typeof obj.id === 'string'
-            && nameGuard(obj.name)
-    }
-}
-
-export type AstNodeIdentityModel = IdentityModel<AstNodeIdentityName>
-export type DerivativeIdentityModel<NAME extends DerivativeIdentityName> = IdentityModel<NAME>
 
 export interface EditableIdentity<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName = IdentityName> extends IdentityModel<NAME>, Readonly<ModelUri> {
     isNewNameFit(newName: NAME): boolean
