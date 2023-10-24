@@ -10,7 +10,7 @@ import { UriConverter } from '../utils/uri-converter'
 import type { LmsDocument } from '../workspace/documents'
 import type { SemanticIdentifier } from './model'
 import { IdentityError } from './model'
-import type { IdentityIndex } from '.'
+import type { IdentityIndex } from './indexed'
 
 export interface IdentityStorage {
     saveIdentityToFile(languageDocumentUri: string, identity: unknown): void

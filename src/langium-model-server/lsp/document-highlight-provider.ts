@@ -2,7 +2,7 @@
 import type { AstNode, LangiumDocument, MaybePromise } from 'langium'
 import { DefaultDocumentHighlightProvider, findLeafNodeAtOffset, getContainerOfType } from 'langium'
 import type { DocumentHighlight, DocumentHighlightParams } from 'vscode-languageserver'
-import type { IdentityIndex } from '../identity'
+import type { IdentityIndex } from '../identity/indexed'
 import type { IdentityManager } from '../identity/manager'
 import type * as identity from '../identity/model'
 import * as source from '../lms/model'

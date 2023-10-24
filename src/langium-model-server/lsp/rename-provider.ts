@@ -1,7 +1,7 @@
 import type { LangiumDocument } from 'langium'
 import { DefaultRenameProvider, findDeclarationNodeAtOffset } from 'langium'
 import type { RenameParams, WorkspaceEdit } from 'vscode-languageserver'
-import type { IdentityIndex } from '../identity'
+import type { IdentityIndex } from '../identity/indexed'
 import type { IdentityManager } from '../identity/manager'
 import type { SemanticIdentifier } from '../identity/model'
 import type { TextEditService } from '../lms/text-edit-service'

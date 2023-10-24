@@ -2,7 +2,7 @@ import { type LangiumDocuments, type LanguageMetaData, type MaybePromise } from 
 import type { Connection } from 'vscode-languageserver'
 import { ShowDocumentRequest } from 'vscode-languageserver'
 import { URI } from 'vscode-uri'
-import type { IdentityIndex } from '../identity'
+import type { IdentityIndex } from '../identity/indexed'
 import type { IdentityManager } from '../identity/manager'
 import type { SemanticIdentifier } from '../identity/model'
 import type { LangiumModelServerServices } from '../services'

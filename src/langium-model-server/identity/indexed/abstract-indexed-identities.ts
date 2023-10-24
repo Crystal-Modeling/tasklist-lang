@@ -1,9 +1,9 @@
 import type { AstNode } from 'langium'
-import type * as sem from '../semantic/model'
-import type { AbstractMap } from '../utils/collections'
-import type { EditableIdentity, Identity, IdentityModel, IdentityName, RollbackableResult, StateRollback } from './model'
-import { SemanticIdentifier } from './model'
-import type { IdentityConstructor, IndexedIdentities } from '.'
+import type * as sem from '../../semantic/model'
+import type { AbstractMap } from '../../utils/collections'
+import type { EditableIdentity, Identity, IdentityModel, IdentityName, RollbackableResult, StateRollback } from '../model'
+import { SemanticIdentifier } from '../model'
+import type { IdentityConstructor, IndexedIdentities } from './indexed-identities'
 
 export abstract class AbstractIndexedIdentities<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName, ID extends Identity<T, NAME>> implements IndexedIdentities<T, NAME, ID>, IdentityConstructor<T, NAME, ID> {
 

@@ -1,7 +1,7 @@
 import type { Module } from 'langium'
 import type { LangiumModelServerServices, PartialLangiumModelServerServices } from '../../langium-model-server/services'
 import { TaskListValidator } from '../task-list/validation/task-list-validation'
-import type { TaskListIdentityIndex } from './identity'
+import type { TaskListIdentityIndex } from './identity/indexed'
 import { TaskListIdentityManager } from './identity/manager'
 import { TaskListIdentityReconciler } from './semantic/task-list-identity-reconciler'
 import { TaskListIdentityStorage } from './identity/storage'
