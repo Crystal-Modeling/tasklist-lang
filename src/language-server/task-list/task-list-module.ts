@@ -3,7 +3,7 @@ import type { LangiumModelServerServices, PartialLangiumModelServerServices } fr
 import { TaskListValidator } from '../task-list/validation/task-list-validation'
 import type { TaskListIdentityIndex } from './identity/identity-index'
 import { TaskListIdentityManager } from './identity/manager'
-import { TaskListIdentityReconciler } from './semantic/task-list-identity-reconciler'
+import { TaskListIdentifier } from './semantic/task-list-identifier'
 import { TaskListIdentityStorage } from './identity/storage'
 import { TaskListSemanticDomain } from './semantic/task-list-semantic-domain'
 import type * as source from './lms/model'
@@ -53,7 +53,7 @@ export const TaskListModule: Module<TaskListServices, PartialLangiumModelServerS
         IdentityManager: (services) => new TaskListIdentityManager(services),
     },
     semantic: {
-        IdentityReconciler: (services) => new TaskListIdentityReconciler(services),
+        Identifier: (services) => new TaskListIdentifier(services),
         SemanticDomainFactory: () => TaskListSemanticDomain.create,
     },
     lms: {

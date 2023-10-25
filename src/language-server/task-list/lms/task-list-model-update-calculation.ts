@@ -1,7 +1,8 @@
 import * as id from '../../../langium-model-server/identity/model'
 import type { ElementUpdate, ReadonlyArrayUpdate } from '../../../langium-model-server/lms/model'
 import { ArrayUpdate, ArrayUpdateCommand, RootUpdate, Update } from '../../../langium-model-server/lms/model'
-import { AbstractModelUpdateCalculators, compareModelWithExistingBefore, deleteIdentity, deleteModels, type ModelUpdateCalculator } from '../../../langium-model-server/lms/model-update-calculation'
+import { AbstractModelUpdateCalculators, compareModelWithExistingBefore, deleteModels, type ModelUpdateCalculator } from '../../../langium-model-server/lms/model-update-calculation'
+import type * as sem from '../../../langium-model-server/semantic/model'
 import type { Initialized } from '../../../langium-model-server/workspace/documents'
 import type { TaskListIdentityIndex } from '../identity/identity-index'
 import type { TaskListIdentityManager } from '../identity/manager'
@@ -42,10 +43,30 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
         this.identityIndex = identityIndex
     }
 
+    public calculateUpdate(deletion: sem.UnmappedIdentities<Model>): RootUpdate<Model> {
+        const tasksUpdate = this.calculateTasksUpdate(deletion.tasks ?? [])
+        const transitionsUpdate = this.calculateTransitionsUpdate(deletion.transitions ?? [])
+
+        const update = RootUpdate.createEmpty<Model>(this.semanticDomain.rootId, id.ModelUri.root)
+        if (!ArrayUpdate.isEmpty(tasksUpdate)) update.tasks = ArrayUpdate.create(tasksUpdate)
+        if (!ArrayUpdate.isEmpty(transitionsUpdate)) update.transitions = ArrayUpdate.create(transitionsUpdate)
+        return update
+    }
+
+    public clearSoftDeletedIdentities(): RootUpdate<Model> {
+        const tasksDeletion = ArrayUpdateCommand.deletion<Task>(Array.from(this.identityIndex.tasks.allSoftDeleted(), identity => identity.remove()))
+        const transitionsDeletion = ArrayUpdateCommand.deletion<Transition>(Array.from(this.identityIndex.transitions.allSoftDeleted(), identity => identity.remove()))
+
+        const rootUpdate = RootUpdate.createEmpty<Model>(this.semanticDomain.rootId, id.ModelUri.root)
+        if (!ArrayUpdate.isEmpty(tasksDeletion)) rootUpdate.tasks = ArrayUpdate.create(tasksDeletion)
+        if (!ArrayUpdate.isEmpty(transitionsDeletion)) rootUpdate.transitions = ArrayUpdate.create(transitionsDeletion)
+        return rootUpdate
+    }
+
     /**
      * Calculates tasks update and applies identities deletion / restoration to embedded identity index
      */
-    public applyTasksUpdate(identitiesToDelete: Iterable<identity.TaskIdentity>): ReadonlyArrayUpdate<Task> {
+    private calculateTasksUpdate(identitiesToDelete: Iterable<id.Identity>): ReadonlyArrayUpdate<Task> {
         const existingTasks = this.semanticDomain.identifiedTasks.values()
         const updates = Array.from(existingTasks, task => compareModelWithExistingBefore(
             this.semanticDomain.getPreviousIdentifiedTask(task.$identity.id),
@@ -65,7 +86,7 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
     /**
      * Calculates transitions update and applies identities deletion / restoration to embedded identity index
      */
-    public applyTransitionsUpdate(identitiesToDelete: Iterable<identity.TransitionIdentity>): ReadonlyArrayUpdate<Transition> {
+    private calculateTransitionsUpdate(identitiesToDelete: Iterable<id.Identity>): ReadonlyArrayUpdate<Transition> {
         const existingTransitions = this.semanticDomain.identifiedTransitions.values()
         const updates = Array.from(existingTransitions, transition => compareModelWithExistingBefore(
             this.semanticDomain.getPreviousIdentifiedTransition(transition.$identity.id),
@@ -80,16 +101,6 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
         )
 
         return ArrayUpdateCommand.all(...updates, deletion)
-    }
-
-    public clearSoftDeletedIdentities(): RootUpdate<Model> {
-        const tasksDeletion = ArrayUpdateCommand.deletion<Task>(Array.from(this.identityIndex.tasks.allSoftDeleted(), deleteIdentity))
-        const transitionsDeletion = ArrayUpdateCommand.deletion<Transition>(Array.from(this.identityIndex.transitions.allSoftDeleted(), deleteIdentity))
-
-        const rootUpdate = RootUpdate.createEmpty<Model>(this.semanticDomain.rootId, id.ModelUri.root)
-        if (!ArrayUpdate.isEmpty(tasksDeletion)) rootUpdate.tasks = ArrayUpdate.create(tasksDeletion)
-        if (!ArrayUpdate.isEmpty(transitionsDeletion)) rootUpdate.transitions = ArrayUpdate.create(transitionsDeletion)
-        return rootUpdate
     }
 }
 

@@ -93,6 +93,13 @@ export abstract class AbstractIndexedIdentities<T extends AstNode | sem.Artifici
                 return undefined
             },
 
+            remove(): string {
+                if (index._allById.has(identity.id)) {
+                    index.hardDeleteIdentity(identity)
+                }
+                return identity.id
+            },
+
             restore(): boolean {
                 if (index._allById.has(identity.id)) {
                     identity.isSoftDeleted = false

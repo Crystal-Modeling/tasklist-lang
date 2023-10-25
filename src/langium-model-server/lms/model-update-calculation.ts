@@ -28,6 +28,7 @@ export abstract class AbstractModelUpdateCalculators<SM extends id.WithSemanticI
 }
 
 export interface ModelUpdateCalculator<SM extends id.WithSemanticID> {
+    calculateUpdate(deletion: sem.UnmappedIdentities<SM>): RootUpdate<SM>
     clearSoftDeletedIdentities(): RootUpdate<SM>
 }
 
@@ -78,7 +79,7 @@ export function compareModelWithExistingBefore<T extends AstNode | sem.Artificia
 export function deleteModels<T extends AstNode | sem.ArtificialAstNode, NAME extends id.IdentityName, SRC extends id.WithSemanticID>(
     getSoftDeleted: () => Iterable<id.Identity<T, NAME>>,
     getPreviousSemanticModel: (id: string) => sem.Identified<T, NAME> | undefined,
-    identitiesToDelete: Iterable<id.Identity<T, NAME>>
+    identitiesToDelete: Iterable<id.Identity>
 ): ReadonlyArrayUpdate<SRC> {
     const deletedIds = stream(identitiesToDelete)
         .filter(identity => identity.delete(getPreviousSemanticModel(identity.id)))
@@ -88,9 +89,4 @@ export function deleteModels<T extends AstNode | sem.ArtificialAstNode, NAME ext
     const deletion = ArrayUpdateCommand.deletion<SRC>(deletedIds)
     const dissappearances = ArrayUpdateCommand.modification(softDeletetionUpdates)
     return ArrayUpdateCommand.all(deletion, dissappearances)
-}
-
-export function deleteIdentity<T extends AstNode | sem.ArtificialAstNode>(identity: id.Identity<T>): string {
-    identity.delete()
-    return identity.id
 }

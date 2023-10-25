@@ -1,6 +1,6 @@
 import type { AstNode, CstNode, LangiumDocument, Reference } from 'langium'
 import type * as id from '../identity/model'
-import type { TypeGuard } from '../utils/types'
+import type { PickOfTypeAndOverride, TypeGuard } from '../utils/types'
 
 export type Validated<T extends AstNode | ArtificialAstNode> = T & {
     $validation: ValidationMessage[]
@@ -82,4 +82,16 @@ export namespace ResolvedReference {
 
 export function isReferenceValid<T extends AstNode, R extends Reference<T>>(ref: R): ref is R & ResolvedReference<Validated<T>> {
     return ResolvedReference.is(ref) && Validated.is(ref.ref)
+}
+
+/**
+ * Describes unmapped identities for the SourceModel element of type T
+ */
+export type UnmappedIdentities<SM extends id.WithSemanticID> =
+    Partial<PickOfTypeAndOverride<SM, id.WithSemanticID[], Iterable<id.Identity>>>
+
+export namespace UnmappedIdentities {
+    export function createEmpty<SM extends id.WithSemanticID>(): UnmappedIdentities<SM> {
+        return { }
+    }
 }
