@@ -1,21 +1,18 @@
-import * as src from '../../../langium-model-server/lms/model'
-import type { IdentityReconciler } from '../../../langium-model-server/semantic/identity-reconciler'
+import type { Identifier } from '../../../langium-model-server/semantic/identifier'
+import type * as sem from '../../../langium-model-server/semantic/model'
 import type { Initialized } from '../../../langium-model-server/workspace/documents'
 import type * as ast from '../../generated/ast'
 import type { TaskListIdentityManager } from '../identity/manager'
 import { TransitionName } from '../identity/model'
 import type * as source from '../lms/model'
-import type { TaskListModelUpdateCalculators } from '../lms/task-list-model-update-calculation'
 import type { TaskListServices } from '../task-list-module'
 import { type TaskListDocument } from '../workspace/documents'
 
-export class TaskListIdentityReconciler implements IdentityReconciler<source.Model, TaskListDocument>{
+export class TaskListIdentifier implements Identifier<source.Model, TaskListDocument>{
     private identityManager: TaskListIdentityManager
-    private modelUpdateCalculators: TaskListModelUpdateCalculators
 
     public constructor(services: TaskListServices) {
         this.identityManager = services.identity.IdentityManager
-        this.modelUpdateCalculators = services.lms.ModelUpdateCalculators
     }
 
     /* NOTE: So, the problem can be characterized as following:
@@ -28,22 +25,21 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
     - I need the concept of language model _semantical validity_, that is, which node from AST do I map to Source Model?
       = which AST node I assume correct enough to track his identity?
     */
-    identityReconciliationIterations = [
+    astIdentificationIterations = [
         // NOTE: ITERATION 1: mapping Tasks
-        this.reconcileTasks.bind(this),
+        this.identifyTasks.bind(this),
         // NOTE: ITERATION 2: mapping Transitions
-        this.reconcileTransitions.bind(this),
+        this.identifyTransitions.bind(this),
     ]
 
-    // Example of how Identity of Ast-based element is reconciled
-    private reconcileTasks(document: Initialized<TaskListDocument>, update: src.Update<source.Model>) {
+    // Example of how Ast-based element is identified
+    private identifyTasks(document: Initialized<TaskListDocument>, missingIdentities: sem.UnmappedIdentities<source.Model>) {
 
         // NOTE: Here I am expressing an idea, that perhaps I will have to have some sort of nested model indices,
         // which would make it generally necessary to pass the parent model into the semantic domain when requesting some (valid/identified) models
         const astModel: ast.Model = document.parseResult.value
 
         const taskIdentities = this.identityManager.getIdentityIndex(document).tasks
-        const updateCalculator = this.modelUpdateCalculators.getOrCreateCalculator(document)
         const semanticDomain = document.semanticDomain
 
         const existingUnmappedIdentities = new Set(taskIdentities.values())
@@ -58,18 +54,14 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
                 }
                 semanticDomain.identifyTask(task, taskIdentity)
             })
-        // Deletion of not mapped tasks. Even though transitions (on the AST level) are composite children of source Task,
-        // they still have to be deleted separately (**to simplify Updates creation**)
-        const tasksUpdate = updateCalculator.applyTasksUpdate(existingUnmappedIdentities.values())
 
-        if (!src.ArrayUpdate.isEmpty(tasksUpdate)) update.tasks = src.ArrayUpdate.create(tasksUpdate)
+        missingIdentities.tasks = existingUnmappedIdentities
     }
 
-    // Example of how Identity of non Ast-based element is reconciled
-    private reconcileTransitions(document: Initialized<TaskListDocument>, update: src.Update<source.Model>) {
+    // Example of how non-Ast-based element is identified
+    private identifyTransitions(document: Initialized<TaskListDocument>, missingIdentities: sem.UnmappedIdentities<source.Model>) {
 
         const transitionIdentities = this.identityManager.getIdentityIndex(document).transitions
-        const updateCalculator = this.modelUpdateCalculators.getOrCreateCalculator(document)
         const semanticDomain = document.semanticDomain
 
         const existingUnmappedIdentities = new Set(transitionIdentities.values())
@@ -84,8 +76,7 @@ export class TaskListIdentityReconciler implements IdentityReconciler<source.Mod
                 }
                 semanticDomain.identifyTransition(transition, transitionIdentity)
             })
-        const transitionsUpdate = updateCalculator.applyTransitionsUpdate(existingUnmappedIdentities.values())
 
-        if (!src.ArrayUpdate.isEmpty(transitionsUpdate)) update.transitions = src.ArrayUpdate.create(transitionsUpdate)
+        missingIdentities.transitions = existingUnmappedIdentities
     }
 }

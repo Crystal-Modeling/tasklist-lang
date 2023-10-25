@@ -3,11 +3,11 @@ import { DocumentState, interruptAndCheck } from 'langium'
 import type { CancellationToken } from 'vscode-languageserver'
 import type { IdentityIndex } from '../identity/indexed'
 import type { IdentityManager } from '../identity/manager'
-import * as id from '../identity/model'
-import * as src from '../lms/model'
-import type { ModelUpdateCombiner } from '../lms/model-update-combiner'
+import type * as id from '../identity/model'
+import type { ModelUpdateCalculators } from '../lms/model-update-calculation'
 import type { LmsSubscriptions } from '../lms/subscriptions'
-import type { IdentityReconciler } from '../semantic/identity-reconciler'
+import type { Identifier } from '../semantic/identifier'
+import * as sem from '../semantic/model'
 import type { SemanticDomainFactory } from '../semantic/semantic-domain'
 import type { LangiumModelServerServices } from '../services'
 import type { TypeGuard } from '../utils/types'
@@ -20,23 +20,23 @@ export class DefaultLmsDocumentBuilder<SM extends id.WithSemanticID, II extends 
 
     protected readonly createSemanticDomain: SemanticDomainFactory
     protected readonly isLmsDocument: TypeGuard<D, ExtendableLangiumDocument>
-    protected readonly identityReconciler: IdentityReconciler<SM, D>
+    protected readonly identifier: Identifier<SM, D>
     protected readonly identityManager: IdentityManager
+    protected readonly modelUpdateCalculators: ModelUpdateCalculators<SM>
     protected readonly lmsSubscriptions: LmsSubscriptions<SM>
-    protected readonly modelUpdateCombiner: ModelUpdateCombiner<SM>
 
     constructor(services: LangiumModelServerServices<SM, II, D>) {
         this.createSemanticDomain = services.semantic.SemanticDomainFactory
         this.isLmsDocument = services.workspace.LmsDocumentGuard
-        this.identityReconciler = services.semantic.IdentityReconciler
+        this.identifier = services.semantic.Identifier
         this.identityManager = services.identity.IdentityManager
+        this.modelUpdateCalculators = services.lms.ModelUpdateCalculators
         this.lmsSubscriptions = services.lms.LmsSubscriptions
-        this.modelUpdateCombiner = services.lms.ModelUpdateCombiner
 
         const documentBuilder = services.shared.workspace.DocumentBuilder
         documentBuilder.onBuildPhase(DocumentState.IndexedReferences, this.initializeSemanticDomain.bind(this))
 
-        documentBuilder.onBuildPhase(DocumentState.Validated, this.reconcileIdentity.bind(this))
+        documentBuilder.onBuildPhase(DocumentState.Validated, this.identifyValidatedAst.bind(this))
     }
 
     protected async initializeSemanticDomain(documents: LangiumDocument[], cancelToken: CancellationToken) {
@@ -54,24 +54,24 @@ export class DefaultLmsDocumentBuilder<SM extends id.WithSemanticID, II extends 
         }
     }
 
-    protected async reconcileIdentity(documents: LangiumDocument[], cancelToken: CancellationToken) {
-        console.debug('====== IDENTITY RECONCILIATION PHASE ======')
-        const newUpdatesForLmsDocuments: Map<Initialized<D>, src.RootUpdate<SM>> = new Map()
+    protected async identifyValidatedAst(documents: LangiumDocument[], cancelToken: CancellationToken) {
+        console.debug('====== AST IDENTIFICATION PHASE ======')
+        const unmappedIdentitiesForLmsDocuments: Map<Initialized<D>, sem.UnmappedIdentities<SM>> = new Map()
         for (const document of documents) {
             const lmsDocument: ExtendableLangiumDocument = document
             // NOTE: Actually, all LMS Documents are initialized during `initializeSemanticDomain` phase
-            console.debug('Trying to reconcile document', lmsDocument.uri.toString(), 'isLMS?', this.isLmsDocument(lmsDocument), 'isInitialized?', !!(lmsDocument as SemanticAwareDocument).semanticDomain)
+            console.debug('Trying to identify valid AST', lmsDocument.uri.toString(), 'isLMS?', this.isLmsDocument(lmsDocument), 'isInitialized?', !!(lmsDocument as SemanticAwareDocument).semanticDomain)
             if (this.isLmsDocument(lmsDocument) && LmsDocument.isInitialized(lmsDocument)) {
                 console.debug('  => For document ', lmsDocument.uri.toString(), `(${lmsDocument.semanticDomain.rootId})`)
-                newUpdatesForLmsDocuments.set(lmsDocument,
-                    src.RootUpdate.createEmpty<SM>(lmsDocument.semanticDomain.rootId, id.ModelUri.root))
+                unmappedIdentitiesForLmsDocuments.set(lmsDocument, sem.UnmappedIdentities.createEmpty<SM>())
             }
         }
         await interruptAndCheck(cancelToken)
-        for (const iteration of this.identityReconciler.identityReconciliationIterations) {
-            newUpdatesForLmsDocuments.forEach((update, lmsDocument) => iteration(lmsDocument, update))
+        for (const iteration of this.identifier.astIdentificationIterations) {
+            unmappedIdentitiesForLmsDocuments.forEach((unmappedIdentities, lmsDocument) => iteration(lmsDocument, unmappedIdentities))
         }
-        newUpdatesForLmsDocuments.forEach((update, lmsDocument) => {
+        unmappedIdentitiesForLmsDocuments.forEach((unmappedIdentities, lmsDocument) => {
+            const update = this.modelUpdateCalculators.getOrCreateCalculator(lmsDocument).calculateUpdate(unmappedIdentities)
             lmsDocument.state = LmsDocumentState.Identified
             this.lmsSubscriptions.getSubscription(update.id)?.pushModelUpdate(update, !lmsDocument.hasImmediateChanges)
             delete lmsDocument.hasImmediateChanges

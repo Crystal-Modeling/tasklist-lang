@@ -9,7 +9,7 @@ import type { ModelUpdateCalculators } from './lms/model-update-calculation'
 import type { ModelUpdateCombiner } from './lms/model-update-combiner'
 import type { LmsSubscriptions } from './lms/subscriptions'
 import type { TextEditService } from './lms/text-edit-service'
-import type { IdentityReconciler } from './semantic/identity-reconciler'
+import type { Identifier } from './semantic/identifier'
 import type { SemanticDomainFactory } from './semantic/semantic-domain'
 import type { TypeGuard } from './utils/types'
 import type { ExtendableLangiumDocument, LmsDocument } from './workspace/documents'
@@ -52,7 +52,7 @@ export type LangiumModelServerAbstractServices<SM extends WithSemanticID, II ext
         IdentityManager: IdentityManager<II>,
     }
     semantic: {
-        IdentityReconciler: IdentityReconciler<SM, D>,
+        Identifier: Identifier<SM, D>,
         SemanticDomainFactory: SemanticDomainFactory,
     },
     lms: {

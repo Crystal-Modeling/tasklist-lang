@@ -37,6 +37,11 @@ export interface EditableIdentity<T extends AstNode | sem.ArtificialAstNode, NAM
      */
     delete(deletedSemanticModel?: sem.Identified<T, NAME>): boolean | undefined
     /**
+     * Performs hard-deletion of this identity
+     * @returns `id` of hard-deleted identity
+     */
+    remove(): string
+    /**
      * Restores soft-deleted identity (if it has not been hard-deleted from the IndexedIdentity it belongs to).
      * @returns `true` if identity was successfully restored or `false` if it has already been hard-deleted.
      */
@@ -46,7 +51,7 @@ export interface EditableIdentity<T extends AstNode | sem.ArtificialAstNode, NAM
     deletedSemanticModel?: sem.Identified<T, NAME>
 }
 
-export type Identity<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName = IdentityName> = Readonly<EditableIdentity<T, NAME>>
+export type Identity<T extends AstNode | sem.ArtificialAstNode = AstNode | sem.ArtificialAstNode, NAME extends IdentityName = IdentityName> = Readonly<EditableIdentity<T, NAME>>
 
 export namespace Identity {
     export function toModel<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName>({ id, name }: Identity<T, NAME>): IdentityModel<NAME> {
