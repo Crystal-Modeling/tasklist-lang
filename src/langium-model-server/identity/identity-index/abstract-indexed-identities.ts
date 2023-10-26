@@ -5,7 +5,7 @@ import type { EditableIdentity, Identity, IdentityModel, IdentityName, Rollbacka
 import { SemanticID } from '../model'
 import type { IdentityConstructor, IndexedIdentities } from './identity-index'
 
-export abstract class AbstractIndexedIdentities<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName, ID extends Identity<T, NAME>> implements IndexedIdentities<T, NAME, ID>, IdentityConstructor<T, NAME, ID> {
+export abstract class AbstractIndexedIdentities<T extends AstNode, NAME extends IdentityName, ID extends Identity<T, NAME>> implements IndexedIdentities<T, NAME, ID>, IdentityConstructor<T, NAME, ID> {
 
     protected static readonly NO_OP = () => { }
 

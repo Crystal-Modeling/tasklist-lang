@@ -19,7 +19,7 @@ export type RollbackableResult<T> = {
     rollback: StateRollback
 }
 
-export interface EditableIdentity<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName = IdentityName> extends IdentityModel<NAME>, Readonly<WithModelUri> {
+export interface EditableIdentity<T extends AstNode, NAME extends IdentityName = IdentityName> extends IdentityModel<NAME>, Readonly<WithModelUri> {
     isNewNameFit(newName: NAME): boolean
     fitNewName(newName: NAME): RollbackableResult<NAME> | undefined
     /**
@@ -51,13 +51,13 @@ export interface EditableIdentity<T extends AstNode | sem.ArtificialAstNode, NAM
     deletedSemanticModel?: sem.Identified<T, NAME>
 }
 
-export type Identity<T extends AstNode | sem.ArtificialAstNode = AstNode | sem.ArtificialAstNode, NAME extends IdentityName = IdentityName> = Readonly<EditableIdentity<T, NAME>>
+export type Identity<T extends AstNode = AstNode, NAME extends IdentityName = IdentityName> = Readonly<EditableIdentity<T, NAME>>
 
 export namespace Identity {
-    export function toModel<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName>({ id, name }: Identity<T, NAME>): IdentityModel<NAME> {
+    export function toModel<T extends AstNode, NAME extends IdentityName>({ id, name }: Identity<T, NAME>): IdentityModel<NAME> {
         return { id, name }
     }
 }
 
 export type AstNodeIdentity<T extends AstNode> = Identity<T, AstNodeIdentityName>
-export type DerivativeIdentity<T extends sem.ArtificialAstNode, NAME extends DerivativeIdentityName = DerivativeIdentityName> = Identity<T, NAME>
+export type DerivativeIdentity<T extends AstNode, NAME extends DerivativeIdentityName = DerivativeIdentityName> = Identity<T, NAME>

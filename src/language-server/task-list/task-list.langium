@@ -5,14 +5,18 @@ entry Model:
 
 Task:
     'task'
-    (name=ID)
+    (name=NAME)
     content=STRING
-    ('->' references+=[Task:ID] (',' references+=[Task:ID] )* )?
+    ('->' transitions+=Transition (',' transitions+=Transition )* )?
+;
+
+Transition:
+    targetTaskRef=[Task:NAME]
 ;
 
 
 hidden terminal WS: /\s+/;
-terminal ID: /[0-9_a-zA-Z][\w_]*/;
+terminal NAME: /[0-9_a-zA-Z][\w_]*/;
 terminal STRING: /"(\\.|[^"\\])*"|'(\\.|[^'\\])*'/;
 
 hidden terminal ML_COMMENT: /\/\*[\s\S]*?\*\//;

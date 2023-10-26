@@ -60,12 +60,13 @@ export class TaskListIdentifier implements Identifier<source.Model, TaskListDocu
 
     // Example of how non-Ast-based element is identified
     private identifyTransitions(document: Initialized<TaskListDocument>, missingIdentities: sem.UnmappedIdentities<source.Model>) {
+        const astModel: ast.Model = document.parseResult.value
 
         const transitionIdentities = this.identityManager.getIdentityIndex(document).transitions
         const semanticDomain = document.semanticDomain
 
         const existingUnmappedIdentities = new Set(transitionIdentities.values())
-        semanticDomain.getValidatedTransitions()
+        semanticDomain.getValidatedTransitions(astModel)
             .forEach(transition => {
                 const name = TransitionName.from(transition)
                 let transitionIdentity = transitionIdentities.byName(name)

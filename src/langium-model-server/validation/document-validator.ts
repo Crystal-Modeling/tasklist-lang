@@ -5,12 +5,13 @@ import { CancellationToken } from 'vscode-languageserver'
 import type { AstNode, LangiumDocument, DiagnosticInfo, ValidationAcceptor } from 'langium'
 import { streamAst, interruptAndCheck } from 'langium'
 import type { LangiumModelServerServices } from '../services'
-import type { WithSemanticID } from '../identity/model'
+import type * as id from '../identity/model'
 import type { IdentityIndex } from '../identity/identity-index'
 import type { ExtendableLangiumDocument, LmsDocument } from '../workspace/documents'
 import type { TypeGuard } from '../utils/types'
+import * as sem from '../semantic/model'
 
-export class LmsDocumentValidator<SM extends WithSemanticID, II extends IdentityIndex, D extends LmsDocument> extends DefaultDocumentValidator {
+export class LmsDocumentValidator<SM extends id.WithSemanticID, II extends IdentityIndex, D extends LmsDocument> extends DefaultDocumentValidator {
 
     protected isLmsDocument: TypeGuard<D, ExtendableLangiumDocument>
 
@@ -36,9 +37,8 @@ export class LmsDocumentValidator<SM extends WithSemanticID, II extends Identity
     protected createValidationAcceptor(validationItems: Diagnostic[], document: LangiumDocument): ValidationAcceptor {
         if (this.isLmsDocument(document)) {
             return <N extends AstNode>(severity: 'error' | 'warning' | 'info' | 'hint', message: string, info: DiagnosticInfo<N>) => {
-                const affectedNode = document.semanticDomain?.getValidatedNode(info.node, info.property, info.index)
-                if (affectedNode) {
-                    affectedNode.$validation.push({ kind: severity, label: info.code?.toString() || affectedNode.$type, description: message })
+                if (sem.Validated.is(info.node)) {
+                    info.node.$validation.push({ kind: severity, label: info.code?.toString() || info.node.$type, description: message })
                 }
                 validationItems.push(this.toDiagnostic(severity, message, info))
             }

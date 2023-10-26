@@ -30,7 +30,7 @@ export class LmsRenameProvider<SM extends WithSemanticID, II extends IdentityInd
         if (!targetNode) return undefined
 
         let newName = params.newName
-        if (sem.Identified.is(targetNode)) {
+        if (sem.Identified.isPrimary(targetNode)) {
             console.debug('Identity for the targetNode:', targetNode.$identity)
             const validatedName = targetNode.$identity.fitNewName(newName)
             if (!validatedName) {

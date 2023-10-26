@@ -1,4 +1,3 @@
-import { findNodeForProperty } from 'langium'
 import * as sem from '../../../../langium-model-server/semantic/model'
 import type * as ast from '../../../generated/ast'
 import type * as identity from '../../identity/model'
@@ -11,25 +10,19 @@ export type TransitionIdentifiedProperties = {
     targetTask: IdentifiedTask
 }
 
-export interface Transition extends sem.ArtificialIndexedAstNode {
+export interface Transition extends ast.Transition {
     sourceTask: sem.Validated<ast.Task>,
-    targetTask: sem.Validated<ast.Task>
+    targetTask: sem.Validated<ast.Task>,
+    readonly $containerIndex: number;
 }
 
 export namespace Transition {
 
-    export function create(task: sem.Validated<ast.Task>, reference: sem.ResolvedReference<sem.Validated<ast.Task>>, refIndex: number): Transition {
-        return {
-            sourceTask: task,
-            targetTask: reference.ref,
-            $type: 'Transition',
-            $container: task,
-            $containerIndex: refIndex,
-            $containerProperty: 'references',
-            get $cstNode() {
-                return findNodeForProperty(task.$cstNode, 'references', refIndex)
-            }
+    export function initProperties(transition: ast.Transition & { $container: sem.Validated<ast.Task>, targetTaskRef: sem.ResolvedReference<sem.Validated<ast.Task>> }): Transition {
+        if (transition.$containerIndex === undefined) {
+            throw new Error('Expected Transition containerIndex to be defined')
         }
+        return Object.assign(transition, { sourceTask: transition.$container, targetTask: transition.targetTaskRef.ref, $containerIndex: transition.$containerIndex })
     }
 
     export function properties(sourceTask: IdentifiedTask, targetTask: IdentifiedTask): TransitionIdentifiedProperties {

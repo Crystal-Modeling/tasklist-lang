@@ -293,7 +293,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             throw new Error('Cannot locate source task ' + sourceTask.name + '(' + sourceTask.$identity.id + ') in text')
         }
 
-        let prefix = (!sourceTask.references || sourceTask.references.length === 0)
+        let prefix = (!sourceTask.transitions || sourceTask.transitions.length === 0)
             ? ' -> '
             : ', '
         let suffix = ''
@@ -402,13 +402,13 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
 
         let start: Position
         let end: Position
-        if (task.references.length > 1) {
+        if (task.transitions.length > 1) {
             if (transition.$containerIndex === 0) {
-                const nextNode = task.references[1].$refNode!
+                const nextNode = task.transitions[1].$cstNode!
                 start = transition.$cstNode.range.start
                 end = nextNode.range.start
             } else {
-                const previousNode = task.references[transition.$containerIndex - 1].$refNode!
+                const previousNode = task.transitions[transition.$containerIndex - 1].$cstNode!
                 start = previousNode.range.end
                 end = transition.$cstNode.range.end
             }
