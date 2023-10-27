@@ -3,7 +3,7 @@ import { DocumentState, interruptAndCheck } from 'langium'
 import type { CancellationToken } from 'vscode-languageserver'
 import type { IdentityIndex } from '../identity/indexed'
 import type { IdentityManager } from '../identity/manager'
-import type * as id from '../identity/model'
+import type { WithSemanticID } from '../identity/semantic-id'
 import type { ModelUpdateCalculators } from '../lms/model-update-calculation'
 import type { LmsSubscriptions } from '../lms/subscriptions'
 import type { Identifier } from '../semantic/identifier'
@@ -16,7 +16,7 @@ import { LmsDocument, LmsDocumentState, type ExtendableLangiumDocument } from '.
 
 export interface LmsDocumentBuilder {
 }
-export class DefaultLmsDocumentBuilder<SM extends id.WithSemanticID, II extends IdentityIndex, D extends LmsDocument> implements LmsDocumentBuilder {
+export class DefaultLmsDocumentBuilder<SM extends WithSemanticID, II extends IdentityIndex, D extends LmsDocument> implements LmsDocumentBuilder {
 
     protected readonly createSemanticDomain: SemanticDomainFactory
     protected readonly isLmsDocument: TypeGuard<D, ExtendableLangiumDocument>

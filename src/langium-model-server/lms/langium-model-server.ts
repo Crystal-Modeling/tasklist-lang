@@ -1,7 +1,7 @@
 import * as fs from 'fs-extra'
 import * as http2 from 'http2'
 import path from 'path'
-import type { WithSemanticID } from '../identity/model'
+import type { WithSemanticID } from '../identity/semantic-id'
 import type { IdentityIndex } from '../identity/indexed'
 import type { LangiumModelServerServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'

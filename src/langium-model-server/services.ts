@@ -1,7 +1,7 @@
 import type { DeepPartial, DocumentHighlightProvider, DocumentValidator, LangiumServices, LanguageServer, PartialLangiumServices, RenameProvider } from 'langium'
 import type { IdentityIndex } from './identity/indexed'
 import type { IdentityManager } from './identity/manager'
-import type { WithSemanticID } from './identity/model'
+import type { WithSemanticID } from './identity/semantic-id'
 import type { IdentityStorage } from './identity/storage'
 import type { LangiumModelServerFacade } from './lms/facade'
 import type { LangiumModelServer } from './lms/langium-model-server'

@@ -1,5 +1,4 @@
 import type { AstNode } from 'langium'
-import type * as sem from '../../semantic/model'
 import type { Identity, IdentityModel, IdentityName, RollbackableResult } from '../model'
 
 export type IdentityIndex = {
@@ -10,7 +9,7 @@ export type ModelExposedIdentityIndex<SemI extends IdentityIndex> = SemI & {
     readonly model: object
 }
 
-export interface IndexedIdentities<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName, ID extends Identity<T, NAME>> {
+export interface IndexedIdentities<T extends AstNode, NAME extends IdentityName, ID extends Identity<T, NAME>> {
     allSoftDeleted(): Iterable<ID>
     values(): Iterable<ID>
     byName(name: NAME): ID | undefined
@@ -23,6 +22,6 @@ export interface IndexedIdentities<T extends AstNode | sem.ArtificialAstNode, NA
     addNew(name: NAME): ID
 }
 
-export interface IdentityConstructor<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName, ID extends Identity<T, NAME>> {
+export interface IdentityLoader<T extends AstNode, NAME extends IdentityName, ID extends Identity<T, NAME>> {
     load(model: IdentityModel<NAME>): ID
 }

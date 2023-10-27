@@ -3,7 +3,7 @@ import { DefaultRenameProvider, findDeclarationNodeAtOffset } from 'langium'
 import type { RenameParams, WorkspaceEdit } from 'vscode-languageserver'
 import type { IdentityIndex } from '../identity/indexed'
 import type { IdentityManager } from '../identity/manager'
-import type { WithSemanticID } from '../identity/model'
+import type { WithSemanticID } from '../identity/semantic-id'
 import type { TextEditService } from '../lms/text-edit-service'
 import * as sem from '../semantic/model'
 import type { LangiumModelServerServices } from '../services'
@@ -30,7 +30,7 @@ export class LmsRenameProvider<SM extends WithSemanticID, II extends IdentityInd
         if (!targetNode) return undefined
 
         let newName = params.newName
-        if (sem.Identified.is(targetNode)) {
+        if (sem.Identified.isPrimary(targetNode)) {
             console.debug('Identity for the targetNode:', targetNode.$identity)
             const validatedName = targetNode.$identity.fitNewName(newName)
             if (!validatedName) {

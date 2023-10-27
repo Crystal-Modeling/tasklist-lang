@@ -4,7 +4,7 @@ import type { Connection, InitializeParams, InitializeResult } from 'vscode-lang
 import { FileChangeType } from 'vscode-languageserver'
 import { URI } from 'vscode-uri'
 import type { IdentityIndex } from '../identity/indexed'
-import type { WithSemanticID } from '../identity/model'
+import type { WithSemanticID } from '../identity/semantic-id'
 import { Save } from '../lms/model'
 import type { LangiumModelServerAddedServices } from '../services'
 import { LmsDocument } from '../workspace/documents'

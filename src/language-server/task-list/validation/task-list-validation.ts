@@ -1,7 +1,7 @@
-import type { Reference, ValidationAcceptor, ValidationChecks } from 'langium'
+import type { ValidationAcceptor, ValidationChecks } from 'langium'
 import { MultiMap } from 'langium'
-import type { Model, Task, TaskListLangAstType } from '../../generated/ast'
-import { isTask } from '../../generated/ast'
+import { ResolvedReference } from '../../../langium-model-server/semantic/model'
+import type { Model, Task, TaskListLangAstType, Transition } from '../../generated/ast'
 import type { TaskListServices } from '../task-list-module'
 import { getTaskListDocument } from '../workspace/documents'
 
@@ -14,11 +14,11 @@ export function registerValidationChecks(services: TaskListServices) {
     const checks: ValidationChecks<TaskListLangAstType> = {
         Model: validator.checkModelHasUniqueTasks,
         Task: [
-            validator.checkTaskHasUniqueReferences,
+            validator.checkTaskHasUniqueTransitions,
             validator.checkTaskNameMustStartWithLowercase,
             validator.checkTaskContentShouldStartWithCapital,
-            validator.checkTaskDoesNotReferenceItself
-        ]
+        ],
+        Transition: validator.checkTransitionDoesNotReferenceContainer
     }
     registry.register(checks, validator)
 }
@@ -59,23 +59,22 @@ export class TaskListValidator {
             })
     }
 
-    checkTaskHasUniqueReferences(task: Task, accept: ValidationAcceptor): void {
-        const referenceNames = new Set<string>()
-        const nonUniqueReferences = new Set<Reference<Task>>()
-        for (let index = 0; index < task.references.length; index++) {
-            const reference = task.references[index]
-            if (isTask(reference.ref)) {
-                const referencedName = reference.ref.name
-                if (referenceNames.has(referencedName)) {
-                    accept('error', 'Task cannot reference another task more than once',
-                        { node: task, property: 'references', index })
-                    nonUniqueReferences.add(reference)
+    checkTaskHasUniqueTransitions(task: Task, accept: ValidationAcceptor): void {
+        const referencedTasks = new Set<Task>()
+        const invalidTransitions = new Set<Transition>()
+        for (const transition of task.transitions) {
+            if (ResolvedReference.is(transition.targetTaskRef)) {
+                const targetTask = transition.targetTaskRef.ref
+                if (referencedTasks.has(targetTask)) {
+                    accept('error', 'Transitions from the same Task can not reference another Task more than once',
+                        { node: transition })
+                    invalidTransitions.add(transition)
                 } else {
-                    referenceNames.add(referencedName)
+                    referencedTasks.add(targetTask)
                 }
             }
         }
-        getTaskListDocument(task).semanticDomain?.validateReferencesForTask(task, nonUniqueReferences)
+        getTaskListDocument(task).semanticDomain?.validateTransitionsForTask(task, invalidTransitions)
     }
 
     checkTaskNameMustStartWithLowercase(task: Task, accept: ValidationAcceptor): void {
@@ -98,13 +97,9 @@ export class TaskListValidator {
         }
     }
 
-    checkTaskDoesNotReferenceItself(task: Task, accept: ValidationAcceptor): void {
-        for (let index = 0; index < task.references.length; index++) {
-            const ref = task.references[index]
-            if (isTask(ref.ref) && ref.ref.name === task.name) {
-                accept('error', 'Task cannot reference itself',
-                    { node: task, property: 'references', index })
-            }
+    checkTransitionDoesNotReferenceContainer(transition: Transition, accept: ValidationAcceptor): void {
+        if (ResolvedReference.is(transition.targetTaskRef) && transition.targetTaskRef.ref === transition.$container) {
+            accept('error', 'Transition cannot reference its container Task', { node: transition })
         }
     }
 }

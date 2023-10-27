@@ -1,12 +1,12 @@
 
-import type * as id from '../../../identity/model'
-import type { OmitProperties} from '../../../utils/types'
+import type { WithSemanticID } from '../../../identity/semantic-id'
+import type { OmitProperties } from '../../../utils/types'
 import { isDefinedObject } from '../../../utils/types'
 
-export type Modification<T extends id.WithSemanticID = id.WithSemanticID> = Partial<OmitProperties<T, id.WithSemanticID>>
+export type Modification<T extends WithSemanticID = WithSemanticID> = Partial<OmitProperties<T, WithSemanticID>>
 
 export namespace Modification {
-    export function is<T extends id.WithSemanticID = id.WithSemanticID>(obj: unknown): obj is Modification<T> {
+    export function is<T extends WithSemanticID = WithSemanticID>(obj: unknown): obj is Modification<T> {
         return isDefinedObject(obj)
     }
 }

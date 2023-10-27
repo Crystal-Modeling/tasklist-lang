@@ -1,14 +1,15 @@
 import { DefaultDocumentValidator } from 'langium'
 
+import type { AstNode, DiagnosticInfo, LangiumDocument, ValidationAcceptor } from 'langium'
+import { interruptAndCheck, streamAst } from 'langium'
 import type { Diagnostic } from 'vscode-languageserver'
 import { CancellationToken } from 'vscode-languageserver'
-import type { AstNode, LangiumDocument, DiagnosticInfo, ValidationAcceptor } from 'langium'
-import { streamAst, interruptAndCheck } from 'langium'
-import type { LangiumModelServerServices } from '../services'
-import type { WithSemanticID } from '../identity/model'
 import type { IdentityIndex } from '../identity/indexed'
-import type { ExtendableLangiumDocument, LmsDocument } from '../workspace/documents'
+import type { WithSemanticID } from '../identity/semantic-id'
+import * as sem from '../semantic/model'
+import type { LangiumModelServerServices } from '../services'
 import type { TypeGuard } from '../utils/types'
+import type { ExtendableLangiumDocument, LmsDocument } from '../workspace/documents'
 
 export class LmsDocumentValidator<SM extends WithSemanticID, II extends IdentityIndex, D extends LmsDocument> extends DefaultDocumentValidator {
 
@@ -36,9 +37,8 @@ export class LmsDocumentValidator<SM extends WithSemanticID, II extends Identity
     protected createValidationAcceptor(validationItems: Diagnostic[], document: LangiumDocument): ValidationAcceptor {
         if (this.isLmsDocument(document)) {
             return <N extends AstNode>(severity: 'error' | 'warning' | 'info' | 'hint', message: string, info: DiagnosticInfo<N>) => {
-                const affectedNode = document.semanticDomain?.getValidatedNode(info.node, info.property, info.index)
-                if (affectedNode) {
-                    affectedNode.$validation.push({ kind: severity, label: info.code?.toString() || affectedNode.$type, description: message })
+                if (sem.Validated.is(info.node)) {
+                    info.node.$validation.push({ kind: severity, label: info.code?.toString() || info.node.$type, description: message })
                 }
                 validationItems.push(this.toDiagnostic(severity, message, info))
             }

@@ -1,24 +1,24 @@
 import type { ServerHttp2Stream } from 'http2'
-import type * as id from '../identity/model'
 import type { Action, RootUpdate } from './model'
 import { Update } from './model'
 import type { ModelUpdateCombiner } from './model-update-combiner'
+import type { WithSemanticID } from '../identity/semantic-id'
 
-export interface LmsSubscriptions<SM extends id.WithSemanticID> {
+export interface LmsSubscriptions<SM extends WithSemanticID> {
     addSubscription(subscriptionStream: ServerHttp2Stream, id: string): void
     getSubscription(modelId: string): LmsSubscription<SM> | undefined
 }
 
-export interface LmsSubscription<SM extends id.WithSemanticID> {
+export interface LmsSubscription<SM extends WithSemanticID> {
     /**
      * @returns `true` if the update was immediately pushed (`modelUpdate` not empty and accumulation was not awaited)
      */
     pushModelUpdate(modelUpdate: RootUpdate<SM>, awaitAccumulation?: boolean): boolean
-    pushUpdate<M extends id.WithSemanticID>(modelUpdate: RootUpdate<M>): void
+    pushUpdate<M extends WithSemanticID>(modelUpdate: RootUpdate<M>): void
     pushAction(action: Action): void
 }
 
-export class DefaultLmsSubscriptions<SM extends id.WithSemanticID> implements LmsSubscriptions<SM> {
+export class DefaultLmsSubscriptions<SM extends WithSemanticID> implements LmsSubscriptions<SM> {
 
     private readonly modelUpdateCombiner: ModelUpdateCombiner<SM>
     private readonly accumulationAwaitingMs: number = 300
@@ -53,7 +53,7 @@ export class DefaultLmsSubscriptions<SM extends id.WithSemanticID> implements Lm
     }
 }
 
-class CompositeLmsSubscription<SM extends id.WithSemanticID> implements LmsSubscription<SM> {
+class CompositeLmsSubscription<SM extends WithSemanticID> implements LmsSubscription<SM> {
     private readonly modelUpdateCombiner: ModelUpdateCombiner<SM>
     private readonly accumulationAwaitingMs: number
 
@@ -119,7 +119,7 @@ class CompositeLmsSubscription<SM extends id.WithSemanticID> implements LmsSubsc
         return false
     }
 
-    public pushUpdate<SM extends id.WithSemanticID>(modelUpdate: RootUpdate<SM>): void {
+    public pushUpdate<SM extends WithSemanticID>(modelUpdate: RootUpdate<SM>): void {
         if (!Update.isEmpty(modelUpdate)) {
             for (const stream of this.subscriptionStreams) {
                 pushUpdateToStream(modelUpdate, stream)
@@ -166,7 +166,7 @@ class CompositeLmsSubscription<SM extends id.WithSemanticID> implements LmsSubsc
     }
 }
 
-function pushUpdateToStream<SM extends id.WithSemanticID>(modelUpdate: RootUpdate<SM>, stream: ServerHttp2Stream): void {
+function pushUpdateToStream<SM extends WithSemanticID>(modelUpdate: RootUpdate<SM>, stream: ServerHttp2Stream): void {
     console.debug('Pushing update for model with id', modelUpdate.id)
     console.debug((Update.isEmpty(modelUpdate) ? 'EMPTY' : JSON.stringify(modelUpdate, undefined, 2)))
     stream.write(JSON.stringify(modelUpdate))

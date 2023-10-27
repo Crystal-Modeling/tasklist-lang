@@ -1,10 +1,10 @@
 
-import type * as id from '../../../identity/model'
+import type { WithSemanticID } from '../../../identity/semantic-id'
 import type { OmitProperties } from '../../../utils/types'
 
 export interface CreationParams {
     anchorModelId?: string
 }
 
-export type Creation<T extends id.WithSemanticID = id.WithSemanticID> = OmitProperties<T, id.WithSemanticID>
+export type Creation<T extends WithSemanticID = WithSemanticID> = OmitProperties<T, WithSemanticID>
 

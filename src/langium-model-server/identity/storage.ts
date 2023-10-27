@@ -8,7 +8,7 @@ import type { LangiumModelServerServices } from '../services'
 import type { TypeGuard } from '../utils/types'
 import { UriConverter } from '../utils/uri-converter'
 import type { LmsDocument } from '../workspace/documents'
-import type { WithSemanticID } from './model'
+import type { WithSemanticID } from './semantic-id'
 import { IdentityError } from './model'
 import type { IdentityIndex } from './indexed'
 

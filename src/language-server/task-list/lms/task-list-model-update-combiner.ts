@@ -1,7 +1,7 @@
 import { stream } from 'langium'
-import type * as id from '../../../langium-model-server/identity/model'
-import { ArrayUpdate, RootUpdate } from '../../../langium-model-server/lms/model'
+import type { WithSemanticID } from '../../../langium-model-server/identity/semantic-id'
 import type { ElementAttributes, ElementUpdate } from '../../../langium-model-server/lms/model'
+import { ArrayUpdate, RootUpdate } from '../../../langium-model-server/lms/model'
 import type { ModelUpdateCombiner } from '../../../langium-model-server/lms/model-update-combiner'
 import type { Model, Task, Transition } from './model'
 
@@ -55,7 +55,7 @@ class ModelCumulativeUpdate implements Readonly<RootUpdate<Model>> {
 
 }
 
-function mergeArrayUpdates<T extends id.WithSemanticID>(
+function mergeArrayUpdates<T extends WithSemanticID>(
     arrayUpdates: Array<ArrayUpdate<T>>,
     ...mutableProps: Array<ElementAttributes<T>>
 ): ArrayUpdate<T> | undefined {

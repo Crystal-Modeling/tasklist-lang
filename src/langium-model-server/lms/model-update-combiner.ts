@@ -1,7 +1,7 @@
-import type * as id from '../identity/model'
+import type { WithSemanticID } from '../identity/semantic-id'
 import type { RootUpdate } from './model'
 
-export interface ModelUpdateCombiner<SM extends id.WithSemanticID> {
+export interface ModelUpdateCombiner<SM extends WithSemanticID> {
 
     /**
      * Combines updates made during several reconciliation phases (updates accumulate if during the last phase an update was not sent).

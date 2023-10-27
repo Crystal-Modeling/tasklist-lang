@@ -1,7 +1,7 @@
 import { URI } from 'vscode-uri'
 import type { LangiumModelServerServices } from '../services'
 import type { LmsDocument } from '../workspace/documents'
-import type { WithSemanticID } from './model'
+import type { WithSemanticID } from './semantic-id'
 import type { IdentityIndex, ModelExposedIdentityIndex } from './indexed'
 import type { IdentityStorage } from './storage'
 

@@ -2,10 +2,10 @@ import type { AstNode } from 'langium'
 import type * as sem from '../../semantic/model'
 import type { AbstractMap } from '../../utils/collections'
 import type { EditableIdentity, Identity, IdentityModel, IdentityName, RollbackableResult, StateRollback } from '../model'
-import { SemanticID } from '../model'
-import type { IdentityConstructor, IndexedIdentities } from './indexed-identities'
+import { SemanticID } from '../semantic-id'
+import type { IdentityLoader, IndexedIdentities } from './indexed-identities'
 
-export abstract class AbstractIndexedIdentities<T extends AstNode | sem.ArtificialAstNode, NAME extends IdentityName, ID extends Identity<T, NAME>> implements IndexedIdentities<T, NAME, ID>, IdentityConstructor<T, NAME, ID> {
+export abstract class AbstractIndexedIdentities<T extends AstNode, NAME extends IdentityName, ID extends Identity<T, NAME>> implements IndexedIdentities<T, NAME, ID>, IdentityLoader<T, NAME, ID> {
 
     protected static readonly NO_OP = () => { }
 
