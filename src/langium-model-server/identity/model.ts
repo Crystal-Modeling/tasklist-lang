@@ -76,7 +76,7 @@ export interface IdentityModel<NAME extends IdentityName> extends Readonly<Seman
 export namespace IdentityModel {
     export function is<NAME extends AstNodeIdentityName>(obj: unknown): obj is IdentityModel<NAME>
     export function is<NAME extends DerivativeIdentityName>(obj: unknown, nameGuard: TypeGuard<NAME>): obj is IdentityModel<NAME>
-    export function is<NAME extends IdentityName>(obj: unknown, nameGuard: TypeGuard<NAME> = (o): o is NAME => typeof o.id === 'string'): obj is IdentityModel<NAME> {
+    export function is<NAME extends IdentityName>(obj: unknown, nameGuard: TypeGuard<NAME> = (o): o is NAME => typeof o === 'string'): obj is IdentityModel<NAME> {
         return isDefinedObject(obj)
             && typeof obj.id === 'string'
             && nameGuard(obj.name)
