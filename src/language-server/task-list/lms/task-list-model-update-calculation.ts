@@ -1,13 +1,11 @@
 import * as id from '../../../langium-model-server/identity/model'
-import type { ElementUpdate, ReadonlyArrayUpdate } from '../../../langium-model-server/lms/model'
-import { ArrayUpdate, ArrayUpdateCommand, RootUpdate, Update } from '../../../langium-model-server/lms/model'
+import type { ReadonlyArrayUpdate } from '../../../langium-model-server/lms/model'
+import { ArrayUpdate, ArrayUpdateCommand, RootUpdate } from '../../../langium-model-server/lms/model'
 import { AbstractModelUpdateCalculators, compareModelWithExistingBefore, deleteModels, type ModelUpdateCalculator } from '../../../langium-model-server/lms/model-update-calculation'
 import type * as sem from '../../../langium-model-server/semantic/model'
 import type { Initialized } from '../../../langium-model-server/workspace/documents'
 import type { TaskListIdentityIndex } from '../identity/indexed'
 import type { TaskListIdentityManager } from '../identity/manager'
-import type * as identity from '../identity/model'
-import type * as semantic from '../semantic/model'
 import type { QueriableTaskListSemanticDomain } from '../semantic/task-list-semantic-domain'
 import type { TaskListServices } from '../task-list-module'
 import type { TaskListDocument } from '../workspace/documents'
@@ -72,7 +70,7 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
             this.semanticDomain.getPreviousIdentifiedTask(task.$identity.id),
             task,
             Task.create,
-            applyTaskChanges,
+            Task.applyChanges,
         ))
         const deletion: ReadonlyArrayUpdate<Task> = deleteModels(
             this.identityIndex.tasks.allSoftDeleted.bind(this.identityIndex.tasks),
@@ -92,7 +90,7 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
             this.semanticDomain.getPreviousIdentifiedTransition(transition.$identity.id),
             transition,
             Transition.create,
-            applyTransitionChanges,
+            Transition.applyChanges,
         ))
         const deletion: ReadonlyArrayUpdate<Transition> = deleteModels(
             this.identityIndex.transitions.allSoftDeleted.bind(this.identityIndex.transitions),
@@ -101,31 +99,5 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
         )
 
         return ArrayUpdateCommand.all(...updates, deletion)
-    }
-}
-
-function applyTaskChanges(update: ElementUpdate<Task>, previous: semantic.IdentifiedTask | identity.TaskIdentity, current: semantic.IdentifiedTask): void {
-    if (previous !== current.$identity) {
-        Update.assignIfUpdated(update, 'name', previous.name, current.name, '')
-        Update.assignIfUpdated(update, 'content', (previous as semantic.IdentifiedTask).content, current.content, '')
-    } else {
-        console.info(`Can't compare attributes of Task '${current.$identity.id}' with name=${current.name}: previous semantic Task is missing`)
-        Update.assign(update, 'name', current.name, '')
-        Update.assign(update, 'content', current.content, '')
-    }
-}
-
-function applyTransitionChanges(update: ElementUpdate<Transition>,
-    previous: semantic.IdentifiedTransition | identity.TransitionIdentity,
-    current: semantic.IdentifiedTransition
-): void {
-    if (previous !== current.$identity) {
-        const previousModel = previous as semantic.IdentifiedTransition
-        Update.assignIfUpdated(update, 'sourceTaskId', previousModel.sourceTask.$identity.id, current.sourceTask.$identity.id)
-        Update.assignIfUpdated(update, 'targetTaskId', previousModel.targetTask.$identity.id, current.targetTask.$identity.id)
-    } else {
-        console.info(`Can't compare attributes of Transition '${current.$identity.id}' with name=${current.$identity.name}: previous semantic Transition is missing`)
-        Update.assign(update, 'sourceTaskId', current.sourceTask.$identity.id)
-        Update.assign(update, 'targetTaskId', current.targetTask.$identity.id)
     }
 }

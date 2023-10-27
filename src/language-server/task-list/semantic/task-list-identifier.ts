@@ -66,7 +66,7 @@ export class TaskListIdentifier implements Identifier<source.Model, TaskListDocu
         const existingUnmappedIdentities = new Set(transitionIdentities.values())
         semanticDomain.getValidatedTransitions()
             .forEach(transition => {
-                const name = TransitionName.from(transition)
+                const name = TransitionName.from(transition.$props)
                 let transitionIdentity = transitionIdentities.byName(name)
                 if (transitionIdentity) {
                     existingUnmappedIdentities.delete(transitionIdentity)

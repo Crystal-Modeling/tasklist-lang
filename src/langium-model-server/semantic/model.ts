@@ -3,6 +3,16 @@ import * as id from '../identity/model'
 import type { WithSemanticID } from '../identity/semantic-id'
 import type { KeysOfType, PickOfTypeAndOverride, TypeGuard } from '../utils/types'
 
+export type Customized<T extends AstNode, P> = T & {
+    $props: P
+}
+
+export namespace Customized {
+    export function customize<T extends AstNode, P>(node: T, properties: P): Customized<T, P> {
+        return Object.assign(node, { $props: properties })
+    }
+}
+
 export type Validated<T extends AstNode> = T & NestedAstNodesWithValidatedContainer<T> & {
     $validation: ValidationMessage[]
 }

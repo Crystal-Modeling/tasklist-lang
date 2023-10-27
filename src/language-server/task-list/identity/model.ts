@@ -18,7 +18,7 @@ export namespace TransitionName {
             && typeof obj.targetTaskId === 'string'
     }
 
-    export function from(newTransition: semantic.TransitionIdentifiedProperties): TransitionName {
+    export function from(newTransition: semantic.IdentifiedTransitionProperties): TransitionName {
         return of(newTransition.sourceTask.$identity.id, newTransition.targetTask.$identity.id)
     }
 
@@ -36,4 +36,4 @@ export namespace TransitionName {
     }
 }
 
-export type TransitionIdentity = id.DerivativeIdentity<semantic.Transition & semantic.TransitionIdentifiedProperties, TransitionName>
+export type TransitionIdentity = id.DerivativeIdentity<semantic.Transition<semantic.IdentifiedTransitionProperties>, TransitionName>

@@ -96,7 +96,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         let anchorModel: semantic.IdentifiedTransition | undefined
         if (creationParams.anchorModelId) {
             anchorModel = lmsDocument.semanticDomain.identifiedTransitions.get(creationParams.anchorModelId)
-            if (anchorModel && anchorModel.sourceTask !== sourceTask) {
+            if (anchorModel && anchorModel.$props.sourceTask !== sourceTask) {
                 return ModificationResult.failedValidation('Anchor model for Transition must be another Transition within the same sourceTask')
             }
         }
@@ -170,7 +170,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
             return ModificationResult.failedValidation('Unable to resolve: ' + unresolvedTasks.join(', '))
         }
 
-        const newTransitionProps = semantic.Transition.properties(newSourceTask ?? transition.sourceTask, newTargetTask ?? transition.targetTask)
+        const newTransitionProps = semantic.Transition.properties(newSourceTask ?? transition.$props.sourceTask, newTargetTask ?? transition.$props.targetTask)
         const newTransitionName = identity.TransitionName.from(newTransitionProps)
         if (!transition.$identity.isNewNameFit(newTransitionName)) {
             return ModificationResult.failedValidation(`Unable to fit supplied transition name ${newTransitionName}: invalid value`)
@@ -215,7 +215,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         const sourceEditAndLabel = stream(resolvedTasks.values())
             .map(task => this.computeTaskDeletion(lmsDocument, task, taskIds))
             .concat(stream(resolvedTransitions.values())
-                .filter((transition) => !resolvedTasks.has(transition.sourceTask.$identity.id) && !resolvedTasks.has(transition.targetTask.$identity.id))
+                .filter((transition) => !resolvedTasks.has(transition.$props.sourceTask.$identity.id) && !resolvedTasks.has(transition.$props.targetTask.$identity.id))
                 .map(transition => this.computeTransitionDeletion(lmsDocument, transition))
             ).reduce((sourceEditAndLabel, [nextSourceEdit, nextLabel]) => {
                 sourceEditAndLabel[0].apply(nextSourceEdit)
@@ -286,7 +286,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return TextEdit.insert(position, prefix + serializedTask + suffix)
     }
 
-    private computeTransitionCreation({ sourceTask, targetTask }: semantic.TransitionIdentifiedProperties,
+    private computeTransitionCreation({ sourceTask, targetTask }: semantic.IdentifiedTransitionProperties,
         anchorModel?: semantic.IdentifiedTransition): TextEdit {
 
         if (!sourceTask.$cstNode) {
@@ -331,15 +331,15 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
         return undefined
     }
 
-    private computeTransitionUpdate(lmsDocument: LmsDocument, transition: semantic.IdentifiedTransition, newTransitionProps: semantic.TransitionIdentifiedProperties): SourceEdit {
+    private computeTransitionUpdate(lmsDocument: LmsDocument, transition: semantic.IdentifiedTransition, newTransitionProps: semantic.IdentifiedTransitionProperties): SourceEdit {
         if (!transition.$cstNode) {
             throw new Error('Cannot locate model ' + transition.$identity.name + '(' + transition.$identity.id + ') in text')
         }
         const sourceEdit = new SourceEdit()
-        if (newTransitionProps.sourceTask !== transition.sourceTask) {
+        if (newTransitionProps.sourceTask !== transition.$props.sourceTask) {
             sourceEdit.apply(this.computeTransitionDeletion(lmsDocument, transition)[0])
             sourceEdit.add(lmsDocument.uri, this.computeTransitionCreation(newTransitionProps))
-        } else if (newTransitionProps.targetTask !== transition.targetTask) {
+        } else if (newTransitionProps.targetTask !== transition.$props.targetTask) {
             const serializedModel = newTransitionProps.targetTask.name
             sourceEdit.add(lmsDocument.uri, TextEdit.replace(transition.$cstNode.range, serializedModel))
         }
@@ -395,7 +395,7 @@ export class TaskListLangiumModelServerFacade extends AbstractLangiumModelServer
     private computeTransitionDeletion(lmsDocument: LmsDocument, transition: semantic.IdentifiedTransition): [SourceEdit, string] {
 
         console.debug('Computing Deletion edit for Transition with name', transition.$identity.name)
-        const task = transition.sourceTask
+        const task = transition.$props.sourceTask
         if (!transition.$cstNode || !task.$cstNode) {
             throw new Error('Cannot locate model ' + transition.$identity.name + '(' + transition.$identity.id + ') in text')
         }

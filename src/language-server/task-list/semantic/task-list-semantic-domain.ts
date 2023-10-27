@@ -6,7 +6,7 @@ import { type QueriableSemanticDomain, type SemanticDomain } from '../../../lang
 import { TypeGuard } from '../../../langium-model-server/utils/types'
 import type * as ast from '../../generated/ast'
 import type * as id from '../identity/model'
-import type { IdentifiedTask, IdentifiedTransition, TransitionIdentifiedProperties } from './model'
+import type { IdentifiedTask, IdentifiedTransition, IdentifiedTransitionProperties } from './model'
 import { Transition } from './model'
 
 export interface QueriableTaskListSemanticDomain extends QueriableSemanticDomain {
@@ -22,7 +22,7 @@ export interface TaskListSemanticDomain extends SemanticDomain, QueriableTaskLis
     validateTransitionsForTask(task: ast.Task, invalidReferences: Set<ast.Transition>): void
     // NOTE: 👇 This is considered as part of manipulation with AST Nodes
     getValidatedTasks(model: ast.Model): Stream<Validated<ast.Task>>
-    getValidatedTransitions(): Stream<Validated<Transition & TransitionIdentifiedProperties>>
+    getValidatedTransitions(): Stream<Validated<Transition<IdentifiedTransitionProperties>>>
     // NOTE: 👇 This is considered as part of manipulation with Semantic Model (IdentifiedTask and IdentifiedTransition)
     /**
      * Maps Validated Task node with semantic identity.
@@ -49,7 +49,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
 
     public readonly rootId: string
 
-    private _validatedTransitionsByTask: Map<Validated<ast.Task>, Array<Validated<Transition>>>
+    private _validatedTransitions: Set<Validated<Transition>>
     private _identifiedTasksById: Map<string, IdentifiedTask>
     private _previousIdentifiedTaskById: Map<string, IdentifiedTask> | undefined
     private _identifiedTransitionsById: Map<string, IdentifiedTransition>
@@ -57,8 +57,8 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
 
     constructor(rootId: string) {
         this.rootId = rootId
+        this._validatedTransitions = new Set()
         this._identifiedTasksById = new Map()
-        this._validatedTransitionsByTask = new Map()
         this._identifiedTransitionsById = new Map()
     }
 
@@ -79,13 +79,12 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
 
     public validateTransitionsForTask(task: ast.Task, invalidTransitions: Set<ast.Transition>): void {
         if (Validated.is(task)) {
-            const validatedTransitions = stream(task.transitions)
+            stream(task.transitions)
                 .filter(transition => !invalidTransitions.has(transition))
                 .filter(TypeGuard.withProp('targetTaskRef', ValidatedReference.is<ast.Task>))
                 .map(Transition.initProperties)
                 .map(Validated.validate)
-                .toArray()
-            this._validatedTransitionsByTask.set(task, validatedTransitions)
+                .forEach(this._validatedTransitions.add.bind(this._validatedTransitions))
         }
     }
 
@@ -94,8 +93,8 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
             .filter(Validated.is)
     }
 
-    public getValidatedTransitions(): Stream<Validated<Transition & TransitionIdentifiedProperties>> {
-        return stream(...this._validatedTransitionsByTask.values())
+    public getValidatedTransitions(): Stream<Validated<Transition<IdentifiedTransitionProperties>>> {
+        return stream(this._validatedTransitions)
             .filter(Transition.assertIdentifiedProperties)
     }
 
@@ -105,7 +104,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
         return identifiedTask
     }
 
-    public identifyTransition(transition: Validated<Transition & TransitionIdentifiedProperties>, identity: id.TransitionIdentity): IdentifiedTransition {
+    public identifyTransition(transition: Validated<Transition<IdentifiedTransitionProperties>>, identity: id.TransitionIdentity): IdentifiedTransition {
         const identifiedTransition = Identified.identify(transition, identity)
         this._identifiedTransitionsById.set(identifiedTransition.$identity.id, identifiedTransition)
         return identifiedTransition
@@ -128,7 +127,7 @@ class DefaultTaskListSemanticDomain implements TaskListSemanticDomain {
     }
 
     public clear() {
-        this._validatedTransitionsByTask.clear()
+        this._validatedTransitions.clear()
         this._previousIdentifiedTaskById = this._identifiedTasksById
         this._identifiedTasksById = new Map()
         this._previousIdentifiedTransitionsById = this._identifiedTransitionsById

@@ -3,35 +3,37 @@ import type * as ast from '../../../generated/ast'
 import type * as identity from '../../identity/model'
 import type { IdentifiedTask } from './task'
 
-export type IdentifiedTransition = sem.Identified<sem.Validated<Transition & TransitionIdentifiedProperties>, identity.TransitionName>
+export type IdentifiedTransition = sem.Identified<Transition<IdentifiedTransitionProperties>, identity.TransitionName>
 
-export type TransitionIdentifiedProperties = {
-    sourceTask: IdentifiedTask,
-    targetTask: IdentifiedTask
-}
+export type Transition<P extends TransitionProperties = TransitionProperties> = sem.Customized<ast.Transition, P>
 
-export interface Transition extends ast.Transition {
+export type TransitionProperties = {
     sourceTask: sem.Validated<ast.Task>,
     targetTask: sem.Validated<ast.Task>,
+}
+
+export type IdentifiedTransitionProperties = {
+    sourceTask: IdentifiedTask,
+    targetTask: IdentifiedTask
 }
 
 export namespace Transition {
 
     export function initProperties(transition: ast.Transition & { $container: sem.Validated<ast.Task>, targetTaskRef: sem.ValidatedReference<ast.Task> }): Transition {
 
-        return Object.assign(transition, { sourceTask: transition.$container, targetTask: transition.targetTaskRef.ref })
+        return sem.Customized.customize(transition, { sourceTask: transition.$container, targetTask: transition.targetTaskRef.ref })
     }
 
-    export function properties(sourceTask: IdentifiedTask, targetTask: IdentifiedTask): TransitionIdentifiedProperties {
+    export function properties(sourceTask: IdentifiedTask, targetTask: IdentifiedTask): IdentifiedTransitionProperties {
         return {
             sourceTask,
             targetTask,
         }
     }
 
-    export function assertIdentifiedProperties(transition: sem.Validated<Transition>): transition is sem.Validated<Transition & TransitionIdentifiedProperties> {
-        if (!sem.Identified.is(transition.sourceTask) || !sem.Identified.is(transition.targetTask)) {
-            throw new Error(`Expected Transition properties to be identified, but got sourceTask=${transition.sourceTask} and targetTask=${transition.targetTask}`)
+    export function assertIdentifiedProperties(transition: sem.Validated<Transition>): transition is sem.Validated<Transition<IdentifiedTransitionProperties>> {
+        if (!sem.Identified.is(transition.$props.sourceTask) || !sem.Identified.is(transition.$props.targetTask)) {
+            throw new Error(`Expected Transition properties to be identified, but got sourceTask=${transition.$props.sourceTask} and targetTask=${transition.$props.targetTask}`)
         }
         return true
     }
