@@ -1,4 +1,4 @@
-import * as id from '../../../langium-model-server/identity/model'
+import { IdentityData, type AstNodeIdentityData, type DerivativeIdentityData } from '../../../langium-model-server/identity/identity-data'
 import { SemanticID } from '../../../langium-model-server/identity/semantic-id'
 import type { IdentityStorage } from '../../../langium-model-server/identity/storage'
 import { AbstractIdentityStorage } from '../../../langium-model-server/identity/storage'
@@ -21,8 +21,8 @@ export class TaskListIdentityStorage extends AbstractIdentityStorage<source.Mode
 
 export interface ModelIdentityModel {
     id: string
-    tasks: id.AstNodeIdentityModel[]
-    transitions: Array<id.DerivativeIdentityModel<TransitionName>>
+    tasks: AstNodeIdentityData[]
+    transitions: Array<DerivativeIdentityData<TransitionName>>
 }
 
 export namespace ModelIdentityModel {
@@ -31,8 +31,8 @@ export namespace ModelIdentityModel {
             return false
         }
         if (typeof (obj as ModelIdentityModel).id !== 'string'
-            || !isArray((obj as ModelIdentityModel).tasks, id.IdentityModel.is)
-            || !isArray((obj as ModelIdentityModel).transitions, (m): m is id.IdentityModel<TransitionName> => id.IdentityModel.is(m, TransitionName.is))) {
+            || !isArray((obj as ModelIdentityModel).tasks, IdentityData.is)
+            || !isArray((obj as ModelIdentityModel).transitions, (m): m is IdentityData<TransitionName> => IdentityData.is(m, TransitionName.is))) {
             return false
         }
 

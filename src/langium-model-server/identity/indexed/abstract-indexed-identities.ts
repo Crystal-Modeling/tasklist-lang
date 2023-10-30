@@ -1,9 +1,10 @@
 import type { AstNode } from 'langium'
 import type * as sem from '../../semantic/model'
 import type { AbstractMap } from '../../utils/collections'
-import type { EditableIdentity, Identity, IdentityModel, IdentityName, RollbackableResult, StateRollback } from '../model'
+import type { EditableIdentity, Identity, IdentityName, RollbackableResult, StateRollback } from '../model'
 import { SemanticID } from '../semantic-id'
 import type { IdentityLoader, IndexedIdentities } from './indexed-identities'
+import type { IdentityData } from '../identity-data'
 
 export abstract class AbstractIndexedIdentities<T extends AstNode, NAME extends IdentityName, ID extends Identity<T, NAME>> implements IndexedIdentities<T, NAME, ID>, IdentityLoader<T, NAME, ID> {
 
@@ -56,8 +57,8 @@ export abstract class AbstractIndexedIdentities<T extends AstNode, NAME extends 
         return this.add(SemanticID.generate(), name)
     }
 
-    public load(model: IdentityModel<NAME>): ID {
-        return this.add(model.id, model.name)
+    public load(data: IdentityData<NAME>): ID {
+        return this.add(data.id, data.name)
     }
 
     protected add(id: string, name: NAME): ID {

@@ -9,7 +9,6 @@ import type { TypeGuard } from '../utils/types'
 import { UriConverter } from '../utils/uri-converter'
 import type { LmsDocument } from '../workspace/documents'
 import type { WithSemanticID } from './semantic-id'
-import { IdentityError } from './model'
 import type { IdentityIndex } from './indexed'
 
 export interface IdentityStorage {
@@ -76,7 +75,7 @@ export abstract class AbstractIdentityStorage<SM extends WithSemanticID, II exte
                 }
                 this.writeFile(path, fileContent)
             }
-            if (guard && !guard(fileContent)) {
+            if (guard !== undefined && !guard(fileContent)) {
                 throw new Error('The loaded root object is not of the expected type!')
             }
             return fileContent
@@ -134,5 +133,12 @@ export abstract class AbstractIdentityStorage<SM extends WithSemanticID, II exte
 
     protected stringifyModel(model: unknown): string {
         return JSON.stringify(model, undefined, 2)
+    }
+}
+
+class IdentityError extends Error {
+    // eslint-disable-next-line @typescript-eslint/no-parameter-properties
+    constructor(message: string, override readonly cause?: unknown) {
+        super(message)
     }
 }

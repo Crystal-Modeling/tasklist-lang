@@ -1,5 +1,6 @@
 import type { AstNode } from 'langium'
-import type { Identity, IdentityModel, IdentityName, RollbackableResult } from '../model'
+import type { Identity, IdentityName, RollbackableResult } from '../model'
+import type { IdentityData } from '../identity-data'
 
 export type IdentityIndex = {
     readonly id: string
@@ -23,5 +24,5 @@ export interface IndexedIdentities<T extends AstNode, NAME extends IdentityName,
 }
 
 export interface IdentityLoader<T extends AstNode, NAME extends IdentityName, ID extends Identity<T, NAME>> {
-    load(model: IdentityModel<NAME>): ID
+    load(data: IdentityData<NAME>): ID
 }

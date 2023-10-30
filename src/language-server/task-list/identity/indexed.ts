@@ -1,6 +1,7 @@
+import { IdentityData } from '../../../langium-model-server/identity/identity-data'
 import { AstNodeIndexedIdentities, DerivativeIndexedIdentities, type IdentityIndex, type IndexedIdentities } from '../../../langium-model-server/identity/indexed'
 import type { AstNodeIdentityName } from '../../../langium-model-server/identity/model'
-import { Identity, ModelUri } from '../../../langium-model-server/identity/model'
+import { ModelUri } from '../../../langium-model-server/identity/model'
 import type * as ast from '../../generated/ast'
 import type * as semantic from '../semantic/model'
 import type { TaskIdentity, TransitionIdentity } from './model'
@@ -35,8 +36,8 @@ export abstract class TaskListIdentityIndex implements IdentityIndex {
     protected get model(): ModelIdentityModel {
         return {
             id: this.id,
-            tasks: Array.from(this.tasks.values(), Identity.toModel),
-            transitions: Array.from(this.transitions.values(), Identity.toModel)
+            tasks: Array.from(this.tasks.values(), IdentityData.fromIdentity),
+            transitions: Array.from(this.transitions.values(), IdentityData.fromIdentity)
         }
     }
 
