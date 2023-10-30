@@ -31,8 +31,8 @@ export interface TaskListSemanticDomain extends SemanticDomain, QueriableTaskLis
     */
     identifyTask(task: Validated<ast.Task>, identity: id.TaskIdentity): IdentifiedTask
     /**
-     * Maps Transition *artificial* node with semantic identity
-     * @param transition Artificial Transition node (they are created being already validated)
+     * Maps Validated Transition node with semantic identity.
+     * @param transition Validated Transition node
      * @param identity Semantic identity, which {@link transition} is identified with
      */
     identifyTransition(transition: Validated<Transition>, identity: id.TransitionIdentity): IdentifiedTransition

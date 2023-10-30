@@ -34,7 +34,7 @@ export namespace Update {
     // NOTE: Values taken from AST node can still be evaluated to undefined, even if they are required by type description
     export function assignIfUpdated<T extends WithSemanticID, V extends PrimitiveModelAttribute, S extends string>(update: Update<T, S>,
         key: PrimitiveModelAttributeChangesRequiredKeysOfType<T, V>, value: V | undefined, newValue: V | undefined, defaultValue: V): void
-    // NOTE: Values taken from an Artificial AST should not be undefined, since they are validated (e.g., other nodes semantic IDs)
+    // NOTE: Values taken from an Customized properties should not be undefined, since they are manually initialized
     export function assignIfUpdated<T extends WithSemanticID, V extends PrimitiveModelAttribute, S extends string>(update: Update<T, S>,
         key: PrimitiveModelAttributeChangesRequiredKeysOfType<T, V>, value: V, newValue: V): void
     export function assignIfUpdated<T extends WithSemanticID, V extends PrimitiveModelAttribute, S extends string>(update: Update<T, S>,

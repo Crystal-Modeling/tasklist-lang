@@ -45,20 +45,14 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
         const tasksUpdate = this.calculateTasksUpdate(deletion.tasks ?? [])
         const transitionsUpdate = this.calculateTransitionsUpdate(deletion.transitions ?? [])
 
-        const update = RootUpdate.createEmpty<Model>(this.semanticDomain.rootId, id.ModelUri.root)
-        if (!ArrayUpdate.isEmpty(tasksUpdate)) update.tasks = ArrayUpdate.create(tasksUpdate)
-        if (!ArrayUpdate.isEmpty(transitionsUpdate)) update.transitions = ArrayUpdate.create(transitionsUpdate)
-        return update
+        return createRootUpdate(this.semanticDomain.rootId, tasksUpdate, transitionsUpdate)
     }
 
     public clearSoftDeletedIdentities(): RootUpdate<Model> {
         const tasksDeletion = ArrayUpdateCommand.deletion<Task>(Array.from(this.identityIndex.tasks.allSoftDeleted(), identity => identity.remove()))
         const transitionsDeletion = ArrayUpdateCommand.deletion<Transition>(Array.from(this.identityIndex.transitions.allSoftDeleted(), identity => identity.remove()))
 
-        const rootUpdate = RootUpdate.createEmpty<Model>(this.semanticDomain.rootId, id.ModelUri.root)
-        if (!ArrayUpdate.isEmpty(tasksDeletion)) rootUpdate.tasks = ArrayUpdate.create(tasksDeletion)
-        if (!ArrayUpdate.isEmpty(transitionsDeletion)) rootUpdate.transitions = ArrayUpdate.create(transitionsDeletion)
-        return rootUpdate
+        return createRootUpdate(this.semanticDomain.rootId, tasksDeletion, transitionsDeletion)
     }
 
     /**
@@ -100,4 +94,11 @@ export class TaskListModelUpdateCalculator implements ModelUpdateCalculator<Mode
 
         return ArrayUpdateCommand.all(...updates, deletion)
     }
+}
+
+function createRootUpdate(rootId: string, tasks: ReadonlyArrayUpdate<Task>, transitions: ReadonlyArrayUpdate<Transition>): RootUpdate<Model> {
+    const rootUpdate = RootUpdate.createEmpty<Model>(rootId, id.ModelUri.root)
+    if (!ArrayUpdate.isEmpty(tasks)) rootUpdate.tasks = ArrayUpdate.create(tasks)
+    if (!ArrayUpdate.isEmpty(transitions)) rootUpdate.transitions = ArrayUpdate.create(transitions)
+    return rootUpdate
 }
