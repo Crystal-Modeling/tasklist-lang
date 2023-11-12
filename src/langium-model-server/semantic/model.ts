@@ -1,5 +1,7 @@
 import type { AstNode, LangiumDocument, Reference } from 'langium'
-import * as id from '../identity/model'
+import type { AstNodeIdentity, DerivativeIdentity, Identity } from '../identity/model'
+import type { DerivativeIdentityName, IdentityName } from '../identity/identity-name'
+import { AstNodeIdentityName } from '../identity/identity-name'
 import type { WithSemanticID } from '../identity/semantic-id'
 import type { KeysOfType, PickOfTypeAndOverride, TypeGuard } from '../utils/types'
 
@@ -44,15 +46,15 @@ export interface ValidationMessage {
     readonly kind: string
 }
 
-export type IdentifiedNode = Identified<AstNode, id.IdentityName>
-export type Identified<T extends AstNode, NAME extends id.IdentityName = id.IdentityName> = Validated<T> & {
-    $identity: id.Identity<T, NAME>
+export type IdentifiedNode = Identified<AstNode, IdentityName>
+export type Identified<T extends AstNode, NAME extends IdentityName = IdentityName> = Validated<T> & {
+    $identity: Identity<T, NAME>
 }
 
 export namespace Identified {
-    export function identify<T extends AstNode>(node: Validated<T>, identity: id.AstNodeIdentity<T>): Identified<T, id.AstNodeIdentityName>
-    export function identify<T extends AstNode, NAME extends id.DerivativeIdentityName>(node: Validated<T>, identity: id.DerivativeIdentity<T, NAME>): Identified<T, NAME>
-    export function identify<T extends AstNode, NAME extends id.IdentityName>(node: Validated<T>, identity: id.Identity<T, NAME>): Identified<T, NAME> {
+    export function identify<T extends AstNode>(node: Validated<T>, identity: AstNodeIdentity<T>): Identified<T, AstNodeIdentityName>
+    export function identify<T extends AstNode, NAME extends DerivativeIdentityName>(node: Validated<T>, identity: DerivativeIdentity<T, NAME>): Identified<T, NAME>
+    export function identify<T extends AstNode, NAME extends IdentityName>(node: Validated<T>, identity: Identity<T, NAME>): Identified<T, NAME> {
         return Object.assign(node, { $identity: identity })
     }
 
@@ -60,12 +62,12 @@ export namespace Identified {
         return (node as Identified<T>)?.$identity?.id !== undefined
     }
 
-    export function isPrimary<T extends AstNode>(node: T): node is Identified<T, id.AstNodeIdentityName> {
-        return is(node) && id.AstNodeIdentityName.is(node.$identity.name)
+    export function isPrimary<T extends AstNode>(node: T): node is Identified<T, AstNodeIdentityName> {
+        return is(node) && AstNodeIdentityName.is(node.$identity.name)
     }
 
-    export function isDerivative<T extends AstNode, NAME extends id.DerivativeIdentityName>(
-        node: T, nameGuard: TypeGuard<NAME, id.IdentityName>
+    export function isDerivative<T extends AstNode, NAME extends DerivativeIdentityName>(
+        node: T, nameGuard: TypeGuard<NAME, IdentityName>
     ): node is Identified<T, NAME> {
         return is(node) && nameGuard(node.$identity.name)
     }
@@ -101,7 +103,7 @@ export namespace ValidatedReference {
  * Describes unmapped identities for the SourceModel element of type T
  */
 export type UnmappedIdentities<SM extends WithSemanticID> =
-    Partial<PickOfTypeAndOverride<SM, WithSemanticID[], Iterable<id.Identity>>>
+    Partial<PickOfTypeAndOverride<SM, WithSemanticID[], Iterable<Identity>>>
 
 export namespace UnmappedIdentities {
     export function createEmpty<SM extends WithSemanticID>(): UnmappedIdentities<SM> {

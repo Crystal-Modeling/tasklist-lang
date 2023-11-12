@@ -1,7 +1,7 @@
 import type { AstNode } from 'langium'
 import type * as sem from '../../semantic/model'
 import type { IdentityData } from '../identity-data'
-import type { AstNodeIdentityName, DerivativeIdentityName, IdentityName } from './name'
+import type { AstNodeIdentityName, DerivativeIdentityName, IdentityName } from '../identity-name'
 import type { WithModelUri } from './uri'
 
 export type StateRollback = () => void

@@ -1,7 +1,8 @@
 import type { AstNode } from 'langium'
 import { ValueBasedMap } from '../../utils/collections'
 import { AbstractIndexedIdentities } from './abstract-indexed-identities'
-import type { DerivativeIdentityName, Identity } from '../model'
+import type { Identity } from '../model'
+import type { DerivativeIdentityName } from '../identity-name'
 import type { ValueBasedOperations } from '../../utils/types'
 
 export class DerivativeIndexedIdentities<T extends AstNode, NAME extends DerivativeIdentityName, ID extends Identity<T, NAME>> extends AbstractIndexedIdentities<T, NAME, ID> {

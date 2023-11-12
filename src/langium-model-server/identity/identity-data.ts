@@ -1,7 +1,8 @@
 import type { AstNode } from 'langium'
 import type { TypeGuard } from '../utils/types'
 import { isDefinedObject } from '../utils/types'
-import type { AstNodeIdentityName, DerivativeIdentityName, IdentityName, Identity } from './model'
+import type { Identity } from './model'
+import type { AstNodeIdentityName, DerivativeIdentityName, IdentityName } from './identity-name'
 import type { WithSemanticID } from './semantic-id'
 
 export interface IdentityData<NAME extends IdentityName> extends Readonly<WithSemanticID> {

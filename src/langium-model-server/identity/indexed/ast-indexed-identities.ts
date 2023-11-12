@@ -2,7 +2,8 @@ import type { AstNode } from 'langium'
 import { MultiMap } from 'langium'
 import type * as sem from '../../semantic/model'
 import { AbstractIndexedIdentities } from './abstract-indexed-identities'
-import type { AstNodeIdentityName, EditableIdentity, Identity, RollbackableResult, StateRollback } from '../model'
+import type { EditableIdentity, Identity, RollbackableResult, StateRollback } from '../model'
+import type { AstNodeIdentityName } from '../identity-name'
 
 export class AstNodeIndexedIdentities<T extends AstNode, ID extends Identity<T, AstNodeIdentityName>> extends AbstractIndexedIdentities<T, AstNodeIdentityName, ID> {
 

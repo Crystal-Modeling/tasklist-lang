@@ -1,5 +1,6 @@
 import type { AstNode } from 'langium'
-import type { Identity, IdentityName, RollbackableResult } from '../model'
+import type { Identity, RollbackableResult } from '../model'
+import type { IdentityName } from '../identity-name'
 import type { IdentityData } from '../identity-data'
 
 export type IdentityIndex = {

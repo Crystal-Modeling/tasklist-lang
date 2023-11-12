@@ -2,6 +2,7 @@ import type { AstNode } from 'langium'
 import { stream } from 'langium'
 import type * as id from '../identity/model'
 import type { WithSemanticID } from '../identity/semantic-id'
+import type { IdentityName } from '../identity/identity-name'
 import type * as sem from '../semantic/model'
 import type { Initialized, LmsDocument } from '../workspace/documents'
 import type { ReadonlyArrayUpdate, RootUpdate } from './model'
@@ -38,7 +39,7 @@ export interface ModelUpdateCalculator<SM extends WithSemanticID> {
 //     [P in KeysOfType<T, id.SemanticIdentity[]> as `calculate${Capitalize<string & P>}Update`]: T[P] extends id.SemanticIdentity[] ? (identitiesToDelete: Iterable<T[P][0]>) => ReadonlyArrayUpdate<T[P][0]> : never
 // }
 
-export function compareModelWithExistingBefore<T extends AstNode, NAME extends id.IdentityName, SRC extends WithSemanticID>(
+export function compareModelWithExistingBefore<T extends AstNode, NAME extends IdentityName, SRC extends WithSemanticID>(
     previous: sem.Identified<T, NAME> | undefined,
     current: sem.Identified<T, NAME>,
     sourceModelFactory: (semanticModel: sem.Identified<T, NAME>) => SRC,
@@ -77,7 +78,7 @@ export function compareModelWithExistingBefore<T extends AstNode, NAME extends i
  * @param getPreviousSemanticModel Fetches corresponding previous Semantic Model from SemanticDomain
  * @returns Semantic Model Update for this deletion request
  */
-export function deleteModels<T extends AstNode, NAME extends id.IdentityName, SRC extends WithSemanticID>(
+export function deleteModels<T extends AstNode, NAME extends IdentityName, SRC extends WithSemanticID>(
     getSoftDeleted: () => Iterable<id.Identity<T, NAME>>,
     getPreviousSemanticModel: (id: string) => sem.Identified<T, NAME> | undefined,
     identitiesToDelete: Iterable<id.Identity>

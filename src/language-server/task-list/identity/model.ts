@@ -1,11 +1,12 @@
 import type * as id from '../../../langium-model-server/identity/model'
+import type { DerivativeIdentityName } from '../../../langium-model-server/identity/identity-name'
 import { isDefinedObject } from '../../../langium-model-server/utils/types'
 import type * as ast from '../../generated/ast'
 import type * as semantic from '../semantic/model'
 
 export type TaskIdentity = id.AstNodeIdentity<ast.Task>
 
-export interface TransitionName extends id.DerivativeIdentityName {
+export interface TransitionName extends DerivativeIdentityName {
     sourceTaskId: string
     targetTaskId: string
 }
