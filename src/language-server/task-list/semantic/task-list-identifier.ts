@@ -46,7 +46,8 @@ export class TaskListIdentifier implements Identifier<source.Model, TaskListDocu
         // Actual mapping: marking semantic elements for deletion, and AST nodes to be added
         semanticDomain.getValidatedTasks(astModel)
             .forEach(task => {
-                let taskIdentity = taskIdentities.byName(task.name)
+                const name = task.name
+                let taskIdentity = taskIdentities.byName(name)
                 if (taskIdentity) {
                     existingUnmappedIdentities.delete(taskIdentity)
                 } else {

@@ -21,16 +21,6 @@
           "include": "#string-character-escape"
         }
       ]
-    },
-    {
-      "name": "string.quoted.single.task-list",
-      "begin": "'",
-      "end": "'",
-      "patterns": [
-        {
-          "include": "#string-character-escape"
-        }
-      ]
     }
   ],
   "repository": {
