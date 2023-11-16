@@ -53,6 +53,7 @@
     },
     "main": "./out/extension.js",
     "scripts": {
+        "package": "npm run rebuild && npm run vscode:prepublish",
         "rebuild": "npm run clean && npm run langium:generate && npm run build && npm run copy-files",
         "vscode:prepublish": "npm run esbuild-base -- --minify && npm run lint",
         "esbuild-base": "esbuild ./src/extension.ts --bundle --outfile=out/main.js --external:vscode --format=cjs --platform=node",
